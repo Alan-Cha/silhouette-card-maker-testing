@@ -1,4 +1,5 @@
 import json
+import math
 import os
 from PIL import Image, ImageDraw, ImageFont
 
@@ -17,6 +18,10 @@ selected_template_type = 'STANDARD'
 # Ideally should be added to the card type JSON
 rotate_card_images_quarter_circle = False
 
+# Add parameter to decrease print bleed
+# Between 0 and 1
+bleed_percentage = 1
+
 # -------------------------------------
 
 # Specify directory locations
@@ -31,9 +36,10 @@ print_height = 2550
 
 def image_paste_with_border(image: Image, page: Image, box: tuple[int, int, int, int], thickness: int):
     origin_x, origin_y, origin_width, origin_height = box
-    for i in reversed(range(thickness)):
+    for i in reversed(range(1, thickness)):
         im_resize = image.resize((origin_width + (2 * i), origin_height + (2 * i)))
         page.paste(im_resize, (origin_x - i, origin_y - i))
+    page.paste(image, (origin_x, origin_y))
 
 # Load the JSON with all the card sizing information
 json_filename = 'card_size_config.json'
@@ -84,7 +90,7 @@ with Image.open(blank_path) as blank_im:
                 image_paste_with_border(back_im_corr,
                    back_page,
                    (new_origin_x, new_origin_y, selected_template['width'], selected_template['height']),
-                   selected_template['border_thickness'])
+                   math.ceil(selected_template['border_thickness'] * bleed_percentage))
 
             # Add template version number to the back
             draw = ImageDraw.Draw(back_page)
@@ -137,7 +143,7 @@ with Image.open(blank_path) as blank_im:
                 image_paste_with_border(front_im_corr,
                     front_page,
                     (new_origin_x, new_origin_y, selected_template['width'], selected_template['height']),
-                    selected_template['border_thickness'])
+                    math.ceil(selected_template['border_thickness'] * bleed_percentage))
 
             n += 1
 
