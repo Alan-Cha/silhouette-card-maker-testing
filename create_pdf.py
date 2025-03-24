@@ -13,6 +13,10 @@ from PIL import Image, ImageDraw, ImageFont
 # 'POKER_HALF'
 selected_template_type = 'STANDARD'
 
+# Flag to indicate if the back/front images are rotated 90 degrees on the template
+# Ideally should be added to the card type JSON
+rotate_card_images_quarter_circle = False
+
 # -------------------------------------
 
 # Specify directory locations
@@ -62,10 +66,14 @@ with Image.open(blank_path) as blank_im:
         back_filename = 'back.jpg'
         back_path = os.path.join(game_back_directory, back_filename)
         with Image.open(back_path) as back_im:
+            # Rotate a quarter circle if the flag is true
+            # Add 180 degree rotation to account for orientation
+            if(rotate_card_images_quarter_circle):
+                back_im_corr = back_im.rotate(270)
+            else:
+                back_im_corr = back_im.rotate(180)
             # Resize the back image to the specified dimensions
-            back_im_corr = back_im.resize((selected_template['width'], selected_template['height']))
-            # Rotate the back image to account for orientation
-            back_im_corr = back_im_corr.rotate(180)
+            back_im_corr = back_im_corr.resize((selected_template['width'], selected_template['height']))
 
             # Fill all the spaces with the card back
             for i in range(num_cards):
@@ -114,8 +122,13 @@ with Image.open(blank_path) as blank_im:
             # Load the image to process it
             front_path = os.path.join(path, name)
             with Image.open(front_path) as front_im:
+                # Rotate a quarter circle if the flag is true
+                if(rotate_card_images_quarter_circle):
+                    front_im_corr = front_im.rotate(90)
+                else:
+                    front_im_corr = front_im
                 # Resize the front images to the specified dimension
-                front_im_corr = front_im.resize((selected_template['width'], selected_template['height']))
+                front_im_corr = front_im_corr.resize((selected_template['width'], selected_template['height']))
 
                 # Calculate the location of the new card based on what number the card is
                 new_origin_x = selected_template['x_pos'][n % num_cards % num_cols]
