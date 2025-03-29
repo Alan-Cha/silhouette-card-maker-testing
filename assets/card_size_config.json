@@ -12,7 +12,7 @@
             234,
             1283
         ],
-        "template": "letter_standard_v1",
+        "template": "letter_standard_v2",
         "border_thickness": 10
     },
     "bridge": {
@@ -28,7 +28,7 @@
             214,
             1288
         ],
-        "template": "letter_bridge_v1",
+        "template": "letter_bridge_v2",
         "border_thickness": 17
     },
     "poker": {
@@ -44,7 +44,7 @@
             220,
             1283
         ],
-        "template": "letter_poker_v1",
+        "template": "letter_poker_v2",
         "border_thickness": 9
     },
     "poker_half": {
@@ -62,7 +62,7 @@
             908,
             1674
         ],
-        "template": "letter_pokerhalf_v1",
+        "template": "letter_pokerhalf_v2",
         "border_thickness": 21
     }
 }

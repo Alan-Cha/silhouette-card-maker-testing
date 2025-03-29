@@ -117,15 +117,16 @@ Before starting the tutorial, determine the cutting settings that works best for
 
 Unfortunately, there are no short cuts for this. You will need to do some experimentation on your own.
 
-I recommend creating a simple cutting template with Silhouette Studio. Set the blade pressure, cutting speed, and blade depth to something reasonable, but set passes to 1. You can have the machine recut again and again to determine the required passes. Prepare your cutting material, stick the material onto the cutting mat, insert the mat into the machine, and have the machine cut. Try different combinations of settings and repeat as necessary.
+I recommend creating a simple cutting template with Silhouette Studio. Set the blade pressure, cutting speed, and blade depth to something reasonable, but set passes to 1. You can have the machine recut again and again to determine the required passes. Prepare your cutting material, stick the material onto the cutting mat, insert the mat into the machine, and start the cutting job. Try different combinations of settings and repeat as necessary.
 
-The following is a table of working settings. Do not use these settings blindly. Test conservatively and work up to the provided values. If you do not, you risk breaking your machine or cutting through mat.
+The following is a table of working settings from various testers. Do not use these settings blindly. Test conservatively and work up to the listed values. If not, you risk breaking your machine or cutting through your mat.
 
-| Machine | Blade     | Card stock     | Lamination | Pressure | Speed | Passes | Depth |
-| ------- | --------- | -------------- | ---------- | -------- | ----- | ------ | ----- |
-| Cameo 5 | Autoblade | 110 lb         | 3 mil      | 33       | 20    | 3      | 7     |
-| Cameo 5 | Autoblade | 110 lb/199 gsm | 3 mil      | 33       | 30    | 4      | 10    |
-| Cameo 3 | ???       | 110 lb         | 3 mil      | 33       | 10    | 3      | 15    |
+| Machine | Blade          | Card stock     | Lamination | Pressure | Speed | Passes | Depth |
+| ------- | -------------- | -------------- | ---------- | -------- | ----- | ------ | ----- |
+| Cameo 5 | Autoblade      | 65 lb          | 3 mil      | 30       | 30    | 3      | 7     |
+| Cameo 5 | Autoblade      | 110 lb         | 3 mil      | 33       | 20    | 3      | 7     |
+| Cameo 5 | Autoblade      | 110 lb/199 gsm | 3 mil      | 33       | 30    | 4      | 10    |
+| Cameo 3 | Deep-Cut Blade | 110 lb         | 3 mil      | 33       | 5     | 5      | 19    |
 
 ## Steps
 
@@ -139,15 +140,25 @@ Now, we will use the scripts in order to create a single, printable PDF
 
 There are two ways to use the scripts in this tutorial. There is a GUI and there is a CLI.
 
-### Print and laminate the sheets
+### Prepare the sheets
 
-### Attach the laminated sheet to the cutting mat
+Print out the PDF and laminate the sheets.
 
 ### Cut the sheet
 
-### Remove cards
+As mentioned previously, there are a number of different cutting templates. Open the appropriate one in Silhouette Studio and configure the cutting settings.
 
-### Relaminate cards
+Put the laminated sheets on the cutting mat, insert the mat into the machine, and start the cutting job.
+
+The machine should begin the Print & Cut process, scanning the registration marks, and then begin cutting out the cards.
+
+### Finish the cards
+
+Eject the cutting mat and pull off the cards and excess.
+
+Because the cutting process occasionally delaminates the cards, put the cards through the laminator a second time.
+
+Now you're ready to play with your cards!
 
 ## Contributing
 
