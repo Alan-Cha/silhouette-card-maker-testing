@@ -109,6 +109,10 @@ def load_offset_data() -> tuple:
         # If x_offset or y_offset is different from the saved values, update the saved data
         if x_offset != offset_data['x_offset'] or y_offset != offset_data['y_offset']:
             save_data(x_offset, y_offset)
+    else:
+        print("No saved offset data found. Defaulting to 0.")
+        x_offset = 0
+        y_offset = 0
 
     return (x_offset, y_offset)
 
