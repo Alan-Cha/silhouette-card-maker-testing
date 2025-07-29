@@ -141,6 +141,8 @@ The [One Piece plugin](plugins/one_piece/README.md) supports **OPTCG Simulator**
 
 The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
 
+The Star Wars Unlimited plugin supports **JSON**, **Melee**, and **Picklist** formats. To learn more, see [here](/plugins/star_wars_unlimited/README.md)
+
 ### Double-Sided Cards
 
 To create double-sided cards, put front images in the `game/front/` folder and back images in the `game/double_sided/` folder. The filenames (and file extensions) must match for each pair.
