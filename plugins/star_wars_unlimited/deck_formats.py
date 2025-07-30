@@ -5,21 +5,13 @@ from json import loads, dumps
 
 card_data_tuple = Tuple[str, str, str, int] # Name, Title, Card Number, Quantity
 
-def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Callable, is_card_line: Callable[[str], bool], extract_card_data: Callable[[str], card_data_tuple]) -> None:
+def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Callable, is_card_line: Callable[[str], bool], extract_card_data: Callable[[str], card_data_tuple], index: int = 0) -> int:
     error_lines = []
-
-    index = 0
 
     deck = deck_splitter(deck_text)
     for line in deck:
         if isinstance(deck, dict) and isinstance(deck.get(line), list):
-            parse_deck_helper(dumps(deck.get(line)), handle_card, deck_splitter, is_card_line, extract_card_data)
-        elif isinstance(deck, dict) and isinstance(deck.get(line), dict) and is_card_line(deck.get(line)):
-            index += 1
-
-            name, title, card_number, quantity = extract_card_data(deck.get(line))
-
-            print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number:{card_number}')
+            index = parse_deck_helper(dumps(deck.get(line)), handle_card, deck_splitter, is_card_line, extract_card_data, index)
         elif is_card_line(line):
             index += 1
 
@@ -36,6 +28,8 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
 
     if len(error_lines) > 0:
         print(f'Errors: {error_lines}')
+    
+    return index
 
 def parse_json(deck_text: str, handle_card: Callable) -> None:
 
