@@ -12,6 +12,17 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
     for line in deck:
         if isinstance(deck, dict) and isinstance(deck.get(line), list):
             index = parse_deck_helper(dumps(deck.get(line)), handle_card, deck_splitter, is_card_line, extract_card_data, index)
+        elif isinstance(deck, dict) and isinstance(deck.get(line), dict) and is_card_line(deck.get(line)):
+            index += 1
+
+            name, title, card_number, quantity = extract_card_data(deck.get(line))
+
+            print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number:{card_number}')
+            try:
+                handle_card(index, name, title, card_number, quantity)
+            except Exception as e:
+                print(f'Error: {e}')
+                error_lines.append((line, e))
         elif is_card_line(line):
             index += 1
 

@@ -2,6 +2,7 @@ from os import path
 from requests import Response, get
 from time import sleep
 from re import sub
+from PIL import Image
 
 def ping_swudb(query: str) -> bool:
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
@@ -61,6 +62,18 @@ def fetch_card(
 
             with open(back_image_path, 'wb') as f:
                 f.write(back_art)
+
+        front_image_for_rotation = Image.open(front_image_path)
+        if front_image_for_rotation.height < front_image_for_rotation.width:
+            front_image_rotated = front_image_for_rotation.rotate(90, expand=True)
+            front_image_rotated.save(front_image_path)
+        if back_art != None:
+            back_image_for_rotation = Image.open(back_image_path)
+            if back_image_for_rotation.height < back_image_for_rotation.width:
+                back_image_rotated = back_image_for_rotation.rotate(90, expand=True)
+                back_image_rotated.save(back_image_path)
+
+        
 
 def get_handle_card(
     front_img_dir: str,

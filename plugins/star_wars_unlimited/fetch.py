@@ -5,7 +5,6 @@ from deck_formats import DeckFormat, parse_deck
 from swudb  import get_handle_card
 
 front_directory = path.join('game', 'front')
-back_directory = path.join('game', 'back')
 double_sided_directory = path.join('game', 'double_sided')
 
 @command()
@@ -20,7 +19,7 @@ def cli(deck_path: str, format: DeckFormat):
     with open(deck_path, 'r') as deck_file:
         deck_text = deck_file.read()
 
-        parse_deck(deck_text, format, get_handle_card( front_directory, back_directory ))
+        parse_deck(deck_text, format, get_handle_card( front_directory, double_sided_directory ))
 
 if __name__ == '__main__':
     cli()
