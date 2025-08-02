@@ -47,6 +47,8 @@ pip install -r requirements.txt
 Put your decklist into a text file within the [decklist directory/folder](../../game/decklist).
 
 Now, you are ready to run the program to generate the images for the deck using one of the following commands.
+
+> [!NOTE]
 > If your deck is in the ``JSON`` format, then use the following command.
 > ```bash
 > python plugins/star_wars_unlimited/fetch.py game/decklist/deck.txt json
