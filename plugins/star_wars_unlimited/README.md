@@ -16,9 +16,22 @@ Open a terminal on your device in the root directory.
 > On MacOS or Linux, this would be the ``Terminal`` application, unless you use another terminal of your choice.
 
 Create and start your Python virtual environment in the terminal.
-```bash
-.\venv\Scripts\Activate.ps1
-```
+
+> [!NOTE]
+> Use the following command to create your Python virtual environment.
+> ```bash
+> python -m venv venv
+> ```
+>
+> On Windows, use the following command to start your Python virtual environment.
+> ```bash
+> .\venv\Scripts\Activate.ps1
+> ```
+>
+> On MacOS or Linux, use the following command to start your Python virtual environment.
+> ```bash
+> . venv/bin/activate
+> ```
 
 > [!WARNING]
 > If this fails on Windows due to authorization policy issues, then run the following command to get around it.
