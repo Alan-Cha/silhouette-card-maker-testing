@@ -12,7 +12,7 @@ If this is your first time here, check out the [tutorial](https://alan-cha.githu
 
 Watch me cut **104 cards in 26 minutes** without breaking a sweat!
 
-[![Proxying a MTG Commander Deck in 26 minutes](https://img.youtube.com/vi/RVHtqsRW8t8/0.jpg)](https://www.youtube.com/watch?v=RVHtqsRW8t8)
+[![Proxying a MTG Commander Deck in 26 minutes](hugo/static/images/youtube_demo.png)](https://www.youtube.com/watch?v=RVHtqsRW8t8)
 
 ## Purpose
 
@@ -36,13 +36,29 @@ Proxies should be easily identifiable as proxies. You may not use this repo to c
 
 This project supports the following card and paper sizes, with more in the future:
 
-| Paper size | `standard`* | `japanese`** | `poker` | `poker_half` | `bridge` | `bridge_square` | `domino` | `domino_square` |
-| ---------- | ----------- | ------------ | ------- | ------------ | -------- | --------------- | -------- | --------------- |
-| `letter`   | ✅          | ✅          | ✅      |  ✅         | ✅       | ✅             | ✅       | ✅             |
-| `tabloid`  | ✅          | ❌          | ✅      |  ❌         | ✅       | ❌             | ❌       | ✅             |
-| `a4`       | ✅          | ✅          | ✅      |  ✅         | ✅       | ❌             | ❌       | ❌             |
-| `a3`       | ✅          | ❌          | ❌      |  ❌         | ❌       | ❌             | ❌       | ❌             |
-| `archb`    | ✅          | ❌          | ❌      |  ❌         | ❌       | ❌             | ❌       | ❌             |
+| Format            | `letter` | `tabloid` | `a4` | `a3` | `archb` |
+|-------------------|----------|-----------|------|------|---------|
+| `standard`        | ✅       | ✅        | ✅   | ✅   | ✅      |
+| `standard_double` | ✅       | ❌        | ✅   | ❌   | ❌      |
+| `japanese`        | ✅       | ❌        | ✅   | ❌   | ❌      |
+| `poker`           | ✅       | ✅        | ✅   | ❌   | ❌      |
+| `poker_half`      | ✅       | ❌        | ✅   | ❌   | ❌      |
+| `bridge`          | ✅       | ✅        | ✅   | ❌   | ❌      |
+| `bridge_square`   | ✅       | ❌        | ❌   | ❌   | ❌      |
+| `domino`          | ✅       | ❌        | ❌   | ❌   | ❌      |
+| `domino_square`   | ✅       | ✅        | ❌   | ❌   | ❌      |
+
+| Card size         | Inches          | Millimeters   | Notes |
+| ----------------- | --------------- | ------------- | ----- |
+| `standard`        | 2.48 x 3.46     | **63 x 88**   | <ul><li>**Magic: the Gathering**</li><li>**Pokémon**</li><li>**Lorcana**</li><li>**One Piece**</li><li>**Digimon**</li><li>**Star Wars: Unlimited**</li><li>**Flesh and Blood**</li></ui> |
+| `standard_double` | 4.96 x 3.46     | **126 x 88**  | <ul><li>**Magic: the Gathering** oversized <ul><li>Planechase</li> <li>Archenemy</li> <li>Commander</li></ui> </li></ui> |
+| `japanese`        | 2.32 x 3.39     | **59 x 86**   | <ul><li>**Yu-Gi-Oh!**</li></ui> |
+| `poker`           | **2.5 x 3.5**   | 63.5 x 88.9   |       |
+| `poker_half`      | **1.75 x 2.45** | 44.45 x 62.23 |       |
+| `bridge`          | **2.25 x 3.5**  | 57.15 x 88.9  |       |
+| `bridge_square`   | **2.25 x 2.25** | 57.15 x 57.15 |       |
+| `domino`          | **1.75 x 3.5**  | 44.45 x 88.9  |       |
+| `domino_square`   | **1.75 x 1.75** | 44.45 x 44.45 |       |
 
 | Paper size | Inches       | Millimeters   |
 | ---------- | ------------ | ------------- |
@@ -52,26 +68,11 @@ This project supports the following card and paper sizes, with more in the futur
 | `a3`       | 11.7 x 16.5  | **297 x 420** |
 | `archb`    | **12 x 18**  | 304.8 x 457.2 |
 
-| Card size       | Inches          | Millimeters   |
-| --------------- | --------------- | ------------- |
-| `standard`*     | 2.48 x 3.46     | **63 x 88**   |
-| `japanese`**    | 2.32 x 3.39     | **59 x 86**   |
-| `poker`         | **2.5 x 3.5**   | 63.5 x 88.9   |
-| `poker_half`    | **1.75 x 2.45** | 44.45 x 62.23 |
-| `bridge`        | **2.25 x 3.5**  | 57.15 x 88.9  |
-| `bridge_square` | **2.25 x 2.25** | 57.15 x 57.15 |
-| `domino`        | **1.75 x 3.5**  | 44.45 x 88.9  |
-| `domino_square` | **1.75 x 1.75** | 44.45 x 44.45 |
-
-\* including: **Magic the Gathering**, **Pokémon**, **Lorcana**, **One Piece**, **Digimon**, **Star Wars: Unlimited**, and **Flesh and Blood**.
-
-** including: **Yu-Gi-Oh!**.
-
 You can find all the cutting templates for Silhouette Studio in [`cutting_templates/`](cutting_templates/).
 
 ## Donate
 
-If you enjoyed using Silhouette Card Maker, consider [donating](https://www.paypal.com/donate/?business=JM8RZAWD2TMLQ&no_recurring=0&item_name=If+you+found+Silhouette+Card+Maker+useful%2C+you+can+help+support+me+and+the+project.+Thank+you%21&currency_code=USD) to help support me and the project. Thank you!
+If you enjoyed using Silhouette Card Maker, consider [donating](https://www.paypal.com/donate/?hosted_button_id=ZH2XCSLXERBW8) to help support me and the project. Thank you!
 
 ## create_pdf.py
 `create_pdf.py` is a CLI tool that layouts your card images into a PDF with registration marks that can be cut out with the appropriate cutting template in [`cutting_templates/`](cutting_templates/).
@@ -176,7 +177,7 @@ Options:
   --output_path TEXT              The desired path to the output PDF.
                                   [default: game/output/game.pdf]
   --output_images                 Create images instead of a PDF.
-  --card_size [standard|japanese|poker|poker_half|bridge|bridge_square|domino|domino_square]
+  --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|domino|domino_square]
                                   The desired card size.  [default: standard]
   --paper_size [letter|tabloid|a4|a3|archb]
                                   The desired paper size.  [default: letter]
@@ -208,7 +209,7 @@ Create poker-sized cards with A4 sized paper.
 python create_pdf.py --card_size poker --paper_size a4
 ```
 
-Crop the borders of the front and double-sided images by 3 mm on all sides. This option is useful if your images already have print bleed.
+Crop the borders of the front and double-sided images by 3 mm on all sides. This option is useful if your images already have print bleed like those from [MPCFill](https://mpcfill.com/).
 
 ```sh
 python create_pdf.py --crop 3mm

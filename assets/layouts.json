@@ -1,8 +1,12 @@
 {
     "card_sizes": {
         "standard": {
-            "width": 742,
-            "height": 1036
+            "width": 743,
+            "height": 1038
+        },
+        "standard_double": {
+            "width": 1487,
+            "height": 1038
         },
         "japanese": {
             "width": 694,
@@ -40,16 +44,27 @@
             "card_layouts": {
                 "standard": {
                     "x_pos": [
-                        141,
-                        900,
+                        140,
+                        899,
                         1658,
                         2417
                     ],
                     "y_pos": [
-                        232,
-                        1282
+                        231,
+                        1280
                     ],
-                    "template": "letter_standard_v3"
+                    "template": "letter_standard_v4"
+                },
+                "standard_double": {
+                    "x_pos": [
+                        155,
+                        1658
+                    ],
+                    "y_pos": [
+                        231,
+                        1280
+                    ],
+                    "template": "letter_standarddouble_v1"
                 },
                 "japanese": {
                     "x_pos": [
@@ -157,18 +172,18 @@
             "card_layouts": {
                 "standard": {
                     "x_pos": [
-                        140,
+                        139,
                         898,
                         1657,
                         2416
                     ],
                     "y_pos": [
-                        457,
-                        1507,
-                        2556,
-                        3606
+                        456,
+                        1506,
+                        2555,
+                        3605
                     ],
-                    "template": "tabloid_standard_v1"
+                    "template": "tabloid_standard_v2"
                 },
                 "poker": {
                     "x_pos": [
@@ -228,16 +243,27 @@
             "card_layouts": {
                 "standard": {
                     "x_pos": [
-                        245,
-                        1004,
-                        1763,
-                        2522
+                        244,
+                        1003,
+                        1762,
+                        2521
                     ],
                     "y_pos": [
-                        197,
-                        1247
+                        196,
+                        1246
                     ],
-                    "template": "a4_standard_v2"
+                    "template": "a4_standard_v3"
+                },
+                    "standard_double": {
+                    "x_pos": [
+                        259,
+                        1762
+                    ],
+                    "y_pos": [
+                        196,
+                        1246
+                    ],
+                    "template": "a4_standarddouble_v1"
                 },
                 "japanese": {
                     "x_pos": [
@@ -310,10 +336,10 @@
                     ],
                     "y_pos": [
                         185,
-                        1235,
-                        2285
+                        1234,
+                        2284
                     ],
-                    "template": "a3_standard_v1"
+                    "template": "a3_standard_v2"
                 }
             }
         },
@@ -326,16 +352,16 @@
                         300,
                         1111,
                         1923,
-                        2735,
+                        2734,
                         3546,
                         4357
                     ],
                     "y_pos": [
-                        211,
+                        162,
                         1281,
-                        2352
+                        2400
                     ],
-                    "template": "archb_standard_v1"
+                    "template": "archb_standard_v2"
                 }
             }
         }

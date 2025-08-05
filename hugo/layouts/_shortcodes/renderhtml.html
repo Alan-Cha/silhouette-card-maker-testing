@@ -1,0 +1,5 @@
+<!-- renderhtml.html -->
+{{- $content := .Get "content" | default (.Get 0) -}}
+<div>
+    {{ $content | safeHTML }}
+</div>

@@ -20,6 +20,7 @@ layouts_path = os.path.join(asset_directory, layouts_filename)
 
 class CardSize(str, Enum):
     STANDARD = "standard"
+    STANDARD_DOUBLE = "standard_double"
     JAPANESE = "japanese"
     POKER = "poker"
     POKER_HALF = "poker_half"
