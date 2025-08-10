@@ -28,6 +28,10 @@
             "width": 673,
             "height": 673
         },
+        "tarot": {
+            "width": 1424,
+            "height": 824
+        },
         "domino": {
             "width": 524,
             "height": 1049
@@ -134,6 +138,17 @@
                     ],
                     "template": "letter_bridgesquare_v1"
                 },
+                "tarot": {
+                    "x_pos": [
+                        210,
+                        1665
+                    ],
+                    "y_pos": [
+                        434,
+                        1292
+                    ],
+                    "template": "letter_tarot_v1"
+                },
                 "domino": {
                     "x_pos": [
                         245,
@@ -214,6 +229,20 @@
                         3635
                     ],
                     "template": "tabloid_bridge_v1"
+                },
+                "tarot": {
+                    "x_pos": [
+                        210,
+                        1665
+                    ],
+                    "y_pos": [
+                        421,
+                        1279,
+                        2138,
+                        2996,
+                        3855
+                    ],
+                    "template": "tabloid_tarot_v1"
                 },
                 "domino_square": {
                     "x_pos": [
@@ -318,6 +347,17 @@
                         1252
                     ],
                     "template": "a4_bridge_v1"
+                },
+                "tarot": {
+                    "x_pos": [
+                        314,
+                        1769
+                    ],
+                    "y_pos": [
+                        399,
+                        1257
+                    ],
+                    "template": "a4_tarot_v1"
                 }
             }
         },
