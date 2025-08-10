@@ -10,8 +10,10 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
 
     deck = deck_splitter(deck_text)
     for line in deck:
+        # Iterate through the JSON list
         if isinstance(deck, dict) and isinstance(deck.get(line), list):
             index = parse_deck_helper(dumps(deck.get(line)), handle_card, deck_splitter, is_card_line, extract_card_data, index)
+        # Get item when already at bottom level of JSON
         elif isinstance(deck, dict) and isinstance(deck.get(line), dict) and is_card_line(deck.get(line)):
             index += 1
 
