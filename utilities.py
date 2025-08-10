@@ -26,6 +26,7 @@ class CardSize(str, Enum):
     POKER_HALF = "poker_half"
     BRIDGE = "bridge"
     BRIDGE_SQUARE = "bridge_square"
+    TAROT = "tarot"
     DOMINO = "domino"
     DOMINO_SQUARE = "domino_square"
 

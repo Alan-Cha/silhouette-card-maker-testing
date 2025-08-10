@@ -121,7 +121,7 @@ Options:
   --output_path TEXT              The desired path to the output PDF.
                                   [default: game/output/game.pdf]
   --output_images                 Create images instead of a PDF.
-  --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|domino|domino_square]
+  --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|tarot|domino|domino_square]
                                   The desired card size.  [default: standard]
   --paper_size [letter|tabloid|a4|a3|archb]
                                   The desired paper size.  [default: letter]
