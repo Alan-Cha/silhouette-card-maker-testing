@@ -5,7 +5,7 @@ weight: 25
 
 This plugin reads a decklist, fetches the card images from [NRO Proxy](https://proxy.nro.run/), and puts the card images into the proper `game/` directories.
 
-This plugin supports many decklist formats such as, ``Plaintext``, ``Markdown``, ``bbCode``, and ``Jinteki``. To learn more, see [here](#formats).
+This plugin supports many decklist formats such as, ``plaintext``, ``markdown``, ``bbcode``, and ``jinteki``. To learn more, see [here](#formats).
 
 ## Basic Instructions
 
