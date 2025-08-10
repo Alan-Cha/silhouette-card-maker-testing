@@ -123,25 +123,25 @@ The [Magic: The Gathering plugin](plugins/mtg/README.md) supports various deckli
 
 The [Yu-Gi-Oh! plugin](plugins/yugioh/README.md) supports **YDK** and **YDKE** formats.
 
-The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
-
-The [Riftbound plugin](plugins/riftbound/README.md) supports **Tabletop Simulator**, **Pixelborn**, and **Piltover Archive** formats.
-
 The [Altered plugin](plugins/altered/README.md) supports **Ajordat** format.
 
-The [Netrunner plugin](plugins/netrunner/README.md) supports **text*, **bbCode**, **markdown**, **plain text**,  and **Jinteki** formats.
+The [Digimon plugin](plugins/digimon/README.md) supports **Tabletop Simulator**, **Digimoncard.io**, **Digimoncard.dev**, **Digimoncard.app**, **DigimonMeta**, and **Untap** formats.
 
 The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Limitless TCG**, **Egman Events**, and **ExBurst** formats.
 
 The [Grand Archive plugin](plugins/grand_archive/README.md) supports **Omnideck** format.
 
-The [Digimon plugin](plugins/digimon/README.md) supports **Tabletop Simulator**, **Digimoncard.io**, **Digimoncard.dev**, **Digimoncard.app**, **DigimonMeta**, and **Untap** formats.
+The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
+
+The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
+
+The [Netrunner plugin](plugins/netrunner/README.md) supports **text*, **bbCode**, **markdown**, **plain text**,  and **Jinteki** formats.
 
 The [One Piece plugin](plugins/one_piece/README.md) supports **OPTCG Simulator** and **Egman Events** formats.
 
-The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
+The [Riftbound plugin](plugins/riftbound/README.md) supports **Tabletop Simulator**, **Pixelborn**, and **Piltover Archive** formats.
 
-The Star Wars Unlimited plugin supports **JSON**, **Melee**, and **Picklist** formats. To learn more, see [here](/plugins/star_wars_unlimited/README.md)
+The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **JSON**, **Melee**, and **Picklist** formats.
 
 ### Double-Sided Cards
 
