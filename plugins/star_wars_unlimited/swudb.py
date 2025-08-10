@@ -10,6 +10,8 @@ SWUDB_BACK_ART_URL_TEMPLATE_2 = 'https://swudb.com/images/cards/{card_number}-po
 SWUDB_NAME_URL_TEMPLATE = 'https://swudb.com/api/search/{name}{title}?grouping=cards&sortorder=setno&sortdir=asc'
 SWUDB_ART_URL_TEMPLATE = 'https://swudb.com/images/cards/{card_art_ref}'
 
+OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}.png'
+
 def ping_swudb(query: str) -> bool:
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
@@ -60,12 +62,17 @@ def fetch_card(
     # Save images based on quantity
     for counter in range(quantity):
         title_text = '' if title == '' else f',{title}'
+        
+        if card_number == '':
+            output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=f'{name}{title_text}', quantity_counter = str(counter + 1))
+        else:
+            output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=card_number, quantity_counter = str(counter + 1))
 
         if front_art != None:
             if card_number == '':
-                front_image_path = path.join(front_img_dir, f'{str(index)}{name}{title_text}{str(counter + 1)}.png')
+                front_image_path = path.join(front_img_dir, output_file)
             else:
-                front_image_path = path.join(front_img_dir, f'{str(index)}{card_number}{str(counter + 1)}.png')
+                front_image_path = path.join(front_img_dir, output_file)
 
             with open(front_image_path, 'wb') as f:
                 f.write(front_art)
@@ -78,9 +85,9 @@ def fetch_card(
 
         if back_art != None:
             if card_number == '':
-                back_image_path = path.join(back_img_dir, f'{str(index)}{name}{title_text}{str(counter + 1)}.png')
+                back_image_path = path.join(back_img_dir, output_file)
             else:
-                back_image_path = path.join(back_img_dir, f'{str(index)}{card_number}{str(counter + 1)}.png')
+                back_image_path = path.join(back_img_dir, output_file)
 
             with open(back_image_path, 'wb') as f:
                 f.write(back_art)
