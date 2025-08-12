@@ -64,9 +64,9 @@ def fetch_card(
         title_text = '' if title == '' else f',{title}'
         
         if card_number == '':
-            output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=f'{name}{title_text}', quantity_counter = str(counter + 1))
+            output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=f'{name}{title_text}', quantity_counter=str(counter + 1))
         else:
-            output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=card_number, quantity_counter = str(counter + 1))
+            output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=card_number, quantity_counter=str(counter + 1))
 
         if front_art != None:
             if card_number == '':
