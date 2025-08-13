@@ -45,10 +45,11 @@ def parse_text(deck_text: str, handle_card: Callable) -> None:
     parse_deck_helper(deck_text, is_text_line, extract_plaintext_card_data, handle_card)
 
 def parse_bbcode(deck_text: str, handle_card: Callable) -> None:
+    identity_pattern = compile(r'\[url=(https://netrunnerdb.com/en/card/\d+)\](.+)\[/url\] \((.+)\).*') # '[url={URL}]{Name}[/url] ({Set})'
     pattern = compile(r'(\d+)x \[url=(https://netrunnerdb.com/en/card/\d+)\](.+)\[/url\] \[i\]\((.+)\)\[/i\].+') # '{Quantity}x [url={URL}]{Name}[/url] [i]({Set})[/i] '
 
     def is_bbcode_line(line) -> bool:
-        return bool(pattern.match(line))
+        return bool(pattern.match(line)) or bool(identity_pattern.match(line))
 
     def extract_bbcode_card_data(line) -> card_data_tuple:
         match = pattern.match(line)
@@ -59,6 +60,15 @@ def parse_bbcode(deck_text: str, handle_card: Callable) -> None:
             quantity = int(match.group(1).strip())
 
             return (name, set, url, quantity)
+        else:
+            match = identity_pattern.match(line)
+            if match:
+                name = match.group(2).strip()
+                url = match.group(1).strip()
+                set = match.group(3).strip()
+
+                return (name, set, url, 1)
+
 
     parse_deck_helper(deck_text, is_bbcode_line, extract_bbcode_card_data, handle_card)
 
