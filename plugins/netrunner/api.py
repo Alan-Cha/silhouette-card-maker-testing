@@ -26,8 +26,10 @@ def fetch_card(
     # Query for card info
     # Query for a normalized name of Latin scripts
     sanitized = sub(r'[^A-Za-z0-9 \-]+', '', ''.join(c for c in normalize('NFD', name) if category(c) != 'Mn'))
-    slugified = sub(r'\s+|-', '_', sanitized).lower()
-    json = request_api(NETRUNNERDB_URL_TEMPLATE.format(card_name=slugified)).json()
+    slugified_1 = sub(r'\s+|-|\.', '_', sanitized).lower() # Replace whitespace, dash, and period with underscores (ex. 'Pressure Spike', 'All-nighter', 'Ansel 1.0')
+    slugified_2 = sub(r'_+', '_', slugified_1) # Flatten multiple underscores (ex. 'Dr. Nuka Vrolyck')
+    slugified_3 = sub(r'_$', '', slugified_2) # Remove underscore when at the end of the string (ex. 'Melange Mining Corp.')
+    json = request_api(NETRUNNERDB_URL_TEMPLATE.format(card_name=slugified_3)).json()
 
     if isinstance(json.get('data'), list) is True:
         raise ValueError(f'Could not parse data for card "{name}"')
@@ -40,7 +42,7 @@ def fetch_card(
 
         # Save image based on quantity
         for counter in range(quantity):
-            image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=name, quantity_counter=str(counter+1)))
+            image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=sanitized, quantity_counter=str(counter+1)))
 
             with open(image_path, 'wb') as f:
                 f.write(card_art)
