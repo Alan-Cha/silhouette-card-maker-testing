@@ -4,10 +4,18 @@ from time import sleep
 from re import sub
 from unicodedata import normalize, category
 
+NETRUNNERDB_SET_URL_TEMPLATE = 'https://api-preview.netrunnerdb.com/api/v3/public/card_sets/{set_name}'
 NETRUNNERDB_URL_TEMPLATE = 'https://api-preview.netrunnerdb.com/api/v3/public/cards/{card_name}'
 NRO_PROXY_URL_TEMPLATE = 'https://nro-public.s3.nl-ams.scw.cloud/nro/card-printings/v2/webp/english/card/{print_id}.webp'
 
 OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}.png'
+
+def ping_api(query: str) -> bool:
+    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+
+    sleep(0.15)
+
+    return False if r.status_code == 404 else True
 
 def request_api(query: str) -> Response:
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
@@ -46,6 +54,13 @@ def fetch_card(
 
             with open(image_path, 'wb') as f:
                 f.write(card_art)
+
+def is_valid_set(set_name: str) -> bool:
+    
+    # Attempt to query for set info
+    sanitized = sub(r'[^A-Za-z0-9 ]+', '', set_name)
+    slugified = sub(r' ', '_', sanitized).lower()
+    return ping_api(NETRUNNERDB_SET_URL_TEMPLATE.format(set_name=slugified))
 
 def get_handle_card(
     front_img_dir: str,

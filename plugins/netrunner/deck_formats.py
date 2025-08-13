@@ -1,6 +1,7 @@
 from re import compile
 from enum import Enum
 from typing import Callable, Tuple
+from api import is_valid_set
 
 card_data_tuple = Tuple[str, str, str, int] # Name, Set, URL, Quantity
 
@@ -31,7 +32,12 @@ def parse_text(deck_text: str, handle_card: Callable) -> None:
     pattern = compile(r'^(?:(\d+)x\s+)?(.+?)\s+\((.+?)\)\s*(?:[•\s]+)?$') # '{Quantity}x {Name} ({Set})' where Quantity is optional and the text is possibly followed by influence pips "•"
 
     def is_text_line(line) -> bool:
-        return bool(pattern.match(line))
+        match = pattern.match(line)
+        if match:
+            set_name = match.group(3).strip()
+            return is_valid_set(set_name) # Ping the set to remove header errors
+        else:
+            return False
 
     def extract_text_card_data(line):
         match = pattern.match(line)
