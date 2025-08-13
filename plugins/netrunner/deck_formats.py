@@ -28,21 +28,21 @@ def parse_deck_helper(deck_text: str, is_card_line: Callable[[str], bool], extra
         print(f'Errors: {error_lines}')
 
 def parse_text(deck_text: str, handle_card: Callable) -> None:
-    pattern = compile(r'^(\d+)x\s+(.+?)\s+\((.+?)\)\s*(?:[•\s]+)?$') # '{Quantity}x {Name} ({Set})' possibly followed by influence pips "•"
+    pattern = compile(r'^(?:(\d+)x\s+)?(.+?)\s+\((.+?)\)\s*(?:[•\s]+)?$') # '{Quantity}x {Name} ({Set})' where Quantity is optional and the text is possibly followed by influence pips "•"
 
     def is_text_line(line) -> bool:
         return bool(pattern.match(line))
 
-    def extract_plaintext_card_data(line):
+    def extract_text_card_data(line):
         match = pattern.match(line)
         if match:
-            quantity = int(match.group(1).strip())
+            quantity = 1 if match.group(1) is None else int(match.group(1).strip())
             name = match.group(2).strip()
             set_name = match.group(3).strip()
 
             return (name, set_name, '', quantity)
 
-    parse_deck_helper(deck_text, is_text_line, extract_plaintext_card_data, handle_card)
+    parse_deck_helper(deck_text, is_text_line, extract_text_card_data, handle_card)
 
 def parse_bbcode(deck_text: str, handle_card: Callable) -> None:
     identity_pattern = compile(r'\[url=(https://netrunnerdb.com/en/card/\d+)\](.+)\[/url\] \((.+)\).*') # '[url={URL}]{Name}[/url] ({Set})'
@@ -110,10 +110,10 @@ def parse_plain_text(deck_text: str, handle_card: Callable) -> None:
 def parse_jinteki(deck_text: str, handle_card: Callable) -> None:
     pattern = compile(r'^(\d+) (.+)$') # '{Quantity} {Name}'
 
-    def is_tabletop_simulator_line(line) -> bool:
+    def is_jinteki_line(line) -> bool:
         return bool(pattern.match(line))
 
-    def extract_tabletop_simulator_card_data(line) -> card_data_tuple:
+    def extract_jinteki_card_data(line) -> card_data_tuple:
         match = pattern.match(line)
         if match:
             name = match.group(2).strip()
@@ -121,7 +121,7 @@ def parse_jinteki(deck_text: str, handle_card: Callable) -> None:
 
             return (name, '', '', quantity)
 
-    parse_deck_helper(deck_text, is_tabletop_simulator_line, extract_tabletop_simulator_card_data, handle_card)
+    parse_deck_helper(deck_text, is_jinteki_line, extract_jinteki_card_data, handle_card)
 
 class DeckFormat(str, Enum):
     TEXT = 'text'
