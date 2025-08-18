@@ -1,23 +1,17 @@
 from os import path
 from requests import Response, get
 from time import sleep
-from re import sub
+from re import sub, compile
 from PIL import Image
+from typing import Tuple
 
-SWUDB_FRONT_ART_URL_TEMPLATE = 'https://swudb.com/images/cards/{card_number}.png'
-SWUDB_BACK_ART_URL_TEMPLATE_1 = 'https://swudb.com/images/cards/{card_number}-back.png'
-SWUDB_BACK_ART_URL_TEMPLATE_2 = 'https://swudb.com/images/cards/{card_number}-portrait.png'
+SWUDB_CARD_NUMBER_URL_TEMPLATE = 'https://api.swu-db.com/cards/{set_id}/{set_number}?format=json'
 SWUDB_NAME_URL_TEMPLATE = 'https://swudb.com/api/search/{name}{title}?grouping=cards&sortorder=setno&sortdir=asc'
 SWUDB_ART_URL_TEMPLATE = 'https://swudb.com/images/cards/{card_art_ref}'
 
 OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}.png'
 
-def ping_swudb(query: str) -> bool:
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
-
-    sleep(0.15)
-
-    return False if r.status_code == 404 else True
+card_tuple = Tuple[str, str] # Name, Title
 
 def request_swudb(query: str) -> Response:
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
@@ -27,52 +21,56 @@ def request_swudb(query: str) -> Response:
 
     return r
 
+def fetch_name_and_title(card_number: str) -> card_tuple:
+    card_number_pattern = compile(r'([A-Z]+)_(\d+)')
+    card_name_dual_patten = compile(r'(.+) \/\/.+') # Chancellor Palpatine // Darth Sidious from TWI_017
+    
+    # Query for card name and title
+    if card_number != '': # Fetch card art by card number
+        match = card_number_pattern.match(card_number)
+        if match:
+            set_id = match.group(1).strip().lower()
+            set_number = int(match.group(2).strip())
+
+            # Query for card name
+            json = request_swudb(SWUDB_CARD_NUMBER_URL_TEMPLATE.format(set_id=set_id, set_number=set_number)).json()
+            name = json.get('Name')
+            name_match = card_name_dual_patten.match(name)
+            if name_match:
+                name = name_match.group(1).strip()
+
+            title = json.get('Subtitle') or '' if json.get('Type') != 'Base' else ''
+
+            return (name, title)
+
 def fetch_card(
     index: int,
     quantity: int,
     name: str,
     title: str,
-    card_number: str,
     front_img_dir: str,
     back_img_dir: str,
 ):
-    # Query for card art
-    if card_number != '': # Fetch card art by card number
-        card_number_url_parse = sub('_', '/', card_number)
-        front_art = request_swudb(SWUDB_FRONT_ART_URL_TEMPLATE.format(card_number=card_number_url_parse)).content
-        back_art = None
+    # Fetch card art by querying name and title
+    title_query = '' if title == '' else f' title:"{title}"'
+    json = request_swudb(SWUDB_NAME_URL_TEMPLATE.format(name=name, title=title_query)).json()
+    art_url_suffix = sub('.+cards/', '', json.get('variants')[0].get('frontImagePath'))
+    front_art = request_swudb(SWUDB_ART_URL_TEMPLATE.format(card_art_ref=art_url_suffix)).content
+    back_art = None
 
-        # Ping to verify the server has the back art in one of the possible naming formats, since we do not know if it does
-        if ping_swudb(SWUDB_BACK_ART_URL_TEMPLATE_1.format(card_number=card_number_url_parse)) is True:
-            back_art = request_swudb(SWUDB_BACK_ART_URL_TEMPLATE_1.format(card_number=card_number_url_parse)).content
-        elif ping_swudb(SWUDB_BACK_ART_URL_TEMPLATE_2.format(card_number=card_number_url_parse)) is True:
-            back_art = request_swudb(SWUDB_BACK_ART_URL_TEMPLATE_2.format(card_number=card_number_url_parse)).content
-    else: # Fetch card art by querying name and title
-        title_query = '' if title == '' else f' title:"{title}"'
-        json = request_swudb(SWUDB_NAME_URL_TEMPLATE.format(name=name, title=title_query)).json()
-        art_url_suffix = sub('.+cards/', '', json.get('variants')[0].get('frontImagePath'))
-        front_art = request_swudb(SWUDB_ART_URL_TEMPLATE.format(card_art_ref=art_url_suffix)).content
-        back_art = None
-
-        # Get the back art from the path when the back portrait item is populated, since otherwise it could lead to a fake URL
-        if json.get('variants')[0].get('backImagePath') != '' and json.get('variants')[0].get('isBackPortrait') is True:
-            art_url_suffix = sub('.+cards/', '', json.get('variants')[0].get('backImagePath'))
-            back_art = request_swudb(SWUDB_ART_URL_TEMPLATE.format(card_art_ref=art_url_suffix)).content
+    # Get the back art from the path when card is not a Base
+    if json.get('variants')[0].get('backImagePath') != '' and json.get('variants')[0].get('hp') is None:
+        art_url_suffix = sub('.+cards/', '', json.get('variants')[0].get('backImagePath'))
+        back_art = request_swudb(SWUDB_ART_URL_TEMPLATE.format(card_art_ref=art_url_suffix)).content
     
     # Save images based on quantity
     for counter in range(quantity):
         title_text = '' if title == '' else f',{title}'
         
-        if card_number == '':
-            output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=f'{name}{title_text}', quantity_counter=str(counter + 1))
-        else:
-            output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=card_number, quantity_counter=str(counter + 1))
+        output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=f'{name}{title_text}', quantity_counter=str(counter + 1))
 
         if front_art != None:
-            if card_number == '':
-                front_image_path = path.join(front_img_dir, output_file)
-            else:
-                front_image_path = path.join(front_img_dir, output_file)
+            front_image_path = path.join(front_img_dir, output_file)
 
             with open(front_image_path, 'wb') as f:
                 f.write(front_art)
@@ -84,10 +82,7 @@ def fetch_card(
                 front_image_rotated.save(front_image_path)  
 
         if back_art != None:
-            if card_number == '':
-                back_image_path = path.join(back_img_dir, output_file)
-            else:
-                back_image_path = path.join(back_img_dir, output_file)
+            back_image_path = path.join(back_img_dir, output_file)
 
             with open(back_image_path, 'wb') as f:
                 f.write(back_art)
@@ -102,13 +97,12 @@ def get_handle_card(
     front_img_dir: str,
     back_img_dir: str,
 ):
-    def configured_fetch_card(index: int, name: str, title: str, card_number: str, quantity: int = 1):
+    def configured_fetch_card(index: int, name: str, title: str, quantity: int = 1):
         fetch_card(
             index,
             quantity,
             name,
             title,
-            card_number,
             front_img_dir,
             back_img_dir
         )

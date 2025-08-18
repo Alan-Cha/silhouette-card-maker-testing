@@ -2,6 +2,7 @@ from re import compile
 from enum import Enum
 from typing import Callable, Tuple
 from json import loads, dumps
+from swudb import fetch_name_and_title
 
 card_data_tuple = Tuple[str, str, str, int] # Name, Title, Card Number, Quantity
 
@@ -21,7 +22,7 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
 
             print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number:{card_number}')
             try:
-                handle_card(index, name, title, card_number, quantity)
+                handle_card(index, name, title, quantity)
             except Exception as e:
                 print(f'Error: {e}')
                 error_lines.append((line, e))
@@ -32,7 +33,7 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
 
             print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number:{card_number}')
             try:
-                handle_card(index, name, title, card_number, quantity)
+                handle_card(index, name, title, quantity)
             except Exception as e:
                 print(f'Error: {e}')
                 error_lines.append((line, e))
@@ -57,9 +58,10 @@ def parse_json(deck_text: str, handle_card: Callable) -> None:
     def extract_json_card_data(line) -> card_data_tuple:
         if isinstance(line, dict):
             card_number = line.get('id').strip()
-            quantity = int( line.get('count') )
+            quantity = int(line.get('count'))
+            name, title = fetch_name_and_title(card_number)
 
-            return ('', '', card_number, quantity)
+            return (name, title, card_number, quantity)
         
     parse_deck_helper(deck_text, handle_card, split_json_deck, is_json_line, extract_json_card_data)
 
