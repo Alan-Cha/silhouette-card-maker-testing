@@ -7,7 +7,7 @@ weight: 30
 
 This plugin reads a decklist from [swudb](https://swudb.com/) and puts the card images into the proper `game/` directories.
 
-This plugin supports many decklist formats such as, ``json``, ``melee``, and ``picklist``. To learn more, see [here](#formats).
+This plugin supports many decklist formats such as, ``swudb_json``, ``melee``, and ``picklist``. To learn more, see [here](#formats).
 
 ## Basic Instructions
 
@@ -38,9 +38,9 @@ Options:
 
 ## Formats
 
-### `json`
+### `swudb_json`
 
-The format for ``JSON``.
+The format for ``SWUDB JSON``.
 
 ```
 {

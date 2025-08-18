@@ -141,7 +141,7 @@ The [One Piece plugin](plugins/one_piece/README.md) supports **OPTCG Simulator**
 
 The [Riftbound plugin](plugins/riftbound/README.md) supports **Tabletop Simulator**, **Pixelborn**, and **Piltover Archive** formats.
 
-The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **JSON**, **Melee**, and **Picklist** formats.
+The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **SWUDB JSON**, **Melee**, and **Picklist** formats.
 
 ### Double-Sided Cards
 
