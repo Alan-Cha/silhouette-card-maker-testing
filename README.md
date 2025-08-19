@@ -18,7 +18,7 @@ Watch me cut **104 cards in 26 minutes** without breaking a sweat!
 
 The purpose of this repo is to enable you to use a Silhouette cutting machine to create card games and proxies. Proxies are only intended to be used for casual play and playtesting.
 
-Proxies should be easily identifiable as proxies. You may not use this repo to create counterfeit cards to decieve people or to play in sanctioned tournaments. You are only permitted to sell cards if you are the full privileged copyright holder.
+Proxies should be easily identifiable as proxies. You may not use this repo to create counterfeit cards to deceive people or to play in sanctioned tournaments. You are only permitted to sell cards if you are the full privileged copyright holder.
 
 ## Contents
 
@@ -26,7 +26,7 @@ Proxies should be easily identifiable as proxies. You may not use this repo to c
 * [tutorial](https://alan-cha.github.io/silhouette-card-maker/tutorial/)
 * [supply list](https://alan-cha.github.io/silhouette-card-maker/tutorial/supplies/)
 * [create_pdf.py](#create_pdfpy), a script for laying out your cards in a PDF
-* [offset_pdy.py](#offset_pdfpy), a script for adding an offset to your PDF
+* [offset_pdf.py](#offset_pdfpy), a script for adding an offset to your PDF
 * [cutting_templates/](cutting_templates/), a directory containing Silhoutte Studio cutting templates
 * [calibration/](calibration/), a directory containing offset calibration sheets
 * [examples/](examples/), a directory containing sample games
@@ -89,6 +89,7 @@ python -m venv venv
 ```
 
 Activate the Python virtual environment.
+
 **Terminal (macOS/Linux):**
 ```sh
 . venv/bin/activate
