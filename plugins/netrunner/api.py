@@ -33,7 +33,7 @@ def fetch_card(
 ):
     # Query for card info
     # Query for a normalized name of Latin scripts
-    sanitized = sub(r'[^A-Za-z0-9 \-]+', '', ''.join(c for c in normalize('NFD', name) if category(c) != 'Mn'))
+    sanitized = sub(r'[^A-Za-z0-9 \-\.]+', '', ''.join(c for c in normalize('NFD', name) if category(c) != 'Mn'))
     slugified_1 = sub(r'\s+|-|\.', '_', sanitized).lower() # Replace whitespace, dash, and period with underscores (ex. 'Pressure Spike', 'All-nighter', 'Ansel 1.0')
     slugified_2 = sub(r'_+', '_', slugified_1) # Flatten multiple underscores (ex. 'Dr. Nuka Vrolyck')
     slugified_3 = sub(r'_$', '', slugified_2) # Remove underscore when at the end of the string (ex. 'Melange Mining Corp.')
