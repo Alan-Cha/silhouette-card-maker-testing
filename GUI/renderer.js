@@ -21,20 +21,70 @@ window.onload = function () {
         e.preventDefault();
         const text = document.getElementById('longText').value;
         console.log('Raw input:', text);
-        cardNames = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-        console.log('Parsed card names:', cardNames);
+        // Parse each line for quantity, card name, set code, and set number
+        let parsedCards = [];
+        text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0).forEach(line => {
+                // Flexible parsing for any combination
+                let qty = 1;
+                let name = '';
+                let setCode = undefined;
+                let setNumber = undefined;
+                // Extract quantity (e.g., "2x", "2 x", "2 ")
+                let qtyMatch = line.match(/^(\d+)\s*x?\s*/i);
+                if (qtyMatch) {
+                    qty = parseInt(qtyMatch[1], 10);
+                    line = line.slice(qtyMatch[0].length).trim();
+                }
+                // Extract set code in parentheses (e.g., "(eoc)")
+                let setCodeMatch = line.match(/\(([^\)]+)\)/);
+                if (setCodeMatch) {
+                    setCode = setCodeMatch[1].trim();
+                    line = line.replace(/\([^\)]+\)/, '').trim();
+                }
+                // Extract set number (last number in line)
+                let setNumberMatch = line.match(/(\d+)$/);
+                if (setNumberMatch) {
+                    setNumber = setNumberMatch[1].trim();
+                    line = line.replace(/(\d+)$/, '').trim();
+                }
+                // Remaining is the card name
+                name = line.trim();
+                for (let i = 0; i < qty; i++) {
+                    let cardObj = { name };
+                    if (setCode) cardObj.setCode = setCode;
+                    if (setNumber) cardObj.setNumber = setNumber;
+                    parsedCards.push(cardObj);
+                }
+        });
+        console.log('Parsed cards:', parsedCards);
         cardData = [];
         document.getElementById('output').innerText = 'Loading...';
-        for (const name of cardNames) {
-            const data = await fetchCardData(name);
-            cardData.push(data);
+        for (const card of parsedCards) {
+            // Scryfall API: use name, setCode, and setNumber
+                let url;
+                if (card.setCode && card.setNumber) {
+                    url = `https://api.scryfall.com/cards/${card.setCode.toLowerCase()}/${card.setNumber}`;
+                } else {
+                    url = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(card.name)}`;
+                }
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const json = await response.json();
+                    cardData.push(json);
+                } else {
+                    cardData.push({ error: `Card not found: ${card.name}` });
+                }
+            } catch (err) {
+                cardData.push({ error: `Error fetching: ${card.name}` });
+            }
         }
-        console.log('All card data:', cardData);
-    let html = '<h3>Results:</h3><div id="card-results-flex">';
-        for (let i = 0; i < cardNames.length; i++) {
+        let html = '<h3>Results:</h3><div id="card-results-flex">';
+        for (let i = 0; i < cardData.length; i++) {
             const data = cardData[i];
+            const card = parsedCards[i];
             if (data.error) {
-                html += `<div class="card-li" id="card-li-${i}"><strong>${cardNames[i]}</strong>: ${data.error}</div>`;
+                html += `<div class="card-li" id="card-li-${i}"><strong>${card ? card.name : 'Unknown'}</strong>: ${data.error}</div>`;
             } else {
                 let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
                 let setCode = data.set ? data.set.toUpperCase() : '';
@@ -45,11 +95,11 @@ window.onload = function () {
       </div>`;
             }
         }
-    html += '</div>';
+        html += '</div>';
         document.getElementById('output').innerHTML = html;
 
         // For each card, fetch available sets and create dropdown
-        for (let i = 0; i < cardNames.length; i++) {
+        for (let i = 0; i < cardData.length; i++) {
             const data = cardData[i];
             if (!data.error && data.prints_search_uri) {
                 fetch(data.prints_search_uri)
@@ -121,7 +171,7 @@ window.onload = function () {
                             let newSetCode = newData.set ? newData.set.toUpperCase() : '';
                         });
                     });
-                }
+            }
         }
     });
 }
