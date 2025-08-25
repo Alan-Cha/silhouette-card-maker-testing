@@ -1,0 +1,28 @@
+#card-results-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: none;
+  border: none;
+}
+.card-li {
+  flex: 0 1 250px;
+  max-width: 250px;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  padding: 5px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-img {
+  max-width: 100%;
+  width: 250px;
+  height: auto;
+  display: block;
+  margin: 0 auto 5px auto;
+}

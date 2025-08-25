@@ -30,22 +30,22 @@ window.onload = function () {
             cardData.push(data);
         }
         console.log('All card data:', cardData);
-        let html = '<h3>Results:</h3><ul style="list-style:none;padding:0;">';
+    let html = '<h3>Results:</h3><div id="card-results-flex">';
         for (let i = 0; i < cardNames.length; i++) {
             const data = cardData[i];
             if (data.error) {
-                html += `<li><strong>${cardNames[i]}</strong>: ${data.error}</li>`;
+                html += `<div class="card-li" id="card-li-${i}"><strong>${cardNames[i]}</strong>: ${data.error}</div>`;
             } else {
                 let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
                 let setCode = data.set ? data.set.toUpperCase() : '';
                 let availableSets = (data.prints_search_uri ? data.prints_search_uri : null);
-                html += `<li style="margin-bottom:30px;" id="card-li-${i}">
-        ${imgUrl ? `<img id="card-img-${i}" src="${imgUrl}" alt="${data.name}" style="max-width:300px;display:block;margin:10px auto;" />` : '<em>No image available</em>'}
-  <div><strong>${data.name}</strong> <span id="setcode-dropdown-wrap-${i}"><strong id="card-set-${i}" style="color:#888;cursor:pointer;">[${setCode}]</strong></span><span id="set-dropdown-container-${i}" style="display:none;"></span></div>
-      </li>`;
+                html += `<div class="card-li" id="card-li-${i}">
+        ${imgUrl ? `<img id="card-img-${i}" src="${imgUrl}" alt="${data.name}" class="card-img" />` : '<em>No image available</em>'}
+  <div><strong>${data.name}</strong> <span id="setcode-dropdown-wrap-${i}"><strong id="card-set-${i}" class="card-set" >[${setCode}]</strong></span><span id="set-dropdown-container-${i}" style="display:none;"></span></div>
+      </div>`;
             }
         }
-        html += '</ul>';
+    html += '</div>';
         document.getElementById('output').innerHTML = html;
 
         // For each card, fetch available sets and create dropdown
@@ -89,6 +89,12 @@ window.onload = function () {
                         setCodeElem.addEventListener('click', function () {
                             setDropdownContainer.style.display = 'inline';
                             document.getElementById(`setcode-dropdown-wrap-${i}`).style.display = 'none';
+                            // Hide the card name instead of removing it
+                            const cardLi = document.getElementById(`card-li-${i}`);
+                            const cardNameElem = cardLi.querySelector('strong');
+                            if (cardNameElem) {
+                                cardNameElem.style.display = 'none';
+                            }
                             dropdown.focus();
                             // Open the dropdown immediately
                             if (typeof dropdown.showDropdown === 'function') {
@@ -102,6 +108,11 @@ window.onload = function () {
                         dropdown.addEventListener('blur', function () {
                             setDropdownContainer.style.display = 'none';
                             document.getElementById(`setcode-dropdown-wrap-${i}`).style.display = 'inline';
+                            const cardLi = document.getElementById(`card-li-${i}`);
+                            const cardNameElem = cardLi.querySelector('strong');
+                            if (cardNameElem) {
+                                cardNameElem.style.display = 'inline';
+                            }
                         });
                         dropdown.addEventListener('change', async function () {
                             const newSet = this.value;
