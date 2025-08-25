@@ -113,6 +113,7 @@ window.onload = function () {
                         });
                         const dropdown = document.createElement('select');
                         dropdown.id = `set-select-${i}`;
+                        dropdown.className = 'card-set-dropdown';
                         // Sort set codes alphabetically by set name
                         const sortedSetCodes = Object.keys(sets).sort((a, b) => sets[a].localeCompare(sets[b]));
                         for (const setCode of sortedSetCodes) {

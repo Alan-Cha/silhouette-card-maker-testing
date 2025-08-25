@@ -5,9 +5,11 @@
   background: none;
   border: none;
 }
-.card-li {
-  flex: 0 1 250px;
-  max-width: 250px;
+ .card-li {
+  flex: 0 1 320px;
+  max-width: 320px;
+  min-height: 480px;
+  height: 480px;
   box-sizing: border-box;
   margin-bottom: 20px;
   padding: 5px;
@@ -19,10 +21,19 @@
   align-items: center;
 }
 
-.card-img {
+ .card-img {
   max-width: 100%;
-  width: 250px;
+  width: 320px;
   height: auto;
   display: block;
   margin: 0 auto 5px auto;
+}
+
+.card-li select {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  align-self: center;
 }
