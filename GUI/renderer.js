@@ -109,7 +109,7 @@ window.onload = function () {
                             let newImgUrl = newData.image_uris ? newData.image_uris.png : (newData.card_faces && newData.card_faces[0].image_uris ? newData.card_faces[0].image_uris.png : null);
                             let newSetCode = newData.set ? newData.set.toUpperCase() : '';
                         });
-                    }
+                    });
                 }
         }
     });
