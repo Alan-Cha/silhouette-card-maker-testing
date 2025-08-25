@@ -1,4 +1,3 @@
-let cardNames = [];
 let cardData = [];
 let parsedCards = []; // Array of { name, setCode, setNumber, qty }
 
@@ -28,6 +27,89 @@ async function fetchCardData(name, setCode = null, setNumber = null) {
     }
 }
 window.onload = function () {
+    // Export front images to ../game/front using Node.js fs (Electron only)
+    document.getElementById('exportImagesFSBtn').addEventListener('click', async function () {
+        const fs = window.require ? window.require('fs') : require('fs');
+        const path = window.require ? window.require('path') : require('path');
+        const frontDir = path.resolve(__dirname, '../game/front');
+        if (!fs.existsSync(frontDir)) {
+            fs.mkdirSync(frontDir, { recursive: true });
+        }
+        for (let i = 0; i < cardData.length; i++) {
+            const data = cardData[i];
+            if (data.error) continue;
+            let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
+            if (!imgUrl) continue;
+            let cardName = data.name.replace(/[^a-zA-Z0-9]/g, ' ');
+            cardName = cardName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
+            cardName = cardName.replace(/\s+/g, '');
+            let filename = path.join(frontDir, `${i+1}${cardName}1.png`);
+            const response = await fetch(imgUrl);
+            const buffer = Buffer.from(await response.arrayBuffer());
+            fs.writeFileSync(filename, buffer);
+        }
+        alert('Images exported to ../game/front');
+    });
+    // Export front images as ZIP button logic
+    document.getElementById('exportImagesZipBtn').addEventListener('click', async function () {
+        if (typeof JSZip === 'undefined') {
+            alert('JSZip library is required for ZIP export. Please add JSZip to your project.');
+            return;
+        }
+        const zip = new JSZip();
+        for (let i = 0; i < cardData.length; i++) {
+            const data = cardData[i];
+            if (data.error) continue;
+            let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
+            if (!imgUrl) continue;
+            let cardName = data.name.replace(/[^a-zA-Z0-9]/g, ' ');
+            cardName = cardName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
+            cardName = cardName.replace(/\s+/g, '');
+            let filename = `front/${i+1}${cardName}1.png`;
+            const response = await fetch(imgUrl);
+            const blob = await response.blob();
+            const arrayBuffer = await blob.arrayBuffer();
+            zip.file(filename, arrayBuffer);
+        }
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'front_images.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+    
+    // Export decklist button logic
+    document.getElementById('exportBtn').addEventListener('click', function () {
+        // Export parsedCards as text
+        let exportLines = parsedCards.map(card => {
+            let line = '';
+            let qty = card.qty || 1;
+            if (qty > 1) {
+                line += qty + 'x ';
+            }
+            line += card.name;
+            if (card.setCode) {
+                line += ` (${card.setCode})`;
+            }
+            if (card.setNumber) {
+                line += ` ${card.setNumber}`;
+            }
+            return line;
+        });
+        let blob = new Blob([exportLines.join('\n')], { type: 'text/plain' });
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = 'card_export.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
     function regenerateTextboxFromCardData() {
         const longText = document.getElementById('longText');
         let newLines = parsedCards.map(card => {
@@ -49,55 +131,68 @@ window.onload = function () {
         longText.value = newLines.join('\n');
     }
 
+    // Clear arrays when input field is manually changed
+    document.getElementById('longText').addEventListener('input', function () {
+        parsedCards = [];
+        cardData = [];
+        cardNames = [];
+    });
+
     document.getElementById('longForm').addEventListener('submit', async function (e) {
         e.preventDefault();
         const text = document.getElementById('longText').value;
         console.log('Raw input:', text);
         // Parse each line for quantity, card name, set code, and set number
         text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0).forEach(line => {
-            // Flexible parsing for any combination
+            // Flexible parsing: always extract card name, optionally extract quantity, set code, set number, ignore category info
+            // Examples:
+            // "1x Ancient Copper Dragon (clb) 161 [Copy Target,Treasures]"
+            // "Ancient Copper Dragon"
             let qty = 1;
             let name = '';
             let setCode = undefined;
             let setNumber = undefined;
-            // Extract quantity (e.g., "2x", "2 x", "2 ")
-            let qtyMatch = line.match(/^(\d+)\s*x?\s*/i);
+            // Extract quantity
+            const qtyMatch = line.match(/^(\d+)x?/);
             if (qtyMatch) {
                 qty = parseInt(qtyMatch[1], 10);
-                line = line.slice(qtyMatch[0].length).trim();
+                line = line.replace(/^(\d+)x?\s*/, '');
             }
-            // Extract set code in parentheses (e.g., "(eoc)")
-            let setCodeMatch = line.match(/\(([^")]+)\)/);
+            // Extract set code in parentheses
+            const setCodeMatch = line.match(/\(([^)]+)\)/);
             if (setCodeMatch) {
                 setCode = setCodeMatch[1].trim();
-                line = line.replace(/\([^")]+\)/, '').trim();
+                line = line.replace(/\([^)]+\)/, '').trim();
             }
-            // Extract set number (last number in line)
-            let setNumberMatch = line.match(/(\d+)$/);
+            // todo: there is bug here for card names like Celebr-8000. This will think it is a set number.
+            // Extract set number (strict: POR-87 or just digits)
+            // Match 'POR-87', 'CN2-30' (any number of uppercase letter, 0 or more digits, hyphen, any number of digits), or just digits
+            let setNumberMatch = line.match(/\b([A-Z]+\d*-\d+)\b/);
+            if (!setNumberMatch) {
+                setNumberMatch = line.match(/\b(\d+)\b/);
+            }
             if (setNumberMatch) {
                 setNumber = setNumberMatch[1].trim();
-                line = line.replace(/(\d+)$/, '').trim();
+                line = line.replace(setNumberMatch[0], '').trim();
             }
-            // Remaining is the card name
-            name = line.trim();
+            // Extract card name (remaining text before any extra info)
+            // todo: bug for boggart trawler // boggart bog (mdfc)
+            name = line.split(/\s*\[/)[0].trim();
             for (let i = 0; i < qty; i++) {
-                let cardObj = { name };
-                if (setCode) cardObj.setCode = setCode;
-                if (setNumber) cardObj.setNumber = setNumber;
-                cardObj.qty = qty;
-                parsedCards.push(cardObj);
+                parsedCards.push({ name, setCode, setNumber, qty });
             }
         });
         console.log('Parsed cards:', parsedCards);
         cardData = [];
         document.getElementById('output').innerText = 'Loading...';
-        for (const card of parsedCards) {
-            // Use fetchCardData for all cases
-            const json = await fetchCardData(card.name, card.setCode, card.setNumber);
+        // Parallelize fetchCardData calls
+        const fetchPromises = parsedCards.map(card => fetchCardData(card.name, card.setCode, card.setNumber));
+        const results = await Promise.all(fetchPromises);
+        results.forEach((json, i) => {
             cardData.push(json);
-            card.setCode = json.set ? json.set.toUpperCase() : card.setCode;
-            card.setNumber = json.collector_number || card.setNumber;
-        }
+            parsedCards[i].setCode = json.set ? json.set.toUpperCase() : parsedCards[i].setCode;
+            parsedCards[i].setNumber = json.collector_number || parsedCards[i].setNumber;
+        });
         regenerateTextboxFromCardData();
         let html = '<h3>Results:</h3><div id="card-results-flex">';
         for (let i = 0; i < cardData.length; i++) {

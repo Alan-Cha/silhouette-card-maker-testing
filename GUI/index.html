@@ -1,7 +1,8 @@
-  <script src="renderer.js"></script>
 <!DOCTYPE html>
 <html>
   <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script type="module" src="renderer.js"></script>
     <meta charset="UTF-8">
     <title>PrintLister</title>
     <link rel="stylesheet" href="card-flex.css">
@@ -12,8 +13,11 @@
   <body>
     <h1>Enter your Print List</h1>
       <form id="longForm" style="margin-top:40px;">
-        <textarea id="longText" rows="8" cols="60" placeholder="1x Sol Ring (eoc) 57..."></textarea><br><br>
-        <button type="submit">Submit</button>
+  <textarea id="longText" rows="8" cols="60" placeholder="1x Sol Ring (eoc) 57..."></textarea><br><br>
+  <button type="submit" id="searchBtn">Search</button>
+  <button type="button" id="exportBtn">Export Decklist</button>
+  <button type="button" id="exportImagesZipBtn">Export Front Images as ZIP</button>
+  <button type="button" id="exportImagesFSBtn">Export Front Images to Folder</button>
       </form>
       <div id="output" style="margin-top:20px;"></div>
   </body>
