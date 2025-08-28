@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { width: 100vw; height: 100vh; overflow: hidden; }
+        #backBtn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            padding: 1em 2em;
+            font-size: 1.2em;
+            border-radius: 8px;
+            border: none;
+            background: #4b6cb7;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #backBtn:hover { background: #182848; }
+        #pdfFrame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <button id="backBtn" onclick="location.href='home.html'">Back</button>
+    <iframe id="pdfFrame" src="../game/output/game.pdf"></iframe>
+</body>
+</html>

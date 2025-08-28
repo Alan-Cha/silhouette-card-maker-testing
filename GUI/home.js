@@ -35,10 +35,14 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('createPdfBtn').onclick = async function() {
         const args = document.getElementById('pdfArgs').value;
+        const spinner = document.getElementById('spinner');
+        spinner.style.display = 'flex';
         try {
             const result = await ipcRenderer.invoke('run-create-pdf', args);
-            alert('PDF created!\n' + result);
+            spinner.style.display = 'none';
+            location.href = 'pdf_viewer.html';
         } catch (err) {
+            spinner.style.display = 'none';
             alert('Error creating PDF:\n' + err);
         }
     }

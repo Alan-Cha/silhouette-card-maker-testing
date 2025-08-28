@@ -23,6 +23,64 @@
     </style>
 </head>
 <body>
+    <div id="spinner" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.7); z-index:1000; align-items:center; justify-content:center;">
+        <div class="card-spinner">
+            <div class="card card1"></div>
+            <div class="card card2"></div>
+            <div class="card card3"></div>
+            <div class="card card4"></div>
+        </div>
+    </div>
+    <style>
+        .card-spinner {
+            position: relative;
+            width: 120px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px 0 rgba(0,0,0,0.18);
+            background: #fff;
+            border: 2px solid #d1bfa3;
+            backface-visibility: hidden;
+            transform-style: preserve-3d;
+            opacity: 0;
+        }
+        .card1 {
+            left: 0;
+            animation: card-flip 2s linear infinite;
+            z-index: 4;
+        }
+        .card2 {
+            left: 20px;
+            animation: card-flip 2s linear infinite 0.5s;
+            z-index: 3;
+        }
+        .card3 {
+            left: 40px;
+            animation: card-flip 2s linear infinite 1s;
+            z-index: 2;
+        }
+        .card4 {
+            left: 60px;
+            animation: card-flip 2s linear infinite 1.5s;
+            z-index: 1;
+        }
+        @keyframes card-flip {
+            0% { opacity: 0; transform: rotateY(0deg) scale(0.8); }
+            10% { opacity: 1; transform: rotateY(0deg) scale(1); }
+            40% { opacity: 1; transform: rotateY(180deg) scale(1); background: #2d2d2d; border-color: #888; }
+            60% { opacity: 1; transform: rotateY(180deg) scale(1); background: #2d2d2d; border-color: #888; }
+            90% { opacity: 0; transform: rotateY(180deg) scale(0.8); }
+            100% { opacity: 0; }
+        }
+    </style>
         <div class="header-bar">
             <h1 style="margin-bottom:0.5em;">Welcome to Silhouette Card Maker</h1>
             <button class="btn" onclick="location.href='index.html'">Magic the Gathering</button>
