@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silhouette Card Maker - Home</title>
+    <link rel="stylesheet" href="card-flex.css">
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
+        .header-bar {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 2em;
+        }
+        .btn { padding: 1em 2em; font-size: 1.2em; margin: 1em; cursor: pointer; border-radius: 8px; border: none; background: #4b6cb7; color: white; transition: background 0.2s; }
+        .btn:hover { background: #182848; }
+    </style>
+</head>
+<body>
+        <div class="header-bar">
+            <h1 style="margin-bottom:0.5em;">Welcome to Silhouette Card Maker</h1>
+            <button class="btn" onclick="location.href='index.html'">Magic the Gathering</button>
+        </div>
+            <div id="front-files" style="margin-bottom: 2em; width: 100%; max-width: 900px; text-align: left;">
+                <h2 style="font-size:1.1em; margin-bottom:0.5em;">game/front folder images:</h2>
+                <div id="frontImagesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; max-height: 400px; overflow-y: auto; background: #f7f7f7; border-radius: 8px; padding: 1em; border: 1px solid #ddd;"></div>
+            </div>
+            <script type="text/javascript" src="home.js"></script>
+    <div style="margin-top: 2em; width: 100%; max-width: 400px; text-align: left;">
+        <h2 style="margin-bottom: 0.5em;">create_pdf arguments</h2>
+        <input type="text" id="pdfArgs" placeholder="Enter arguments for create_pdf..." style="width: 100%; padding: 0.5em; font-size: 1em; margin-bottom: 1em; border-radius: 6px; border: 1px solid #ccc;">
+        <button class="btn" style="width: 100%;" id="createPdfBtn">Create Pdf</button>
+    </div>
+</body>
+</html>
