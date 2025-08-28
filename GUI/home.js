@@ -28,6 +28,22 @@ function loadImages() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    const pdfArgsInput = document.getElementById('pdfArgs');
+    const onlyFrontsCheckbox = document.getElementById('onlyFrontsCheckbox');
+
+    onlyFrontsCheckbox.addEventListener('change', function() {
+        let args = pdfArgsInput.value.trim();
+        const flag = '--only_fronts';
+        if (this.checked) {
+            if (!args.includes(flag)) {
+                args = args.length ? args + ' ' + flag : flag;
+            }
+        } else {
+            // Remove the flag if present
+            args = args.replace(/\s*--only_fronts\b/, '');
+        }
+        pdfArgsInput.value = args.trim();
+    });
     loadImages();
     // Listen for event-driven updates from main process
     ipcRenderer.on('front-images-changed', () => {
