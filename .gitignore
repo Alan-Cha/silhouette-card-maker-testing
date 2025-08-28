@@ -16,6 +16,8 @@ game/decklist/*
 node_modules
 
 data
+create_pdf.exe
+/dist
 
 images/*.xcf
 
