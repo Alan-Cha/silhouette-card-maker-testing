@@ -1,6 +1,7 @@
 from os import path
 from requests import Response, get
 from time import sleep
+from PIL import Image
 
 DECK_API_URL = 'https://decklog-en.bushiroad.com/system/app/api/view/{deck_code}'
 
@@ -68,12 +69,24 @@ def fetch_card(
 
             with open(front_image_path, 'wb') as f:
                 f.write(front_card_art)
+                
+            # Align the rotated art so that it has the correct orientation
+            front_image_for_rotation = Image.open(front_image_path)
+            if front_image_for_rotation.height < front_image_for_rotation.width:
+                front_image_rotated = front_image_for_rotation.rotate(-90, expand=True)
+                front_image_rotated.save(front_image_path) 
 
         if back_card_art is not None:
             back_image_path = path.join(back_img_dir, f'{str(index)}{name}{str(counter + 1)}.png')
 
             with open(back_image_path, 'wb') as f:
                 f.write(back_card_art)
+                
+            # Align the rotated art so that it has the correct orientation
+            back_image_for_rotation = Image.open(back_image_path)
+            if back_image_for_rotation.height < back_image_for_rotation.width:
+                back_image_rotated = back_image_for_rotation.rotate(-90, expand=True)
+                back_image_rotated.save(back_image_path)
 
 def get_handle_card(
     front_img_dir: str,
