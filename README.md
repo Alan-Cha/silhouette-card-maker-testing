@@ -137,6 +137,8 @@ The [Altered plugin](plugins/altered/README.md) supports **Ajordat** format.
 
 The [Ashes Reborn plugin](plugins/ashes_reborn/README.md) supports **Ashes** and **Ashes DB** formats.
 
+The [Bushiroad plugin](plugins/bushiroad/README.md) supports **Bushiroad Deck Log** format for Cardfight Vanguard, Shadowverse: Evolve, Weiss Schwarz, Godzilla Card Game, and hololive.
+
 The [Digimon plugin](plugins/digimon/README.md) supports **Tabletop Simulator**, **Digimoncard.io**, **Digimoncard.dev**, **Digimoncard.app**, **DigimonMeta**, and **Untap** formats.
 
 The [Echoes of Astra plugin](plugins/echoes_of_astra/README.md) supports **AstraBuilder** format.
