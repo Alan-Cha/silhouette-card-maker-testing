@@ -29,6 +29,10 @@ function loadImages() {
 
 window.addEventListener('DOMContentLoaded', () => {
     loadImages();
+    // Listen for event-driven updates from main process
+    ipcRenderer.on('front-images-changed', () => {
+        loadImages();
+    });
     document.getElementById('createPdfBtn').onclick = async function() {
         const args = document.getElementById('pdfArgs').value;
         try {
@@ -36,6 +40,15 @@ window.addEventListener('DOMContentLoaded', () => {
             alert('PDF created!\n' + result);
         } catch (err) {
             alert('Error creating PDF:\n' + err);
+        }
+    }
+    document.getElementById('clearFrontBtn').onclick = async function() {
+        try {
+            const result = await ipcRenderer.invoke('clear-front-images');
+            alert(result);
+            loadImages();
+        } catch (err) {
+            alert('Error clearing images:\n' + err);
         }
     }
 });

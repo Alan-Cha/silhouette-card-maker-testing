@@ -1,5 +1,37 @@
-const { ipcMain } = require('electron');
+const { BrowserWindow, ipcMain } = require('electron');
+const fs = require('fs');
+const path = require('path');
 const { spawn } = require('child_process');
+const frontDir = require('path').join(__dirname, '../game/front');
+let watcher = null;
+
+function startFrontDirWatcher() {
+  if (watcher) return;
+  const fs = require('fs');
+  watcher = fs.watch(frontDir, { persistent: true }, (eventType, filename) => {
+    if (filename && filename.endsWith('.png')) {
+      BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('front-images-changed');
+      });
+    }
+  });
+}
+startFrontDirWatcher();
+ipcMain.handle('clear-front-images', async () => {
+  const dir = require('path').join(__dirname, '../game/front');
+  const fs = require('fs');
+  try {
+    const files = await fs.promises.readdir(dir);
+    for (const file of files) {
+      if (file.endsWith('.png')) {
+        await fs.promises.unlink(require('path').join(dir, file));
+      }
+    }
+    return 'Front images cleared.';
+  } catch (err) {
+    return 'Error clearing images: ' + err;
+  }
+});
 ipcMain.handle('run-create-pdf', async (event, argsString) => {
   return new Promise((resolve, reject) => {
     // Split argsString into array, respecting quotes
@@ -20,8 +52,6 @@ ipcMain.handle('run-create-pdf', async (event, argsString) => {
     });
   });
 });
-const fs = require('fs');
-const path = require('path');
 
 ipcMain.handle('get-front-images', async () => {
   const dir = path.join(__dirname, '../game/front');
