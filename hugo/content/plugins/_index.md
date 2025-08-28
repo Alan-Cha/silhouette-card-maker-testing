@@ -13,6 +13,7 @@ The following plugins are currently available:
 * [Yu-Gi-Oh!]({{% ref "yugioh.md" %}})
 * [Altered]({{% ref "altered.md" %}})
 * [Ashes Reborn]({{% ref "ashes_reborn.md" %}})
+* [Bushiroad]({{% ref "bushiroad.md" %}})
 * [Digimon]({{% ref "digimon.md" %}})
 * [Echoes of Astra]({{% ref "echoes_of_astra.md" %}})
 * [Elestrals]({{% ref "elestrals.md" %}})
