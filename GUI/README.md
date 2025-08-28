@@ -24,22 +24,58 @@ If you're starting with a fresh install of your operating system, follow these s
 Once Python and Node.js are installed, continue with the project setup steps below.
 # Silhouette Card Maker GUI
 
-This folder contains the Electron-based graphical user interface for the Silhouette Card Maker project.
-
-## Prerequisites
 - Node.js (v18 or newer recommended)
 - Python (v3.10+ recommended)
 - All Python dependencies listed in the project root `requirements.txt`
+## 1. Install Python
+
+- **Windows:** Download Python from the official website: https://www.python.org/downloads/
+   - Run the installer and **check the box to add Python to your PATH**.
+- **Linux/Mac:** Install via your package manager or download from the website.
+   - Ubuntu/Debian:
+      ```bash
+      sudo apt update && sudo apt install python3 python3-pip
+      ```
+   - Mac (Homebrew):
+      ```bash
+      brew install python3
+      ```
+- Verify installation:
+   ```powershell
+   python --version
+   ```
+   ```bash
+   python3 --version
+   ```
 
 ## Setup
 
-1. **Install Node.js dependencies**
-   ```powershell
-   cd GUI
    npm install
    ```
 
 2. **Install Python dependencies**
+## 2. Install Node.js
+
+- **Windows:** Download Node.js (LTS version recommended) from: https://nodejs.org/
+   - Run the installer and follow the prompts.
+- **Linux/Mac:** Install via your package manager or download from the website.
+   - Ubuntu/Debian:
+      ```bash
+      sudo apt update && sudo apt install nodejs npm
+      ```
+   - Mac (Homebrew):
+      ```bash
+      brew install node
+      ```
+- Verify installation:
+   ```powershell
+   node --version
+   npm --version
+   ```
+   ```bash
+   node --version
+   npm --version
+   ```
    ```powershell
    cd ..
    python -m pip install -r requirements.txt
