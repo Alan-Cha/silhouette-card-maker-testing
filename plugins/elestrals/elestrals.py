@@ -1,6 +1,7 @@
 from os import path
 from requests import Response, get
 from time import sleep
+from PIL import Image
 
 DECK_ID_URL_TEMPLATE = 'https://play-api.carde.io/v1/decks/{deck_id}'
 
@@ -39,10 +40,18 @@ def fetch_card_art(index: int, card_name: str, image_url: str, quantity: int, fr
     if card_art is not None:
         # Save image based on quantity
         for counter in range(quantity):
-            image_path = path.join(front_img_dir, f'{index}{card_name}_{counter + 1}.jpg')
+            image_path = path.join(front_img_dir, f'{index}{card_name}_{counter + 1}.png')
 
             with open(image_path, 'wb') as f:
                 f.write(card_art)
+
+                img = Image.open(image_path)
+                img = img.convert("RGBA")
+                transparent = img.getchannel("A")
+                bounding_box = transparent.getbbox()
+                if bounding_box:
+                    cropped_img = img.crop(bounding_box)
+                    cropped_img.save(image_path)
 
 def get_handle_card(
     front_img_dir: str
