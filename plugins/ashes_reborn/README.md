@@ -1,8 +1,8 @@
 # Ashes Reborn Plugin
 
-This plugin reads decklist URLs, retrieves the decklists, fetches the card images, and puts the card images into the proper `game/` directories.
+This plugin reads decklist URLs, retrieves the decklists, fetches the card images from either [Ashes](https://ashes.live/) or [AshesDB](https://ashesdb.plaidhatgames.com/), and puts the card images into the proper `game/` directories.
 
-This plugin supports decklist exports from [Ashes](https://ashes.live/). To learn more, see [here](#formats).
+This plugin supports decklist exports from [Ashes](https://ashes.live/) and [AshesDB](https://ashesdb.plaidhatgames.com/). To learn more, see [here](#formats).
 
 ## Basic Instructions
 
@@ -25,10 +25,11 @@ Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy)
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH {ashes}
+Usage: fetch.py [OPTIONS] DECK_PATH {ashes|ashesdb}
 
 Options:
-  --help  Show this message and exit.
+  --source [ashes|ashesdb]  The desired image source.  [default: ashes]
+  --help                    Show this message and exit.
 ```
 
 ## Formats
@@ -39,4 +40,11 @@ The format for ``Ashes``.
 
 ```
 https://ashes.live/decks/share/57be4c41-6b6f-4770-8e30-b2fe9b9a6c72/
+```
+### `ashesdb`
+
+The format for ``AshesDB``.
+
+```
+https://ashesdb.plaidhatgames.com/decks/share/0f8855d9-3c02-45e8-8458-366cbd755a04/
 ```
