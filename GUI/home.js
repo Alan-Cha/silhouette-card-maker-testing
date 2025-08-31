@@ -28,6 +28,21 @@ function loadImages() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    const skip4Checkbox = document.getElementById('skip4Checkbox');
+
+    skip4Checkbox.addEventListener('change', function() {
+        let args = pdfArgsInput.value.trim();
+        const flag = '--skip 4';
+        if (this.checked) {
+            if (!args.includes(flag)) {
+                args = args.length ? args + ' ' + flag : flag;
+            }
+        } else {
+            // Remove the flag if present
+            args = args.replace(/\s*--skip 4\b/, '');
+        }
+        pdfArgsInput.value = args.trim();
+    });
     const pdfArgsInput = document.getElementById('pdfArgs');
     const onlyFrontsCheckbox = document.getElementById('onlyFrontsCheckbox');
 

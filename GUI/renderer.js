@@ -35,18 +35,36 @@ window.onload = function () {
         if (!fs.existsSync(frontDir)) {
             fs.mkdirSync(frontDir, { recursive: true });
         }
+        let imgCount = 1;
         for (let i = 0; i < cardData.length; i++) {
             const data = cardData[i];
             if (data.error) continue;
-            let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
-            if (!imgUrl) continue;
-            let cardName = data.name.replace(/[^a-zA-Z0-9]/g, ' ');
-            cardName = cardName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
-            cardName = cardName.replace(/\s+/g, '');
-            let filename = path.join(frontDir, `${i+1}${cardName}1.png`);
-            const response = await fetch(imgUrl);
-            const buffer = Buffer.from(await response.arrayBuffer());
-            fs.writeFileSync(filename, buffer);
+            // Handle double-faced cards
+            if (data.card_faces && Array.isArray(data.card_faces) && data.card_faces.length > 1) {
+                for (let f = 0; f < data.card_faces.length; f++) {
+                    let imgUrl = data.card_faces[f].image_uris ? data.card_faces[f].image_uris.png : null;
+                    if (!imgUrl) continue;
+                    let faceName = data.card_faces[f].name.replace(/[^a-zA-Z0-9]/g, ' ');
+                    faceName = faceName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
+                    faceName = faceName.replace(/\s+/g, '');
+                    let filename = path.join(frontDir, `${imgCount}${faceName}1.png`);
+                    const response = await fetch(imgUrl);
+                    const buffer = Buffer.from(await response.arrayBuffer());
+                    fs.writeFileSync(filename, buffer);
+                    imgCount++;
+                }
+            } else {
+                let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
+                if (!imgUrl) continue;
+                let cardName = data.name.replace(/[^a-zA-Z0-9]/g, ' ');
+                cardName = cardName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
+                cardName = cardName.replace(/\s+/g, '');
+                let filename = path.join(frontDir, `${imgCount}${cardName}1.png`);
+                const response = await fetch(imgUrl);
+                const buffer = Buffer.from(await response.arrayBuffer());
+                fs.writeFileSync(filename, buffer);
+                imgCount++;
+            }
         }
         alert('Images exported to ../game/front');
     });
