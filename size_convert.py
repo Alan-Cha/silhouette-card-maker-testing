@@ -1,4 +1,3 @@
-import math
 import re
 
     
@@ -9,16 +8,16 @@ def size_to_pixel(size_string, ppi):
     mm_match = re.fullmatch(rf"({float_pattern})mm", size_string)
     if mm_match:
         size_mm = float(mm_match.group(1))
-        return math.ceil(size_mm / 25.4 * ppi)
+        return round(size_mm / 25.4 * ppi)
 
     # Match inches
     in_match = re.fullmatch(rf"({float_pattern})in", size_string)
     if in_match:
         size_in = float(in_match.group(1))
-        return math.ceil(size_in*ppi)
+        return round(size_in*ppi)
     
     #If no match
-    return math.ceil(float(size_string))
+    return round(float(size_string))
 
 
 def size_to_pt(size_string):

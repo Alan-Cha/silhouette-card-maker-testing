@@ -132,7 +132,7 @@ def generate_custom_layout(
     
     #10mm min inset + 5mm length of silhouette at 300ppi + 1/2 thickness
     min_margin = size_convert.size_to_pixel(inset, ppi)
-    margin_x = size_convert.size_to_pixel(inset, ppi) + size_convert.size_to_pixel(length, ppi) + math.floor(size_convert.size_to_pixel(thickness, ppi)/2)
+    margin_x = size_convert.size_to_pixel(inset, ppi) + size_convert.size_to_pixel(length, ppi) + round(size_convert.size_to_pixel(thickness, ppi)/2)
     margin_y = margin_x
     
     if orientation:
@@ -211,8 +211,8 @@ def generate_custom_layout(
         filled_width = card_width_px * num_cols + (2 * space_x_px) + (bleed_x_px * (num_cols - 1))
 
 
-    start_x = math.floor(margin_x + space_x_px + ((available_width - filled_width) / 2))
-    start_y = math.floor(margin_y + space_y_px + ((available_height - filled_height) / 2))
+    start_x = round(margin_x + space_x_px + ((available_width - filled_width) / 2))
+    start_y = round(margin_y + space_y_px + ((available_height - filled_height) / 2))
     
     x_pos=[start_x]
     y_pos=[start_y]
@@ -331,7 +331,6 @@ def generate_custom_reg_mark(paper_width:str, paper_height:str, inset:str, thick
     ax.add_line(line)
 
     # Save output
-    
     img_buf = io.BytesIO()
     plt.savefig(img_buf, format='jpg')
     img_buf.seek(0)
