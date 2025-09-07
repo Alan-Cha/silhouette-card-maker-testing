@@ -1,8 +1,8 @@
 # Star Wars Unlimited Plugin
 
-This plugin reads a decklist from [swudb](https://swudb.com/) and puts the card images into the proper `game/` directories.
+This plugin reads a decklist from [SWUDB](https://swudb.com/) and puts the card images into the proper `game/` directories.
 
-This plugin supports many decklist formats such as, ``swudb_json``, ``melee``, and ``picklist``. To learn more, see [here](#formats).
+This plugin supports many decklist formats such as, `swudb_json`, `melee`, and `picklist`. To learn more, see [here](#formats).
 
 ## Basic Instructions
 
@@ -35,9 +35,9 @@ Options:
 
 ### `swudb_json`
 
-The format for ``SWUDB JSON``.
+SWUDB JSON format.
 
-```
+```json
 {
   "metadata": {
     "name": "Wichita PQ - 4th",
@@ -156,7 +156,7 @@ The format for ``SWUDB JSON``.
 
 ### `melee`
 
-The format for ``Melee``.
+Melee format.
 
 ```
 Leaders
@@ -196,7 +196,7 @@ Sideboard
 
 ### `picklist`
 
-The format for ``Picklist``.
+Picklist format.
 
 ```
 [ ]          Han Solo | Audacious Smuggler

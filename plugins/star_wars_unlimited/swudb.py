@@ -24,7 +24,6 @@ def request_swudb(query: str) -> Response:
 def fetch_name_and_title(card_number: str) -> card_tuple:
     card_number_pattern = compile(r'([A-Z]+)_(\d+)')
     card_name_dual_patten = compile(r'(.+) \/\/.+') # Chancellor Palpatine // Darth Sidious from TWI_017
-    
     # Query for card name and title
     if card_number != '': # Fetch card art by card number
         match = card_number_pattern.match(card_number)
@@ -54,19 +53,19 @@ def fetch_card(
     # Fetch card art by querying name and title
     title_query = '' if title == '' else f' title:"{title}"'
     json = request_swudb(SWUDB_NAME_URL_TEMPLATE.format(name=name, title=title_query)).json()
-    art_url_suffix = sub('.+cards/', '', json.get('variants')[0].get('frontImagePath'))
+    art_url_suffix = sub('.+cards/', '', json.get('printings')[0].get('frontImagePath'))
     front_art = request_swudb(SWUDB_ART_URL_TEMPLATE.format(card_art_ref=art_url_suffix)).content
     back_art = None
 
     # Get the back art from the path when card is not a Base
-    if json.get('variants')[0].get('backImagePath') != '' and json.get('variants')[0].get('hp') is None:
-        art_url_suffix = sub('.+cards/', '', json.get('variants')[0].get('backImagePath'))
+    if json.get('printings')[0].get('backImagePath') != '' and json.get('printings')[0].get('hp') is None:
+        art_url_suffix = sub('.+cards/', '', json.get('printings')[0].get('backImagePath'))
         back_art = request_swudb(SWUDB_ART_URL_TEMPLATE.format(card_art_ref=art_url_suffix)).content
-    
+
     # Save images based on quantity
     for counter in range(quantity):
         title_text = '' if title == '' else f',{title}'
-        
+
         output_file = OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=f'{name}{title_text}', quantity_counter=str(counter + 1))
 
         if front_art != None:
@@ -79,7 +78,7 @@ def fetch_card(
             front_image_for_rotation = Image.open(front_image_path)
             if front_image_for_rotation.height < front_image_for_rotation.width:
                 front_image_rotated = front_image_for_rotation.rotate(90, expand=True)
-                front_image_rotated.save(front_image_path)  
+                front_image_rotated.save(front_image_path)
 
         if back_art != None:
             back_image_path = path.join(back_img_dir, output_file)
@@ -108,4 +107,3 @@ def get_handle_card(
         )
 
     return configured_fetch_card
-    
