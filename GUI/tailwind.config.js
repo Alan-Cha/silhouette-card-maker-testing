@@ -29,23 +29,23 @@ module.exports = {
         }
       },
       animation: {
-        'card-flip': 'card-flip 2s linear infinite',
+        'card-slide-1': 'card-slide 2s ease-in-out infinite',
+        'card-slide-2': 'card-slide 2s ease-in-out infinite 0.66s',
+        'card-slide-3': 'card-slide 2s ease-in-out infinite 1.33s',
       },
       keyframes: {
-        'card-flip': {
-          '0%': { 
+        'card-slide': {
+          '0%': {
             opacity: '0',
-            transform: 'rotateY(0deg) scale(0.8)',
+            transform: 'translateY(-100%) translateX(-50%) rotate(-15deg)',
           },
-          '10%': {
+          '25%, 35%': {
             opacity: '1',
-            transform: 'rotateY(0deg) scale(1)',
+            transform: 'translateY(0) translateX(0) rotate(0deg)',
           },
-          '40%': {
-            opacity: '1',
-            transform: 'rotateY(180deg) scale(1)',
-            backgroundColor: '#2d2d2d',
-            borderColor: '#888',
+          '60%, 100%': {
+            opacity: '0',
+            transform: 'translateY(100%) translateX(50%) rotate(15deg)',
           },
         },
       },

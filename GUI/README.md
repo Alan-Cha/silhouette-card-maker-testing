@@ -83,10 +83,27 @@ Once Python and Node.js are installed, continue with the project setup steps bel
 
 3. **Build the Python executable**
    (Optional, for standalone PDF generation)
+
+   **Windows:**
    ```powershell
    .\build_create_pdf.bat
    ```
-   This will create `create_pdf.exe` in the project root.
+
+   **macOS/Linux:**
+   ```bash
+   ./build_create_pdf.sh
+   ```
+
+   This will create the PDF generator executable in the project root:
+   - Windows: `create_pdf.exe`
+   - macOS/Linux: `create_pdf`
+
+   The build script will:
+   1. Install/upgrade pip
+   2. Install required Python packages
+   3. Install PyInstaller
+   4. Build a standalone executable
+   5. Clean up temporary build files
 
 ## Running the GUI
 

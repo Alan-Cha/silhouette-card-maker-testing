@@ -11,12 +11,27 @@
 <body class="min-h-screen bg-surface text-content">
     <nav-bar current-step="3"></nav-bar>
 
-    <!-- Loading Spinner -->
-    <div id="spinner" class="fixed inset-0 bg-surface-dark/90 flex items-center justify-center z-50 hidden">
-    <div class="paper-element p-8 flex gap-2">
-            <div class="w-4 h-4 bg-primary-light rounded-full animate-bounce"></div>
-            <div class="w-4 h-4 bg-primary-light rounded-full animate-bounce [animation-delay:-.3s]"></div>
-            <div class="w-4 h-4 bg-primary-light rounded-full animate-bounce [animation-delay:-.5s]"></div>
+    <!-- Loading Animation -->
+    <div id="spinner" class="fixed inset-0 bg-surface-dark/95 flex flex-col items-center justify-center z-50 hidden">
+        <div class="paper-element p-8 flex flex-col items-center gap-8">
+            <!-- Card Animation Container -->
+            <div class="flex items-center justify-center gap-8">
+                <!-- Sliding Cards -->
+                <div class="relative w-32 h-44">
+                    <!-- Base Card -->
+                    <div class="absolute inset-0 bg-surface-light border-2 border-content/10 rounded-lg shadow-lg"></div>
+                    <!-- Animating Cards -->
+                    <div class="absolute inset-0 bg-surface-light border-2 border-content/10 rounded-lg shadow-lg animate-card-slide-1"></div>
+                    <div class="absolute inset-0 bg-surface-light border-2 border-content/10 rounded-lg shadow-lg animate-card-slide-2"></div>
+                    <div class="absolute inset-0 bg-surface-light border-2 border-content/10 rounded-lg shadow-lg animate-card-slide-3"></div>
+                </div>
+            </div>
+
+            <!-- Status Text -->
+            <div class="text-content text-center">
+                <h3 class="text-lg font-medium mb-2">Creating PDF</h3>
+                <p class="text-content-light">Processing card images...</p>
+            </div>
         </div>
     </div>
 
