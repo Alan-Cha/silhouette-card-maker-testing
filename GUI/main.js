@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require('electron');
-require('./ipcHandlers');
+require('./Utilities/ipcHandlers');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -10,7 +10,7 @@ function createWindow() {
       contextIsolation: false
     }
   });
-  win.loadFile('home.html');
+  win.loadFile('Home/home.html');
 }
 
 app.whenReady().then(createWindow);

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silhouette Card Maker - Create PDF</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <script type="text/javascript" src="../shared/navbar.js"></script>
+    <script type="text/javascript" src="create.js"></script>
+</head>
+<body class="min-h-screen bg-surface text-content">
+    <nav-bar current-step="3"></nav-bar>
+
+    <!-- Loading Spinner -->
+    <div id="spinner" class="fixed inset-0 bg-surface-dark/90 flex items-center justify-center z-50 hidden">
+    <div class="paper-element p-8 flex gap-2">
+            <div class="w-4 h-4 bg-primary-light rounded-full animate-bounce"></div>
+            <div class="w-4 h-4 bg-primary-light rounded-full animate-bounce [animation-delay:-.3s]"></div>
+            <div class="w-4 h-4 bg-primary-light rounded-full animate-bounce [animation-delay:-.5s]"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 pt-24 pb-8 max-w-6xl">
+        <!-- Front Files Section -->
+        <section class="paper-element mb-12 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-primary-dark">game/front folder images</h2>
+                <button class="paper-button" id="clearFrontBtn">Clear Front Images</button>
+            </div>
+            <div id="frontImagesGrid" class="paper-surface grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 rounded-lg p-4 max-h-[400px] overflow-y-auto">
+                <!-- Images will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- PDF Creation Section -->
+        <section class="paper-element p-6 max-w-xl mx-auto">
+            <h2 class="text-xl font-semibold text-primary-dark mb-6">PDF Creation Options</h2>
+            
+            <!-- Checkboxes -->
+            <div class="space-y-4 mb-6">
+                <label class="flex items-center space-x-3 p-3 bg-surface rounded-lg hover:bg-surface/80 transition-colors cursor-pointer group">
+                    <input type="checkbox" id="onlyFrontsCheckbox" class="w-4 h-4 rounded border-2 border-primary-light/30 text-primary focus:ring-2 focus:ring-primary-light checked:border-primary group-hover:border-primary transition-colors duration-200">
+                    <span class="text-content group-hover:text-content-dark transition-colors duration-200">Only Fronts (--only_fronts)</span>
+                </label>
+                
+                <label class="flex items-center space-x-3 p-3 bg-surface rounded-lg hover:bg-surface/80 transition-colors cursor-pointer group">
+                    <input type="checkbox" id="skip4Checkbox" class="w-4 h-4 rounded border-2 border-primary-light/30 text-primary focus:ring-2 focus:ring-primary-light checked:border-primary group-hover:border-primary transition-colors duration-200">
+                    <span class="text-content group-hover:text-content-dark transition-colors duration-200">Skip 4 (--skip 4)</span>
+                </label>
+            </div>
+
+            <!-- Arguments Input -->
+            <div class="space-y-4">
+                <div class="relative">
+                    <input type="text" 
+                           id="pdfArgs" 
+                           placeholder="Enter additional arguments for create_pdf..." 
+                           class="paper-input">
+                </div>
+                
+                <button class="paper-button w-full mt-6" id="createPdfBtn">
+                    Create PDF
+                </button>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

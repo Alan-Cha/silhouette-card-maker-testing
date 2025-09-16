@@ -2,7 +2,7 @@ const { BrowserWindow, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const frontDir = require('path').join(__dirname, '../game/front');
+const frontDir = require('path').join(__dirname, '../../game/front');
 let watcher = null;
 
 function startFrontDirWatcher() {
