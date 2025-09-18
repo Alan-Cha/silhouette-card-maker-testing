@@ -28,6 +28,18 @@ async function fetchCardData(name, setCode = null, setNumber = null) {
     }
 }
 window.onload = function () {
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        const dropdowns = document.querySelectorAll('[id^="set-dropdown-container-"]');
+        dropdowns.forEach(dropdown => {
+            if (!dropdown.contains(e.target) && 
+                !e.target.id?.includes('card-set-') && 
+                !e.target.id?.includes('set-select-')) {
+                dropdown.classList.add('hidden');
+                dropdown.classList.remove('block');
+            }
+        });
+    });
     // Export front images to ../game/front using Node.js fs (Electron only)
     document.getElementById('exportImagesFSBtn').addEventListener('click', async function () {
         const fs = window.require ? window.require('fs') : require('fs');
@@ -212,24 +224,81 @@ window.onload = function () {
             parsedCards[i].setNumber = json.collector_number || parsedCards[i].setNumber;
         });
         regenerateTextboxFromCardData();
-        let html = '<h3>Results:</h3><div id="card-results-flex">';
+        let html = '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">';
         for (let i = 0; i < cardData.length; i++) {
             const data = cardData[i];
             const card = parsedCards[i];
             if (data.error) {
-                html += `<div class="card-li" id="card-li-${i}"><strong>${card ? card.name : 'Unknown'}</strong>: ${data.error}</div>`;
+                html += `
+                    <div class="flex flex-col p-4 bg-red-50 border border-red-200 rounded-lg" id="card-li-${i}">
+                        <strong class="text-red-500">${card ? card.name : 'Unknown'}</strong>
+                        <p class="text-sm mt-2 text-red-400">${data.error}</p>
+                    </div>`;
             } else {
                 let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
                 let setCode = data.set ? data.set.toUpperCase() : '';
                 let availableSets = (data.prints_search_uri ? data.prints_search_uri : null);
-                html += `<div class="card-li" id="card-li-${i}">
-        ${imgUrl ? `<img id="card-img-${i}" src="${imgUrl}" alt="${data.name}" class="card-img" />` : '<em>No image available</em>'}
-  <div><strong>${data.name}</strong> <span id="setcode-dropdown-wrap-${i}"><strong id="card-set-${i}" class="card-set" >[${setCode}]</strong></span><span id="set-dropdown-container-${i}" style="display:none;"></span></div>
-      </div>`;
+                html += `
+                    <div class="flex flex-col" id="card-li-${i}">
+                        ${imgUrl ? `
+                            <div class="relative">
+                                <div class="aspect-[745/1040] rounded-lg overflow-hidden shadow transition-shadow duration-200 hover:shadow-md">
+                                    <img id="card-img-${i}" src="${imgUrl}" alt="${data.name}" class="w-full h-full object-cover" loading="lazy" />
+                                </div>
+                                ${data.card_faces && data.card_faces.length > 1 ? `
+                                    <button id="flip-btn-${i}" 
+                                            class="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                                            title="Flip card">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </button>
+                                ` : ''}
+                            </div>` : 
+                            '<div class="aspect-[745/1040] bg-gray-100 flex items-center justify-center rounded-lg"><em>No image available</em></div>'}
+                        <div class="mt-2">
+                            <div class="flex items-start">
+                                <div class="flex-grow">
+                                    <strong class="text-sm text-content inline-flex items-start flex-wrap">
+                                        <span class="break-all">${data.name}</span>
+                                        <span id="setcode-dropdown-wrap-${i}" class="relative inline-flex items-center shrink-0">
+                                            <span id="card-set-${i}" class="cursor-pointer hover:underline ml-1" title="Click to change set">[${setCode}]</span>
+                                        </span>
+                                    </strong>
+                                    <div id="set-dropdown-container-${i}" class="hidden absolute z-50 bg-white shadow-lg rounded-md border border-gray-200" style="min-width: 200px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
             }
         }
         html += '</div>';
         document.getElementById('output').innerHTML = html;
+
+        // Set up flip buttons for double-faced cards
+        for (let i = 0; i < cardData.length; i++) {
+            const data = cardData[i];
+            if (!data.error && data.card_faces && data.card_faces.length > 1) {
+                const flipBtn = document.getElementById(`flip-btn-${i}`);
+                if (flipBtn) {
+                    let showingFront = true;
+                    const frontImg = data.card_faces[0].image_uris?.png;
+                    const backImg = data.card_faces[1].image_uris?.png;
+                    
+                    flipBtn.addEventListener('click', function(e) {
+                        const imgElem = document.getElementById(`card-img-${i}`);
+                        if (showingFront && backImg) {
+                            imgElem.src = backImg;
+                            showingFront = false;
+                        } else if (frontImg) {
+                            imgElem.src = frontImg;
+                            showingFront = true;
+                        }
+                        e.stopPropagation();
+                    });
+                }
+            }
+        }
 
         // For each card, fetch available sets and create dropdown
         for (let i = 0; i < cardData.length; i++) {
@@ -283,33 +352,35 @@ window.onload = function () {
                         setCodeElem.addEventListener('mouseleave', function () {
                             setCodeElem.style.textDecoration = 'none';
                         });
-                        setCodeElem.addEventListener('click', function () {
-                            setDropdownContainer.style.display = 'inline';
-                            document.getElementById(`setcode-dropdown-wrap-${i}`).style.display = 'none';
-                            // Hide the card name instead of removing it
-                            const cardLi = document.getElementById(`card-li-${i}`);
-                            const cardNameElem = cardLi.querySelector('strong');
-                            if (cardNameElem) {
-                                cardNameElem.style.display = 'none';
-                            }
+                        setCodeElem.addEventListener('click', function (e) {
+                            // Position the dropdown relative to the set code element
+                            const rect = setCodeElem.getBoundingClientRect();
+                            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                            
+                            setDropdownContainer.style.top = (rect.bottom + scrollTop) + 'px';
+                            setDropdownContainer.style.left = (rect.left + scrollLeft) + 'px';
+                            
+                            setDropdownContainer.classList.remove('hidden');
+                            setDropdownContainer.classList.add('block');
+                            
                             dropdown.focus();
+                            
                             // Open the dropdown immediately
                             if (typeof dropdown.showDropdown === 'function') {
                                 dropdown.showDropdown();
                             } else {
-                                // For most browsers, dispatching a click event will open the dropdown
                                 const event = new MouseEvent('mousedown', { bubbles: true });
                                 dropdown.dispatchEvent(event);
                             }
+                            
+                            // Prevent event bubbling
+                            e.stopPropagation();
                         });
                         dropdown.addEventListener('blur', function () {
-                            setDropdownContainer.style.display = 'none';
-                            document.getElementById(`setcode-dropdown-wrap-${i}`).style.display = 'inline';
-                            const cardLi = document.getElementById(`card-li-${i}`);
-                            const cardNameElem = cardLi.querySelector('strong');
-                            if (cardNameElem) {
-                                cardNameElem.style.display = 'inline';
-                            }
+                            setDropdownContainer.classList.add('hidden');
+                            setDropdownContainer.classList.remove('block');
+                            document.getElementById(`setcode-dropdown-wrap-${i}`).classList.remove('hidden');
                         });
                         dropdown.addEventListener('change', async function () {
                             const newSet = this.value;

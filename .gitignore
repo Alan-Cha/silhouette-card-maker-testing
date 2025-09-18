@@ -3,6 +3,9 @@
 venv
 __pycache__
 
+# Generated CSS files
+GUI/styles/main.css
+
 game/back/*
 !game/back/EMPTY.md
 game/front/*
