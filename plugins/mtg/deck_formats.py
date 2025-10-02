@@ -115,7 +115,7 @@ def parse_mtgo(deck_text, handle_card: Callable) -> None:
 # 1x Assassin's Trophy (sld) 139 [Targeted Disruption]
 # 2x Boseiju Reaches Skyward // Branch of Boseiju (neo) 177 [Ramp] ^Have,#37d67a^
 def parse_archidekt(deck_text, handle_card: Callable) -> None:
-    pattern = re.compile(r'^(\d+)x?\s+(.+?)\s+\((\w+)\)\s+(\d+).*')
+    pattern = re.compile(r'^(\d+)x?\s+(.+?)\s+\((\w+)\)\s+([\w\-]+).*')
     def is_archidekt_card_line(line: str) -> bool:
         return bool(pattern.match(line))
 
