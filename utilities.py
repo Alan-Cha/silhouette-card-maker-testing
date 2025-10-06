@@ -2,6 +2,7 @@ from enum import Enum
 import itertools
 import json
 import math
+import mimetypes
 import os
 import re
 from glob import glob
@@ -18,6 +19,9 @@ asset_directory = 'assets'
 
 layouts_filename = 'layouts.json'
 layouts_path = os.path.join(asset_directory, layouts_filename)
+
+# Specify valid mimetypes for images
+valid_mimetypes = ("image/jpeg", "image/png")
 
 class CardSize(str, Enum):
     STANDARD = "standard"
@@ -136,20 +140,21 @@ def get_image_file_paths(dir_path: str) -> List[str]:
 
     for current_folder, _, files in os.walk(dir_path):
         for filename in files:
-            # Skip files that end with .md
-            if filename.endswith(".md"):
+            full_path = os.path.join(current_folder, filename)
+            
+            # Skip invalid files
+            if mimetypes.guess_file_type(full_path)[0] not in valid_mimetypes:
                 continue
 
-            full_path = os.path.join(current_folder, filename)
             relative_path = os.path.relpath(full_path, dir_path)
             result.append(relative_path)
 
     return result
 
 def get_back_card_image_path(back_dir_path) -> str | None:
-    # List all files in the directory that do not end with .md
-    # The directory may contain markdown files
-    files = [f for f in os.listdir(back_dir_path) if (os.path.isfile(os.path.join(back_dir_path, f)) and not f.endswith(".md"))]
+    # List all files in the directory that are pngs and jpegs
+    # The directory may contain markdown and/or other files
+    files = [f for f in Path(back_dir_path).glob("*") if f.is_file() and mimetypes.guess_file_type(f)[0] in valid_mimetypes]
 
     if len(files) == 0:
         return None
