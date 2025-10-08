@@ -32,7 +32,7 @@ Proxies should be easily identifiable as proxies. You may not use this repo to c
 * [tutorial]({{% ref "tutorial/" %}})
 * [supply list]({{% ref "tutorial/supplies.md" %}})
 * [create_pdf.py]({{% ref "docs/create.md" %}}), a script for laying out your cards in a PDF
-* [offset_pdy.py]({{% ref "docs/offset.md" %}}), a script for adding an offset to your PDF
+* [offset_pdf.py]({{% ref "docs/offset.md" %}}), a script for adding an offset to your PDF
 * [cutting_templates/](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/cutting_templates), a directory containing Silhoutte Studio cutting templates
 * [calibration/](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/calibration), a directory containing offset calibration sheets
 * [examples/](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/examples), a directory containing sample games
