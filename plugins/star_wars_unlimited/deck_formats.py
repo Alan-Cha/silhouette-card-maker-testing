@@ -11,29 +11,12 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
 
     deck = deck_splitter(deck_text)
     for line in deck:
-        # Iterate through the swudb_json list
-        if isinstance(deck, dict) and isinstance(deck.get(line), list):
-            index = parse_deck_helper(dumps(deck.get(line)), handle_card, deck_splitter, is_card_line, extract_card_data, index)
-
-        # Get item when already at bottom level of swudb_json
-        elif isinstance(deck, dict) and isinstance(deck.get(line), dict) and is_card_line(deck.get(line)):
-            index += 1
-
-            name, title, card_number, quantity = extract_card_data(deck.get(line))
-
-            print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number:{card_number}')
-            try:
-                handle_card(index, name, title, quantity)
-            except Exception as e:
-                print(f'Error: {e}')
-                error_lines.append((line, e))
-
-        elif is_card_line(line):
+        if is_card_line(line):
             index += 1
 
             name, title, card_number, quantity = extract_card_data(line)
 
-            print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number:{card_number}')
+            print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number: {card_number}')
 
             try:
                 handle_card(index, name, title, quantity)
@@ -49,24 +32,26 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
     return index
 
 def parse_swudb_json(deck_text: str, handle_card: Callable) -> None:
+    data = loads(deck_text)
 
-    def split_swudb_json_deck(deck_text: str):
-        return loads(deck_text)
+    # Get cards from leader, base, deck, and sideboard
+    cards = []
+    leader = data.get("leader")
+    if leader is not None:
+        cards.append(leader)
+    base = data.get("base")
+    if base is not None:
+        cards.append(base)
+    cards = cards + data.get("deck", [])
+    cards = cards + data.get("sideboard", [])
 
-    def is_swudb_json_line(line) -> bool: # '{"id": "{Card Number with _ as separator}","count": {Quantity}}'
-        if not isinstance(line, dict):
-            return False
-        return line.get('id') is not None and line.get('count') is not None
+    for index, card in enumerate(cards, start=1):
+        card_number = card.get("id")
+        quantity = card.get("count", 1)
+        name, title = fetch_name_and_title(card_number)
 
-    def extract_swudb_json_card_data(line) -> card_data_tuple:
-        if isinstance(line, dict):
-            card_number = line.get('id').strip()
-            quantity = int(line.get('count'))
-            name, title = fetch_name_and_title(card_number)
-
-            return (name, title, card_number, quantity)
-
-    parse_deck_helper(deck_text, handle_card, split_swudb_json_deck, is_swudb_json_line, extract_swudb_json_card_data)
+        print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number: {card_number}')
+        handle_card(index, name, title, quantity)
 
 def parse_melee(deck_text: str, handle_card: Callable) -> None:
     pattern = compile(r'^(\d+)\s*\|\s*([\w\'\-]+(?:\s+[\w\'\-]+)*)\s*(?:\|\s*(.+))?$') # '{Quantity} {Name} | {Title}'
