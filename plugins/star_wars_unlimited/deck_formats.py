@@ -14,9 +14,9 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
         if is_card_line(line):
             index += 1
 
-            name, title, card_number, quantity = extract_card_data(line)
+            name, title, card_id, quantity = extract_card_data(line)
 
-            print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number: {card_number}')
+            print(f'Index: {index}, quantity: {quantity}, card ID: {card_id}, name: {name}, title: {title}')
 
             try:
                 handle_card(index, name, title, quantity)
@@ -46,11 +46,11 @@ def parse_swudb_json(deck_text: str, handle_card: Callable) -> None:
     cards = cards + data.get("sideboard", [])
 
     for index, card in enumerate(cards, start=1):
-        card_number = card.get("id")
+        card_id = card.get("id")
         quantity = card.get("count", 1)
-        name, title = fetch_name_and_title(card_number)
+        name, title = fetch_name_and_title(card_id)
 
-        print(f'Index: {index}, quantity: {quantity}, name: {name}, title: {title}, card number: {card_number}')
+        print(f'Index: {index}, quantity: {quantity}, card ID: {card_id}, name: {name}, title: {title}')
         handle_card(index, name, title, quantity)
 
 def parse_melee(deck_text: str, handle_card: Callable) -> None:

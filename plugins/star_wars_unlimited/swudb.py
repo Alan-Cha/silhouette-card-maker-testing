@@ -21,26 +21,29 @@ def request_swudb(query: str) -> Response:
 
     return r
 
-def fetch_name_and_title(card_number: str) -> card_tuple:
-    card_number_pattern = compile(r'([A-Z]+)_(\d+)')
+def fetch_name_and_title(card_id: str) -> card_tuple:
+    card_id_pattern = compile(r'([A-Z]+)_(\d+)')
     card_name_dual_patten = compile(r'(.+) \/\/.+') # Chancellor Palpatine // Darth Sidious from TWI_017
+
     # Query for card name and title
-    if card_number != '': # Fetch card art by card number
-        match = card_number_pattern.match(card_number)
-        if match:
-            set_id = match.group(1).strip().lower()
-            set_number = int(match.group(2).strip())
+    match = card_id_pattern.match(card_id)
+    if match:
+        set_id = match.group(1).strip().lower()
+        set_number = int(match.group(2).strip())
 
-            # Query for card name
-            json = request_swudb(SWUDB_CARD_NUMBER_URL_TEMPLATE.format(set_id=set_id, set_number=set_number)).json()
-            name = json.get('Name')
-            name_match = card_name_dual_patten.match(name)
-            if name_match:
-                name = name_match.group(1).strip()
+        # Query for card name
+        json = request_swudb(SWUDB_CARD_NUMBER_URL_TEMPLATE.format(set_id=set_id, set_number=set_number)).json()
+        name = json.get('Name')
+        name_match = card_name_dual_patten.match(name)
+        if name_match:
+            name = name_match.group(1).strip()
 
-            title = json.get('Subtitle') or '' if json.get('Type') != 'Base' else ''
+        title = json.get('Subtitle') or '' if json.get('Type') != 'Base' else ''
 
-            return (name, title)
+        return (name, title)
+    
+    else:
+        raise Exception(f'Cannot parse card ID: "{card_id}"')
 
 def fetch_card(
     index: int,
