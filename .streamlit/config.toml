@@ -1,0 +1,9 @@
+[theme]
+base="dark"
+
+[server]
+showEmailPrompt = false
+runOnSave = true
+
+[browser]
+gatherUsageStats = false

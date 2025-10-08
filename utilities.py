@@ -3,6 +3,9 @@ import itertools
 import json
 import math
 import os
+import click
+import pandas as pd
+import streamlit as st
 from pathlib import Path
 import re
 from typing import Dict, List
@@ -14,9 +17,53 @@ from pydantic import BaseModel
 
 # Specify directory locations
 asset_directory = 'assets'
-
 layouts_filename = 'layouts.json'
 layouts_path = os.path.join(asset_directory, layouts_filename)
+LAYOUTS_JSON_PATH = "./assets/layouts.json"
+OFFSET_JSON_PATH = "./calibration/data/offset_data.json"
+USERPREFS_JSON_PATH = "./userprefs.json"
+HELP_DOCUMENTATION_URL = 'https://alan-cha.github.io/silhouette-card-maker/'
+
+# Plugin directory name to user-friendly name mapping
+PLUGIN_DISPLAY_NAMES = {
+    "altered": "Altered",
+    "digimon": "Digimon",
+    "flesh_and_blood": "Flesh and Blood", 
+    "grand_archive": "Grand Archive",
+    "gundam": "Gundam",
+    "lorcana": "Lorcana",
+    "mtg": "Magic: The Gathering",
+    "netrunner": "Netrunner",
+    "one_piece": "One Piece",
+    "riftbound": "Riftbound",
+    "yugioh": "Yu-Gi-Oh!"
+}
+
+def get_plugin_display_name(plugin_dir_name: str) -> str:
+    """
+    Get the user-friendly display name for a plugin directory name.
+    
+    Args:
+        plugin_dir_name: The directory name of the plugin (e.g., "mtg", "flesh_and_blood")
+        
+    Returns:
+        User-friendly display name (e.g., "Magic: The Gathering", "Flesh and Blood")
+    """
+    return PLUGIN_DISPLAY_NAMES.get(plugin_dir_name, plugin_dir_name.replace("_", " ").title())
+
+def get_plugin_directory_name(display_name: str) -> str:
+    """
+    Get the plugin directory name from a user-friendly display name.
+    
+    Args:
+        display_name: The user-friendly display name (e.g., "Magic: The Gathering")
+        
+    Returns:
+        Plugin directory name (e.g., "mtg")
+    """
+    # Create reverse mapping
+    reverse_mapping = {v: k for k, v in PLUGIN_DISPLAY_NAMES.items()}
+    return reverse_mapping.get(display_name, display_name.lower().replace(" ", "_"))
 
 class CardSize(str, Enum):
     STANDARD = "standard"
@@ -58,6 +105,10 @@ class PaperLayout(BaseModel):
 class Layouts(BaseModel):
     card_sizes: Dict[CardSize, CardLayoutSize]
     paper_layouts: Dict[PaperSize, PaperLayout]
+    
+class OffsetData(BaseModel):
+    x_offset: int
+    y_offset: int
 
 # Known junk files across OSes
 EXTRANEOUS_FILES = {
@@ -68,6 +119,7 @@ EXTRANEOUS_FILES = {
 }
 
 def parse_crop_string(crop_string: str | None, card_width: int, card_height: int) -> tuple[float, float]:
+    
     """
     Calculates crop based on various formats.
 
@@ -75,7 +127,7 @@ def parse_crop_string(crop_string: str | None, card_width: int, card_height: int
     "3mm" -> calls function to determine mm crop
     "3in" -> calls function to determine in crop
     """
-    if crop_string is None:
+    if crop_string is None or not crop_string:
         return 0, 0
 
     crop_string = crop_string.strip().lower()
@@ -101,6 +153,115 @@ def parse_crop_string(crop_string: str | None, card_width: int, card_height: int
         return num, num
 
     raise ValueError(f"Invalid crop format: '{crop_string}'")
+def manage_json_file(json_path: str, section=None, edits=None):
+    """
+    Reads or writes edits to a section of layouts.json.
+    If edits is None, returns the section.
+    If edits is provided, updates the section and writes the file.
+    """
+    with open(json_path, "r", encoding="utf8") as f:
+        data = json.load(f)
+
+    if edits is None:
+        if section is None:
+            return data
+        # Just read and return the section
+        return data.get(section, None)
+    else:
+        # Update the section and write back
+        if section is None:
+            data = edits
+        else:
+            data[section] = edits
+
+        with open(json_path, "w", encoding="utf8") as f:
+            json.dump(data, f, indent=4)
+        reload_jsons()
+
+def reload_jsons():
+    layouts_json = manage_json_file(LAYOUTS_JSON_PATH)
+    try:
+        offsets_data = load_saved_offset(path=OFFSET_JSON_PATH)
+    except:
+        pass
+    if layouts_json is not None:
+        st.session_state.df = pd.read_json(LAYOUTS_JSON_PATH)
+        st.session_state.card_sizes_from_layouts = layouts_json["card_sizes"]
+        st.session_state.paper_layouts_from_layouts = layouts_json["paper_layouts"]
+    if offsets_data is not None:
+        st.session_state.offsets_data = offsets_data
+
+def validate_gen_options(options_dict):
+    if options_dict['front_dir_path'] is None:
+        options_dict['front_dir_path'] = ""
+    if options_dict['back_dir_path'] is None:
+        options_dict['back_dir_path'] = ""
+    if options_dict['double_sided_dir_path'] is None:
+        options_dict['double_sided_dir_path'] = ""
+    if options_dict['output_path'] is None:
+        options_dict['output_path'] = ""
+    if options_dict['output_images'] is None:
+        options_dict['output_images'] = False
+    if options_dict['card_size'] is None:
+        options_dict['card_size'] = ""
+    if options_dict['paper_size'] is None:
+        options_dict['paper_size'] = ""
+    if options_dict['only_fronts'] is None:
+        options_dict['only_fronts'] = False
+    #if options_dict.get('crop'):
+    #    temp = options_dict['crop']
+    #    del options_dict['crop']
+    #    options_dict['crop_string'] = temp
+    #if options_dict['crop'] is None:
+    #    options_dict['crop'] = ""
+    if options_dict['extend_corners'] is None:
+        options_dict['extend_corners'] = 0
+    if options_dict['ppi'] is None:
+        options_dict['ppi'] = 300
+    if options_dict['quality'] is None:
+        options_dict['quality'] = 100
+    #if options_dict['skip_indices'] is None:
+    #    options_dict['skip_indices'] = []
+    if options_dict['load_offset'] is None:
+        options_dict['load_offset'] = False
+    if options_dict['name'] is None:
+        options_dict['name'] = ""
+    return options_dict
+
+def get_click_command_options(click_command):
+    """
+    Returns a list of dicts with parameter names and their default values from a click command.
+    
+    """
+    # This is dumb, I could have just called the function name + .params, 
+    
+    options = []
+    for param in click_command.params:
+        if isinstance(param, click.Option):
+            options.append(
+                {
+                    "name": param.name,
+                    "default": param.default,
+                    "help": param.help,
+                    "is_flag": param.is_flag,
+                    "type": param.type,
+                    "show_default": param.show_default,
+                    "value": param.default,
+                    "required": param.required,
+                    "expose_value": param.expose_value
+                }
+            )
+    return options
+
+def convert_click_options_to_dict(options):
+    my_dict = {}
+    
+    for o in options:
+        if (o['value'] is not None) and (not o['value'] == ""):
+            my_dict[o['name']] = o['value']
+        else:
+            my_dict[o['name']] = ''
+    return my_dict
 
 def convertInToCrop(crop_in: float, card_width_px: int, card_height_px: int) -> tuple[float, float]:
     # Convert from pixels to physical mm using DPI
@@ -612,10 +773,6 @@ def generate_pdf(
                 pages[0].save(output_path, format='PDF', save_all=True, append_images=pages[1:], resolution=math.floor(300 * ppi_ratio), speed=0, subsampling=0, quality=quality)
                 print(f'Generated PDF: {output_path}')
 
-class OffsetData(BaseModel):
-    x_offset: int
-    y_offset: int
-
 def save_offset(x_offset, y_offset) -> None:
     # Create the directory if it doesn't exist
     os.makedirs('data', exist_ok=True)
@@ -626,9 +783,24 @@ def save_offset(x_offset, y_offset) -> None:
 
     print('Offset data saved!')
 
-def load_saved_offset() -> OffsetData:
-    if os.path.exists('data/offset_data.json'):
-        with open('data/offset_data.json', 'r') as offset_file:
+def load_user_prefs():
+    if os.path.exists('/userprefs.json'):
+        with open('/userprefs.json', 'r') as userpref_file:
+            try:
+                data = json.load(userpref_file)
+                return data
+
+            except json.JSONDecodeError as e:
+                print(f'Cannot decode user preferences JSON: {e}')
+
+            except ValidationErr as e:
+                print(f'Cannot validate user preferences data: {e}.')
+
+    return None
+
+def load_saved_offset(path='calibration/data/offset_data.json') -> OffsetData:
+    if os.path.exists(path):
+        with open(path, 'r') as offset_file:
             try:
                 data = json.load(offset_file)
                 return OffsetData(**data)

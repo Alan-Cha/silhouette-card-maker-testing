@@ -6,3 +6,7 @@ pydantic==2.11.1
 Requests==2.32.3
 pypdfium2==4.30.0
 split-image==2.0.1
+streamlit==1.49.0
+pandas==2.3.2
+streamlit-option-menu==0.4.0
+streamlit-extras==0.7.7
