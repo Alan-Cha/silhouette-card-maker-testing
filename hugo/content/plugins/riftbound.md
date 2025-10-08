@@ -1,6 +1,6 @@
 ---
 title: 'Riftbound'
-weight: 15
+weight: 100
 ---
 
 This plugin reads a decklist, fetches the card image from either [Piltover Archive](https://piltoverarchive.com/) or [Riftmana](https://riftmana.com/), and puts the card images into the proper `game/` directories.

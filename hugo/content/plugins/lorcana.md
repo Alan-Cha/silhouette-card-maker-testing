@@ -1,6 +1,6 @@
 ---
 title: 'Lorcana'
-weight: 10
+weight: 70
 ---
 
 This plugin reads a decklist, automatically fetches card art from [Lorcast](https://lorcast.com) and puts them in the proper `game/` directories.

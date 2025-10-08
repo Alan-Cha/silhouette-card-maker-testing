@@ -127,11 +127,11 @@ The [Altered plugin](plugins/altered/README.md) supports **Ajordat** format.
 
 The [Digimon plugin](plugins/digimon/README.md) supports **Tabletop Simulator**, **Digimoncard.io**, **Digimoncard.dev**, **Digimoncard.app**, **DigimonMeta**, and **Untap** formats.
 
+The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
+
 The [Grand Archive plugin](plugins/grand_archive/README.md) supports **Omnideck** format.
 
 The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Limitless TCG**, **Egman Events**, and **ExBurst** formats.
-
-The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
 
 The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
 

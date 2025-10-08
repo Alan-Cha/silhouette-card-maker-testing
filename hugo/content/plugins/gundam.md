@@ -1,6 +1,6 @@
 ---
 title: 'Gundam'
-weight: 45
+weight: 60
 ---
 
 This plugin reads a decklist and puts the card images into the proper `game/` directories.

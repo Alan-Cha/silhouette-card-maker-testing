@@ -1,6 +1,6 @@
 ---
 title: 'Star Wars Unlimited'
-weight: 30
+weight: 110
 ---
 
 This plugin reads a decklist from [SWUDB](https://swudb.com/) and puts the card images into the proper `game/` directories.

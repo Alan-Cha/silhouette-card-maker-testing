@@ -1,6 +1,6 @@
 ---
 title: 'Digimon'
-weight: 40
+weight: 30
 ---
 
 This plugin reads a decklist, fetches the card images, and puts the card images into the proper `game/` directories.

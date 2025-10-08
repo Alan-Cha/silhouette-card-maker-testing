@@ -1,6 +1,6 @@
 ---
 title: 'Netrunner'
-weight: 25
+weight: 80
 ---
 
 This plugin reads a decklist, fetches the card images from [NRO Proxy](https://proxy.nro.run/), and puts the card images into the proper `game/` directories.

@@ -1,6 +1,6 @@
 ---
 title: 'One Piece'
-weight: 40
+weight: 90
 ---
 
 This plugin reads a decklist, automatically fetches card art, and puts them in the proper `game/` directories.

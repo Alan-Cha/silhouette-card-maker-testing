@@ -1,6 +1,6 @@
 ---
 title: 'Flesh and Blood'
-weight: 35
+weight: 40
 ---
 
 This plugin reads a decklist, fetches card art from [Fabrary](https://fabrary.net/), and puts the card images into the proper `game/` directories.
