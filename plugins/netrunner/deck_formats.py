@@ -61,8 +61,8 @@ def parse_bbcode(deck_text: str, handle_card: Callable) -> None:
         match = pattern.match(line)
         if match:
             name = match.group(3).strip()
-            url = match.group(2).strip()
             set = match.group(4).strip()
+            url = match.group(2).strip()
             quantity = int(match.group(1).strip())
 
             return (name, set, url, quantity)
@@ -70,8 +70,8 @@ def parse_bbcode(deck_text: str, handle_card: Callable) -> None:
             match = identity_pattern.match(line)
             if match:
                 name = match.group(2).strip()
-                url = match.group(1).strip()
                 set = match.group(3).strip()
+                url = match.group(1).strip()
 
                 return (name, set, url, 1)
 
@@ -79,7 +79,7 @@ def parse_bbcode(deck_text: str, handle_card: Callable) -> None:
     parse_deck_helper(deck_text, is_bbcode_line, extract_bbcode_card_data, handle_card)
 
 def parse_markdown(deck_text: str, handle_card: Callable) -> None:
-    pattern = compile(r'^(?:\* (\d+)x )?\[(.+)\]\((.+)\) _\((.+)\)_.*$') # '* {Quantity}x [{Name}]({URL}) _({Set})_' where Quantity is optional to support Identitiy cards
+    pattern = compile(r'^(?:\* (\d+)x )?\[(.+)\]\((.+)\) _\((.+)\)_.*$') # '* {Quantity}x [{Name}]({URL}) _({Set})_' where Quantity is optional to support Identity cards
 
     def is_markdown_line(line) -> bool:
         return bool(pattern.match(line))
