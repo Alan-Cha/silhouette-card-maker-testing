@@ -21,7 +21,7 @@ layouts_filename = 'layouts.json'
 layouts_path = os.path.join(asset_directory, layouts_filename)
 
 # Specify valid mimetypes for images
-valid_mimetypes = ("image/jpeg", "image/png")
+valid_mimetypes = ("image/jpeg", "image/png", "image/tiff")
 
 class CardSize(str, Enum):
     STANDARD = "standard"
