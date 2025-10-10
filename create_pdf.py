@@ -4,6 +4,13 @@ import re
 import click
 from utilities import Registration, CardSize, PaperSize, generate_pdf
 
+# Try to import upscale functionality (optional dependency)
+try:
+    from upscale import upscale_for_create_pdf
+    UPSCALE_AVAILABLE = True
+except ImportError:
+    UPSCALE_AVAILABLE = False
+
 front_directory = os.path.join('game', 'front')
 back_directory = os.path.join('game', 'back')
 double_sided_directory = os.path.join('game', 'double_sided')
@@ -28,6 +35,7 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--load_offset", default=False, is_flag=True, help="Apply saved offsets. See `offset_pdf.py` for more information.")
 @click.option("--skip", type=click.IntRange(min=0), multiple=True, help="Skip a card based on its index. Useful for registration issues. Examples: 0, 4.")
 @click.option("--name", help="Label each page of the PDF with a name.")
+@click.option("--upscale", default=False, is_flag=True, help="Upscale images to 1200 DPI before creating PDF using Real-ESRGAN.")
 @click.version_option("1.5.1")
 
 def cli(
@@ -46,8 +54,24 @@ def cli(
     quality,
     skip,
     load_offset,
-    name
+    name,
+    upscale
 ):
+    # Upscale images if requested
+    if upscale:
+        if not UPSCALE_AVAILABLE:
+            print("Warning: Upscaling dependencies not installed. Skipping upscaling.")
+            print("Install with: pip install torch torchvision basicsr facexlib gfpgan realesrgan opencv-python")
+            print()
+        else:
+            upscale_for_create_pdf(
+                front_dir_path,
+                back_dir_path,
+                double_sided_dir_path,
+                card_size,
+                target_dpi=1200
+            )
+    
     generate_pdf(
         front_dir_path,
         back_dir_path,

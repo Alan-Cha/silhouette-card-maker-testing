@@ -26,6 +26,7 @@ Proxies should be easily identifiable as proxies. You may not use this repo to c
 * [tutorial](https://alan-cha.github.io/silhouette-card-maker/tutorial/)
 * [supply list](https://alan-cha.github.io/silhouette-card-maker/tutorial/supplies/)
 * [create_pdf.py](#create_pdfpy), a script for laying out your cards in a PDF
+* [upscale.py](#upscalepy), a script for upscaling card images to high DPI using AI
 * [offset_pdf.py](#offset_pdfpy), a script for adding an offset to your PDF
 * [cutting_templates/](cutting_templates/), a directory containing Silhoutte Studio cutting templates
 * [calibration/](calibration/), a directory containing offset calibration sheets
@@ -217,6 +218,8 @@ Options:
   --skip INTEGER RANGE            Skip a card based on its index. Useful for
                                   registration issues. Examples: 0, 4.  [x>=0]
   --name TEXT                     Label each page of the PDF with a name.
+  --upscale                       Upscale images to 1200 DPI before creating
+                                  PDF using Real-ESRGAN.
   --version                       Show the version and exit.
   --help                          Show this message and exit.
 ```
@@ -246,6 +249,107 @@ Produce a 600 pixels per inch (PPI) file with minimal compression.
 ```sh
 python create_pdf.py --ppi 600 --quality 100
 ```
+
+## upscale.py
+
+Card images fetched from online sources like Scryfall often come in lower resolutions (typically 300-600 DPI). For optimal print quality, especially when cutting precise card edges, higher resolution images are recommended.
+
+`upscale.py` is a CLI tool that uses AI-powered upscaling (Real-ESRGAN) to intelligently increase image resolution to 1200 DPI while preserving and enhancing image quality. It automatically detects and utilizes GPU acceleration when available.
+
+### Basic Usage
+
+First, ensure you have the upscaling dependencies installed:
+
+```sh
+pip install torch torchvision basicsr facexlib gfpgan realesrgan opencv-python
+```
+
+**Note:** For GPU support on Windows with NVIDIA GPUs, you may need to install PyTorch with CUDA support separately:
+```sh
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+```
+
+After fetching card images using a plugin (e.g., MTG plugin), upscale them:
+
+```sh
+python upscale.py
+```
+
+The script will:
+- Automatically detect GPU availability (CUDA for NVIDIA, MPS for Apple Silicon)
+- Calculate current DPI based on card dimensions
+- Only upscale images that are below the target DPI (smart upscaling)
+- Preserve image formats and transparency
+
+### Integration with create_pdf.py
+
+You can also upscale images automatically when creating PDFs using the `--upscale` flag:
+
+```sh
+python create_pdf.py --upscale
+```
+
+This will upscale all images to 1200 DPI before laying them out in the PDF.
+
+### CLI Options
+
+```
+Usage: upscale.py [OPTIONS]
+
+Options:
+  --front_dir_path TEXT           The path to the directory containing the
+                                  card fronts.  [default: game/front]
+  --back_dir_path TEXT            The path to the directory containing one or
+                                  more card backs.  [default: game/back]
+  --double_sided_dir_path TEXT    The path to the directory containing card
+                                  backs for double-sided cards.  [default:
+                                  game/double_sided]
+  --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|tarot|domino|domino_square]
+                                  The card size for DPI calculation.
+                                  [default: standard]
+  --target_dpi INTEGER RANGE      Target DPI for upscaling.  [default: 1200;
+                                  x>=300]
+  --force                         Force upscale even if already at target
+                                  DPI.
+  --use_simple                    Use simple Lanczos upscaling instead of
+                                  Real-ESRGAN.
+  --gpu_id INTEGER                GPU device ID (None=auto, -1=CPU).
+  --version                       Show the version and exit.
+  --help                          Show this message and exit.
+```
+
+### Examples
+
+Upscale poker-sized cards to 1200 DPI:
+
+```sh
+python upscale.py --card_size poker --target_dpi 1200
+```
+
+Force upscale all images, even if they're already high resolution:
+
+```sh
+python upscale.py --force
+```
+
+Use CPU instead of GPU (useful if you encounter GPU memory issues):
+
+```sh
+python upscale.py --gpu_id -1
+```
+
+Use simple Lanczos upscaling without AI (faster but lower quality):
+
+```sh
+python upscale.py --use_simple
+```
+
+### Performance Notes
+
+- **GPU Acceleration**: The script will automatically use CUDA (NVIDIA) or MPS (Apple Silicon) if available, providing 10-50x speedup over CPU
+- **Processing Time**: On GPU, upscaling typically takes 1-3 seconds per image; on CPU, 10-30 seconds per image
+- **Memory Usage**: GPU processing requires 2-4GB VRAM; reduce `tile` size in the code if you encounter memory errors
+- **Quality**: Real-ESRGAN provides superior quality compared to traditional upscaling methods, especially for detailed card artwork
 
 ## offset_pdf.py
 
