@@ -36,6 +36,8 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--skip", type=click.IntRange(min=0), multiple=True, help="Skip a card based on its index. Useful for registration issues. Examples: 0, 4.")
 @click.option("--name", help="Label each page of the PDF with a name.")
 @click.option("--upscale", default=False, is_flag=True, help="Upscale images to 1200 DPI before creating PDF using Real-ESRGAN.")
+@click.option("--saturation", default=1.0, type=click.FloatRange(min=0.0, max=2.0), show_default=True, help="Saturation multiplier (1.0=no change, >1.0=boost, <1.0=reduce).")
+@click.option("--contrast", default=1.0, type=click.FloatRange(min=0.0, max=2.0), show_default=True, help="Contrast multiplier (1.0=no change, >1.0=boost, <1.0=reduce).")
 @click.version_option("1.5.1")
 
 def cli(
@@ -55,7 +57,9 @@ def cli(
     skip,
     load_offset,
     name,
-    upscale
+    upscale,
+    saturation,
+    contrast
 ):
     # Upscale images if requested
     if upscale:
@@ -88,7 +92,9 @@ def cli(
         quality,
         skip,
         load_offset,
-        name
+        name,
+        saturation,
+        contrast
     )
 
 if __name__ == '__main__':

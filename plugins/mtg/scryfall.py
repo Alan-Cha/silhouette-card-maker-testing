@@ -3,6 +3,9 @@ from typing import List, Set, Tuple
 import re
 import requests
 import time
+from io import BytesIO
+from PIL import Image
+import numpy as np
 
 double_sided_layouts = ['transform', 'modal_dfc']
 
@@ -19,6 +22,71 @@ def request_scryfall(
 
     return r
 
+def fix_card_borders(image_bytes: bytes, border_width: int = 5, brightness_threshold: int = 50) -> bytes:
+    """
+    Detect and fix grey/dark blue borders on MTG cards by painting them pure black.
+    
+    Args:
+        image_bytes: Image data in bytes
+        border_width: Width of border to analyze/fix in pixels
+        brightness_threshold: Maximum brightness (0-255) to consider as border
+    
+    Returns:
+        Fixed image data in bytes
+    """
+    # Load image from bytes
+    img = Image.open(BytesIO(image_bytes))
+    
+    # Convert to numpy array for processing
+    img_array = np.array(img)
+    height, width = img_array.shape[:2]
+    
+    # Check if image has alpha channel
+    has_alpha = img_array.shape[2] == 4 if len(img_array.shape) == 3 else False
+    
+    # Define border regions to check/fix
+    # Top border
+    top_region = img_array[0:border_width, :, :3] if has_alpha else img_array[0:border_width, :, :]
+    # Bottom border
+    bottom_region = img_array[height-border_width:height, :, :3] if has_alpha else img_array[height-border_width:height, :, :]
+    # Left border
+    left_region = img_array[:, 0:border_width, :3] if has_alpha else img_array[:, 0:border_width, :]
+    # Right border
+    right_region = img_array[:, width-border_width:width, :3] if has_alpha else img_array[:, width-border_width:width, :]
+    
+    # Calculate brightness for each region (average of RGB channels)
+    def get_brightness(region):
+        return np.mean(region, axis=2)
+    
+    # Paint dark borders black
+    def paint_border_black(region, img_slice):
+        brightness = get_brightness(region)
+        # Find pixels that are dark but not already black
+        dark_mask = (brightness > 0) & (brightness < brightness_threshold)
+        
+        if has_alpha:
+            # Paint RGB channels black, preserve alpha
+            img_slice[:, :, 0][dark_mask] = 0  # R
+            img_slice[:, :, 1][dark_mask] = 0  # G
+            img_slice[:, :, 2][dark_mask] = 0  # B
+        else:
+            # Paint all channels black
+            img_slice[dark_mask] = 0
+    
+    # Apply border fix to each edge
+    paint_border_black(top_region, img_array[0:border_width, :])
+    paint_border_black(bottom_region, img_array[height-border_width:height, :])
+    paint_border_black(left_region, img_array[:, 0:border_width])
+    paint_border_black(right_region, img_array[:, width-border_width:width])
+    
+    # Convert back to PIL Image
+    fixed_img = Image.fromarray(img_array.astype(np.uint8))
+    
+    # Save to bytes
+    output = BytesIO()
+    fixed_img.save(output, format='PNG')
+    return output.getvalue()
+
 def fetch_card_art(
     index: int,
     quantity: int,
@@ -29,12 +97,16 @@ def fetch_card_art(
     layout: str,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
+    fix_borders: bool = False
 ) -> None:
     # Query for the front side
     card_front_image_query = f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
     card_art = request_scryfall(card_front_image_query).content
     if card_art is not None:
+        # Apply border fix if requested
+        if fix_borders:
+            card_art = fix_card_borders(card_art)
 
         # Save image based on quantity
         for counter in range(quantity):
@@ -48,6 +120,9 @@ def fetch_card_art(
         card_back_image_query = f'{card_front_image_query}&face=back'
         card_art = request_scryfall(card_back_image_query).content
         if card_art is not None:
+            # Apply border fix if requested
+            if fix_borders:
+                card_art = fix_card_borders(card_art)
 
             # Save image based on quantity
             for counter in range(quantity):
@@ -103,7 +178,9 @@ def fetch_card(
     prefer_extra_art: bool,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
+    
+    fix_borders: bool = False
 ):
     if not ignore_set_and_collector_number and card_set != "" and card_collector_number != "":
         card_info_query = f"https://api.scryfall.com/cards/{card_set}/{card_collector_number}"
@@ -111,7 +188,7 @@ def fetch_card(
         # Query for card info
         card_json = request_scryfall(card_info_query).json()
 
-        fetch_card_art(index, quantity, remove_nonalphanumeric(card_json['name']), card_set, card_collector_number, card_json['layout'], front_img_dir, double_sided_dir)
+        fetch_card_art(index, quantity, remove_nonalphanumeric(card_json['name']), card_set, card_collector_number, card_json['layout'], front_img_dir, double_sided_dir, fix_borders)
 
     else:
         if name == "":
@@ -167,7 +244,8 @@ def fetch_card(
             collector_number,
             card_json['layout'],
             front_img_dir,
-            double_sided_dir
+            double_sided_dir,
+            fix_borders
         )
 
 def get_handle_card(
@@ -180,7 +258,9 @@ def get_handle_card(
     prefer_extra_art: bool,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
+    
+    fix_borders: bool = False
 ):
     def configured_fetch_card(index: int, name: str, card_set: str = None, card_collector_number: int = None, quantity: int = 1):
         fetch_card(
@@ -200,6 +280,8 @@ def get_handle_card(
             prefer_extra_art,
 
             front_img_dir,
-            double_sided_dir
+            double_sided_dir,
+            
+            fix_borders
         )
     return configured_fetch_card

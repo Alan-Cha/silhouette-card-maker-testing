@@ -40,8 +40,10 @@ Options:
                                   preferred sets.
   --prefer_showcase               Prefer fetching cards with showcase
                                   treatment
-  --prefer_extra_art               Prefer fetching cards with full art,
+  --prefer_extra_art              Prefer fetching cards with full art,
                                   borderless, or extended art.
+  --fix_borders                   Fix grey/dark blue borders by painting them
+                                  pure black.
   --help                          Show this message and exit.
 ```
 
@@ -75,6 +77,12 @@ Use a Deckstats decklist named `eldraine_commander.txt`. Use the set and collect
 
 ```sh
 python plugins/mtg/fetch.py game/decklist/eldraine_commander.txt deckstats -s eld -s woe
+```
+
+Fix grey or dark blue borders on cards by painting them pure black for a cleaner look.
+
+```sh
+python plugins/mtg/fetch.py game/decklist/deck.txt mtga --fix_borders
 ```
 
 ## Formats

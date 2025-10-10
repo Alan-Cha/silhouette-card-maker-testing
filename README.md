@@ -220,6 +220,12 @@ Options:
   --name TEXT                     Label each page of the PDF with a name.
   --upscale                       Upscale images to 1200 DPI before creating
                                   PDF using Real-ESRGAN.
+  --saturation FLOAT RANGE        Saturation multiplier (1.0=no change,
+                                  >1.0=boost, <1.0=reduce).  [default: 1.0;
+                                  0.0<=x<=2.0]
+  --contrast FLOAT RANGE          Contrast multiplier (1.0=no change,
+                                  >1.0=boost, <1.0=reduce).  [default: 1.0;
+                                  0.0<=x<=2.0]
   --version                       Show the version and exit.
   --help                          Show this message and exit.
 ```
@@ -248,6 +254,18 @@ Produce a 600 pixels per inch (PPI) file with minimal compression.
 
 ```sh
 python create_pdf.py --ppi 600 --quality 100
+```
+
+Boost saturation and contrast for more vibrant cards.
+
+```sh
+python create_pdf.py --saturation 1.2 --contrast 1.15
+```
+
+Combine upscaling with image enhancements.
+
+```sh
+python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
 ```
 
 ## upscale.py
