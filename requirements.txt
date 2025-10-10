@@ -6,8 +6,15 @@ pydantic==2.11.1
 Requests==2.32.3
 pypdfium2==4.30.0
 split-image==2.0.1
-torch==2.2.0
-torchvision==0.17.0
+
+# Real-ESRGAN dependencies
+# For AMD GPU on Windows, install torch-directml instead:
+#   pip install torch-directml
+# For NVIDIA GPU, install CUDA version:
+#   pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu118
+torch-directml==0.2.5.dev240914; platform_system == "Windows"
+torch==2.4.1; platform_system != "Windows"
+torchvision==0.19.1; platform_system != "Windows"
 basicsr==1.4.2
 facexlib==0.3.0
 gfpgan==1.3.8

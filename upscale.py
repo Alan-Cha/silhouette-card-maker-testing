@@ -50,15 +50,27 @@ def setup_realesrgan_model(gpu_id=None):
         if torch.cuda.is_available():
             device = 'cuda'
             gpu_id = 0
-            print(f"GPU detected: Using CUDA")
+            print(f"GPU detected: Using CUDA (NVIDIA)")
         elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
             device = 'mps'
             gpu_id = 0
             print(f"GPU detected: Using Apple MPS")
         else:
-            device = 'cpu'
-            gpu_id = None
-            print("No GPU detected: Using CPU (this will be slower)")
+            # Check for DirectML (AMD/Intel on Windows)
+            try:
+                import torch_directml
+                if torch_directml.is_available():
+                    device = torch_directml.device()
+                    gpu_id = 0
+                    print(f"GPU detected: Using DirectML (AMD/Intel)")
+                else:
+                    device = 'cpu'
+                    gpu_id = None
+                    print("No GPU detected: Using CPU (this will be slower)")
+            except ImportError:
+                device = 'cpu'
+                gpu_id = None
+                print("No GPU detected: Using CPU (this will be slower)")
     elif gpu_id == -1:
         device = 'cpu'
         gpu_id = None
@@ -73,17 +85,34 @@ def setup_realesrgan_model(gpu_id=None):
     # Determine model path (download if needed)
     model_path = 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
     
-    # Initialize upsampler
-    upsampler = RealESRGANer(
-        scale=4,
-        model_path=model_path,
-        model=model,
-        tile=400,  # Tile size for processing (adjust based on GPU memory)
-        tile_pad=10,
-        pre_pad=0,
-        half=True if device == 'cuda' else False,  # FP16 for CUDA
-        gpu_id=gpu_id
-    )
+    # For DirectML, we need to handle device differently
+    if isinstance(device, str) and device not in ['cuda', 'cpu', 'mps']:
+        # DirectML or other custom device
+        # Move model to DirectML device
+        model = model.to(device)
+        # Initialize upsampler with cpu as device (model is already on correct device)
+        upsampler = RealESRGANer(
+            scale=4,
+            model_path=model_path,
+            model=model,
+            tile=400,
+            tile_pad=10,
+            pre_pad=0,
+            half=False,  # DirectML doesn't support FP16 the same way
+            device=device  # Pass device directly instead of gpu_id
+        )
+    else:
+        # Initialize upsampler normally for CUDA/MPS/CPU
+        upsampler = RealESRGANer(
+            scale=4,
+            model_path=model_path,
+            model=model,
+            tile=400,  # Tile size for processing (adjust based on GPU memory)
+            tile_pad=10,
+            pre_pad=0,
+            half=True if device == 'cuda' else False,  # FP16 for CUDA
+            gpu_id=gpu_id
+        )
     
     return upsampler
 

@@ -38,7 +38,7 @@ def fix_basicsr_compatibility():
     
     # Check if already patched
     if 'try:' in content and 'from torchvision.transforms.functional import rgb_to_grayscale' in content:
-        print("✅ basicsr is already patched!")
+        print("[OK] basicsr is already patched!")
         return
     
     # Apply the patch
@@ -60,7 +60,7 @@ except ImportError:
     with open(degradations_file, 'w', encoding='utf-8') as f:
         f.write(new_content)
     
-    print(f"✅ Successfully patched: {degradations_file}")
+    print(f"[OK] Successfully patched: {degradations_file}")
     print("Real-ESRGAN should now work with newer torchvision versions!")
 
 if __name__ == '__main__':
