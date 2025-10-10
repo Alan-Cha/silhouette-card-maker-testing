@@ -288,11 +288,15 @@ Then run the compatibility fix for Real-ESRGAN:
 python fix_realesrgan.py
 ```
 
-**Note:** For GPU support on Windows with NVIDIA GPUs, install PyTorch with CUDA support:
-```sh
-pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu118
-python fix_realesrgan.py
-```
+**GPU Support:**
+- **AMD/Intel GPU on Windows:** Already included with `torch-directml` in requirements.txt
+- **NVIDIA GPU on Windows:** Install CUDA version:
+  ```sh
+  pip uninstall torch torchvision torch-directml -y
+  pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu118
+  python fix_realesrgan.py
+  ```
+- **macOS with Apple Silicon:** MPS support is automatic
 
 After fetching card images using a plugin (e.g., MTG plugin), upscale them:
 
@@ -371,7 +375,11 @@ python upscale.py --use_simple
 
 ### Performance Notes
 
-- **GPU Acceleration**: The script will automatically use CUDA (NVIDIA) or MPS (Apple Silicon) if available, providing 10-50x speedup over CPU
+- **GPU Acceleration**: The script will automatically detect and use:
+  - CUDA (NVIDIA GPUs)
+  - DirectML (AMD/Intel GPUs on Windows)
+  - MPS (Apple Silicon)
+  - Provides 10-50x speedup over CPU
 - **Processing Time**: On GPU, upscaling typically takes 1-3 seconds per image; on CPU, 10-30 seconds per image
 - **Memory Usage**: GPU processing requires 2-4GB VRAM; reduce `tile` size in the code if you encounter memory errors
 - **Quality**: Real-ESRGAN provides superior quality compared to traditional upscaling methods, especially for detailed card artwork
