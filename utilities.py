@@ -499,9 +499,16 @@ def generate_pdf(
                     num_image = num_image + 1
 
                     front_image_path = os.path.join(front_dir_path, file)
-                    front_image = Image.open(front_image_path)
-                    front_image = ImageOps.exif_transpose(front_image)
-                    front_card_images.append(front_image)
+                    try:
+                        front_image = Image.open(front_image_path)
+                        front_image.load()  # Force load to catch truncation errors early
+                        front_image = ImageOps.exif_transpose(front_image)
+                        front_card_images.append(front_image)
+                    except (OSError, IOError) as e:
+                        print(f'WARNING: Skipping corrupted image {file}: {e}')
+                        # Add a None placeholder so card count stays consistent
+                        front_card_images.append(None)
+                        continue
 
                 single_sided_front_page = reg_im.copy()
 
@@ -562,14 +569,27 @@ def generate_pdf(
                     num_image = num_image + 1
 
                     front_image_path = os.path.join(front_dir_path, file)
-                    front_image = Image.open(front_image_path)
-                    front_image = ImageOps.exif_transpose(front_image)
-                    front_card_images.append(front_image)
+                    try:
+                        front_image = Image.open(front_image_path)
+                        front_image.load()  # Force load to catch truncation errors early
+                        front_image = ImageOps.exif_transpose(front_image)
+                        front_card_images.append(front_image)
+                    except (OSError, IOError) as e:
+                        print(f'WARNING: Skipping corrupted front image {file}: {e}')
+                        front_card_images.append(None)
+                        back_card_images.append(None)
+                        continue
 
                     ds_image_path = os.path.join(double_sided_dir_path, file)
-                    ds_image = Image.open(ds_image_path)
-                    ds_image = ImageOps.exif_transpose(ds_image)
-                    back_card_images.append(ds_image)
+                    try:
+                        ds_image = Image.open(ds_image_path)
+                        ds_image.load()  # Force load to catch truncation errors early
+                        ds_image = ImageOps.exif_transpose(ds_image)
+                        back_card_images.append(ds_image)
+                    except (OSError, IOError) as e:
+                        print(f'WARNING: Skipping corrupted back image {file}: {e}')
+                        # Front was OK but back is corrupted - add None for back
+                        back_card_images.append(None)
 
                 double_sided_front_page = reg_im.copy()
                 double_sided_back_page = reg_im.copy()

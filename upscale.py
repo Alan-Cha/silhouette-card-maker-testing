@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 import json
+import tempfile
+import shutil
 
 import click
 from PIL import Image
@@ -275,15 +277,31 @@ def process_directory(
             else:
                 upscaled = upscale_image(image_path, scale_factor, upsampler)
             
-            # Save the upscaled image (overwrite original)
-            # Preserve the original format
-            file_format = os.path.splitext(image_path)[1].lower()
-            if file_format == '.jpg' or file_format == '.jpeg':
-                upscaled.save(image_path, 'JPEG', quality=95)
-            else:
-                upscaled.save(image_path)
+            # Save to temporary file first to avoid corrupting original on error
+            temp_fd, temp_path = tempfile.mkstemp(suffix=os.path.splitext(image_path)[1])
+            os.close(temp_fd)  # Close file descriptor, we'll use PIL to write
             
-            processed += 1
+            try:
+                # Preserve the original format
+                file_format = os.path.splitext(image_path)[1].lower()
+                if file_format == '.jpg' or file_format == '.jpeg':
+                    upscaled.save(temp_path, 'JPEG', quality=95)
+                else:
+                    upscaled.save(temp_path)
+                
+                # Verify the saved file can be opened
+                with Image.open(temp_path) as verify_img:
+                    verify_img.load()  # Force load to catch truncation errors
+                
+                # If successful, replace original with upscaled version
+                shutil.move(temp_path, image_path)
+                processed += 1
+                
+            except Exception as save_error:
+                # Clean up temp file
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                raise save_error  # Re-raise to be caught by outer except
             
         except Exception as e:
             print(f"  Error processing {os.path.basename(image_path)}: {e}")
