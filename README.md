@@ -279,12 +279,19 @@ Card images fetched from online sources like Scryfall often come in lower resolu
 First, ensure you have the upscaling dependencies installed:
 
 ```sh
-pip install torch torchvision basicsr facexlib gfpgan realesrgan opencv-python
+pip install -r requirements.txt
 ```
 
-**Note:** For GPU support on Windows with NVIDIA GPUs, you may need to install PyTorch with CUDA support separately:
+Then run the compatibility fix for Real-ESRGAN:
+
 ```sh
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+python fix_realesrgan.py
+```
+
+**Note:** For GPU support on Windows with NVIDIA GPUs, install PyTorch with CUDA support:
+```sh
+pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu118
+python fix_realesrgan.py
 ```
 
 After fetching card images using a plugin (e.g., MTG plugin), upscale them:

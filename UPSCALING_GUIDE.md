@@ -128,8 +128,15 @@ python upscale.py --use_simple
 ### "Real-ESRGAN dependencies not installed"
 Install the required packages:
 ```bash
-pip install torch torchvision basicsr facexlib gfpgan realesrgan opencv-python
+pip install -r requirements.txt
 ```
+
+Then run the compatibility fix:
+```bash
+python fix_realesrgan.py
+```
+
+This patches basicsr to work with torchvision 0.17.0+.
 
 ### GPU Memory Errors
 Try these solutions:
