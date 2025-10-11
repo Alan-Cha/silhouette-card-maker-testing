@@ -14,6 +14,17 @@ Watch me cut **104 cards in 26 minutes** without breaking a sweat!
 
 [![Proxying a MTG Commander Deck in 26 minutes](hugo/static/images/youtube_demo.png)](https://www.youtube.com/watch?v=RVHtqsRW8t8)
 
+## ✨ New: AI-Powered Image Enhancements
+
+Take your card quality to the next level with these new features:
+
+- **🎨 AI Upscaling**: Automatically upscale card images to 1200 DPI using Real-ESRGAN for crisp, professional prints
+- **🌈 Color Enhancement**: Boost saturation and contrast for more vibrant cards
+- **⚡ GPU Acceleration**: Automatic support for NVIDIA, AMD, Intel, and Apple Silicon GPUs
+- **🧠 Smart Processing**: Only upscales images that need it, skipping high-res images
+
+See [upscale.py](#upscalepy) and [UPSCALING_GUIDE.md](UPSCALING_GUIDE.md) for details!
+
 ## Purpose
 
 The purpose of this repo is to enable you to use a Silhouette cutting machine to create card games and proxies. Proxies are only intended to be used for casual play and playtesting.
@@ -26,6 +37,7 @@ Proxies should be easily identifiable as proxies. You may not use this repo to c
 * [tutorial](https://alan-cha.github.io/silhouette-card-maker/tutorial/)
 * [supply list](https://alan-cha.github.io/silhouette-card-maker/tutorial/supplies/)
 * [create_pdf.py](#create_pdfpy), a script for laying out your cards in a PDF
+* [upscale.py](#upscalepy), a script for upscaling card images to high DPI using AI
 * [offset_pdf.py](#offset_pdfpy), a script for adding an offset to your PDF
 * [cutting_templates/](cutting_templates/), a directory containing Silhoutte Studio cutting templates
 * [calibration/](calibration/), a directory containing offset calibration sheets
@@ -217,6 +229,17 @@ Options:
   --skip INTEGER RANGE            Skip a card based on its index. Useful for
                                   registration issues. Examples: 0, 4.  [x>=0]
   --name TEXT                     Label each page of the PDF with a name.
+  --upscale                       Upscale images before creating PDF using
+                                  Real-ESRGAN.
+  --upscale_target_dpi INTEGER RANGE
+                                  Target DPI when upscaling (used with
+                                  --upscale).  [default: 1200; x>=300]
+  --saturation FLOAT RANGE        Saturation multiplier (1.0=no change,
+                                  >1.0=boost, <1.0=reduce).  [default: 1.0;
+                                  0.0<=x<=2.0]
+  --contrast FLOAT RANGE          Contrast multiplier (1.0=no change,
+                                  >1.0=boost, <1.0=reduce).  [default: 1.0;
+                                  0.0<=x<=2.0]
   --version                       Show the version and exit.
   --help                          Show this message and exit.
 ```
@@ -246,6 +269,145 @@ Produce a 600 pixels per inch (PPI) file with minimal compression.
 ```sh
 python create_pdf.py --ppi 600 --quality 100
 ```
+
+### Image Enhancement Features
+
+Boost saturation and contrast for more vibrant, professional-looking cards:
+
+```sh
+python create_pdf.py --saturation 1.2 --contrast 1.15
+```
+
+**When to use:**
+- Cards look washed out or dull
+- Want more vibrant colors for better visual appeal
+- Compensating for printer color limitations
+
+Combine upscaling with image enhancements for best results:
+
+```sh
+python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
+```
+
+Upscale to a custom target DPI (e.g., 1500 DPI for extra high quality):
+
+```sh
+python create_pdf.py --upscale --upscale_target_dpi 1500
+```
+
+**Recommended values:**
+- `--saturation 1.0-1.3` - Subtle to moderate boost
+- `--contrast 1.0-1.2` - Subtle to moderate boost
+- Start with 1.1 for both and adjust to taste
+
+## upscale.py
+
+Card images fetched from online sources like Scryfall often come in lower resolutions (typically 300-600 DPI). For optimal print quality, especially when cutting precise card edges, higher resolution images are recommended.
+
+`upscale.py` is a CLI tool that uses AI-powered upscaling (Real-ESRGAN) to intelligently increase image resolution to 1200 DPI while preserving and enhancing image quality. It automatically detects and utilizes GPU acceleration when available.
+
+### Basic Usage
+
+First, ensure you have the upscaling dependencies installed:
+
+```sh
+pip install -r requirements.txt
+```
+
+**GPU Support:**
+- **AMD/Intel GPU on Windows:** Already included with `torch-directml` in requirements.txt
+- **NVIDIA GPU on Windows:** Install CUDA version:
+  ```sh
+  pip uninstall torch torchvision torch-directml -y
+  pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu118
+  ```
+- **macOS with Apple Silicon:** MPS support is automatic
+
+After fetching card images using a plugin (e.g., MTG plugin), upscale them:
+
+```sh
+python upscale.py
+```
+
+The script will:
+- Automatically detect GPU availability (CUDA for NVIDIA, MPS for Apple Silicon)
+- Calculate current DPI based on card dimensions
+- Only upscale images that are below the target DPI (smart upscaling)
+- Preserve image formats and transparency
+
+### Integration with create_pdf.py
+
+You can also upscale images automatically when creating PDFs using the `--upscale` flag:
+
+```sh
+python create_pdf.py --upscale
+```
+
+This will upscale all images to 1200 DPI before laying them out in the PDF.
+
+### CLI Options
+
+```
+Usage: upscale.py [OPTIONS]
+
+Options:
+  --front_dir_path TEXT           The path to the directory containing the
+                                  card fronts.  [default: game/front]
+  --back_dir_path TEXT            The path to the directory containing one or
+                                  more card backs.  [default: game/back]
+  --double_sided_dir_path TEXT    The path to the directory containing card
+                                  backs for double-sided cards.  [default:
+                                  game/double_sided]
+  --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|tarot|domino|domino_square]
+                                  The card size for DPI calculation.
+                                  [default: standard]
+  --target_dpi INTEGER RANGE      Target DPI for upscaling.  [default: 1200;
+                                  x>=300]
+  --force                         Force upscale even if already at target
+                                  DPI.
+  --use_simple                    Use simple Lanczos upscaling instead of
+                                  Real-ESRGAN.
+  --gpu_id INTEGER                GPU device ID (None=auto, -1=CPU).
+  --version                       Show the version and exit.
+  --help                          Show this message and exit.
+```
+
+### Examples
+
+Upscale poker-sized cards to 1200 DPI:
+
+```sh
+python upscale.py --card_size poker --target_dpi 1200
+```
+
+Force upscale all images, even if they're already high resolution:
+
+```sh
+python upscale.py --force
+```
+
+Use CPU instead of GPU (useful if you encounter GPU memory issues):
+
+```sh
+python upscale.py --gpu_id -1
+```
+
+Use simple Lanczos upscaling without AI (faster but lower quality):
+
+```sh
+python upscale.py --use_simple
+```
+
+### Performance Notes
+
+- **GPU Acceleration**: The script will automatically detect and use:
+  - CUDA (NVIDIA GPUs)
+  - DirectML (AMD/Intel GPUs on Windows)
+  - MPS (Apple Silicon)
+  - Provides 10-50x speedup over CPU
+- **Processing Time**: On GPU, upscaling typically takes 1-3 seconds per image; on CPU, 10-30 seconds per image
+- **Memory Usage**: GPU processing requires 2-4GB VRAM; reduce `tile` size in the code if you encounter memory errors
+- **Quality**: Real-ESRGAN provides superior quality compared to traditional upscaling methods, especially for detailed card artwork
 
 ## offset_pdf.py
 

@@ -9,7 +9,7 @@ from typing import Dict, List
 from xml.dom import ValidationErr
 
 from natsort import natsorted
-from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps, ImageEnhance
 from pydantic import BaseModel
 
 # Specify directory locations
@@ -112,6 +112,28 @@ def convertInToCrop(crop_in: float, card_width_px: int, card_height_px: int) -> 
     crop_y_percent = 2 * crop_in / card_height_mm * 100
 
     return (crop_x_percent, crop_y_percent)
+
+def enhance_image(image: Image.Image, saturation: float = 1.0, contrast: float = 1.0) -> Image.Image:
+    """
+    Apply saturation and contrast enhancements to an image.
+    
+    Args:
+        image: PIL Image to enhance
+        saturation: Saturation multiplier (1.0 = no change, >1.0 = boost, <1.0 = reduce)
+        contrast: Contrast multiplier (1.0 = no change, >1.0 = boost, <1.0 = reduce)
+    
+    Returns:
+        Enhanced PIL Image
+    """
+    if saturation != 1.0:
+        enhancer = ImageEnhance.Color(image)
+        image = enhancer.enhance(saturation)
+    
+    if contrast != 1.0:
+        enhancer = ImageEnhance.Contrast(image)
+        image = enhancer.enhance(contrast)
+    
+    return image
 
 def delete_hidden_files_in_directory(path: str):
     if len(path) > 0:
@@ -225,7 +247,9 @@ def draw_card_layout(
     crop: tuple[float, float],
     ppi_ratio: float,
     extend_corners: int,
-    flip: bool
+    flip: bool,
+    saturation: float = 1.0,
+    contrast: float = 1.0
 ):
     num_cards = num_rows * num_cols
 
@@ -243,6 +267,10 @@ def draw_card_layout(
 
             # Rotate the back image to account for orientation
             card_image = card_image.rotate(180)
+        
+        # Apply saturation and contrast enhancements (skip for backs when flip=True)
+        if not flip and (saturation != 1.0 or contrast != 1.0):
+            card_image = enhance_image(card_image, saturation, contrast)
 
         # Crop the outer portion of a card to remove preexisting print bleed
         crop_x_percent, crop_y_percent = crop
@@ -308,7 +336,9 @@ def generate_pdf(
     quality: int,
     skip_indices: List[int],
     load_offset: bool,
-    name: str
+    name: str,
+    saturation: float = 1.0,
+    contrast: float = 1.0
 ):
     # Sanity checks for the different directories
     f_path = Path(front_dir_path)
@@ -439,7 +469,9 @@ def generate_pdf(
                         (0, 0),
                         ppi_ratio,
                         extend_corners,
-                        flip=True
+                        flip=True,
+                        saturation=saturation,
+                        contrast=contrast
                     )
 
             # Create single-sided card layout
@@ -467,9 +499,16 @@ def generate_pdf(
                     num_image = num_image + 1
 
                     front_image_path = os.path.join(front_dir_path, file)
-                    front_image = Image.open(front_image_path)
-                    front_image = ImageOps.exif_transpose(front_image)
-                    front_card_images.append(front_image)
+                    try:
+                        front_image = Image.open(front_image_path)
+                        front_image.load()  # Force load to catch truncation errors early
+                        front_image = ImageOps.exif_transpose(front_image)
+                        front_card_images.append(front_image)
+                    except (OSError, IOError) as e:
+                        print(f'WARNING: Skipping corrupted image {file}: {e}')
+                        # Add a None placeholder so card count stays consistent
+                        front_card_images.append(None)
+                        continue
 
                 single_sided_front_page = reg_im.copy()
 
@@ -487,7 +526,9 @@ def generate_pdf(
                     crop,
                     ppi_ratio,
                     extend_corners,
-                    flip=False
+                    flip=False,
+                    saturation=saturation,
+                    contrast=contrast
                 )
 
                 add_front_back_pages(
@@ -528,14 +569,27 @@ def generate_pdf(
                     num_image = num_image + 1
 
                     front_image_path = os.path.join(front_dir_path, file)
-                    front_image = Image.open(front_image_path)
-                    front_image = ImageOps.exif_transpose(front_image)
-                    front_card_images.append(front_image)
+                    try:
+                        front_image = Image.open(front_image_path)
+                        front_image.load()  # Force load to catch truncation errors early
+                        front_image = ImageOps.exif_transpose(front_image)
+                        front_card_images.append(front_image)
+                    except (OSError, IOError) as e:
+                        print(f'WARNING: Skipping corrupted front image {file}: {e}')
+                        front_card_images.append(None)
+                        back_card_images.append(None)
+                        continue
 
                     ds_image_path = os.path.join(double_sided_dir_path, file)
-                    ds_image = Image.open(ds_image_path)
-                    ds_image = ImageOps.exif_transpose(ds_image)
-                    back_card_images.append(ds_image)
+                    try:
+                        ds_image = Image.open(ds_image_path)
+                        ds_image.load()  # Force load to catch truncation errors early
+                        ds_image = ImageOps.exif_transpose(ds_image)
+                        back_card_images.append(ds_image)
+                    except (OSError, IOError) as e:
+                        print(f'WARNING: Skipping corrupted back image {file}: {e}')
+                        # Front was OK but back is corrupted - add None for back
+                        back_card_images.append(None)
 
                 double_sided_front_page = reg_im.copy()
                 double_sided_back_page = reg_im.copy()
@@ -554,7 +608,9 @@ def generate_pdf(
                     crop,
                     ppi_ratio,
                     extend_corners,
-                    flip=False
+                    flip=False,
+                    saturation=saturation,
+                    contrast=contrast
                 )
 
                 # Create back layout for double-sided cards
@@ -571,7 +627,9 @@ def generate_pdf(
                     crop,
                     ppi_ratio,
                     extend_corners,
-                    flip=True
+                    flip=True,
+                    saturation=saturation,
+                    contrast=contrast
                 )
 
                 # Add the front and back layouts

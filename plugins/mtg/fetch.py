@@ -17,6 +17,9 @@ double_sided_directory = os.path.join('game', 'double_sided')
 @click.option('-s', '--prefer_set', multiple=True, help="Prefer fetching cards from a particular set(s) if sets are not provided. Use this option multiple times to specify multiple preferred sets.")
 @click.option('--prefer_showcase', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with showcase treatment")
 @click.option('--prefer_extra_art', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with full art, borderless, or extended art.")
+@click.option('--fix_borders', default=False, is_flag=True, show_default=True, help="Fix grey/dark blue borders by painting them pure black.")
+@click.option('--show_cost', default=False, is_flag=True, show_default=True, help="Display the USD cost of each card and the total deck cost.")
+@click.option('--cheapest_version', default=False, is_flag=True, show_default=True, help="Fetch the cheapest available printing of each card (overrides all other preferences).")
 
 def cli(
     deck_path: str,
@@ -26,7 +29,10 @@ def cli(
     prefer_set: Set[str],
 
     prefer_showcase: bool,
-    prefer_extra_art: bool
+    prefer_extra_art: bool,
+    fix_borders: bool,
+    show_cost: bool,
+    cheapest_version: bool
 ):
     if not os.path.isfile(deck_path):
         print(f'{deck_path} is not a valid file.')
@@ -35,22 +41,32 @@ def cli(
     with open(deck_path, 'r') as deck_file:
         deck_text = deck_file.read()
 
+        handle_card = get_handle_card(
+            ignore_set_and_collector_number,
+
+            prefer_older_sets,
+            prefer_set,
+            
+            prefer_showcase,
+            prefer_extra_art,
+
+            front_directory,
+            double_sided_directory,
+            
+            fix_borders,
+            show_cost,
+            cheapest_version
+        )
+        
         parse_deck(
             deck_text,
             format,
-            get_handle_card(
-                ignore_set_and_collector_number,
-
-                prefer_older_sets,
-                prefer_set,
-                
-                prefer_showcase,
-                prefer_extra_art,
-
-                front_directory,
-                double_sided_directory
-            )
+            handle_card
         )
+        
+        # Print total cost if requested
+        if show_cost and hasattr(handle_card, 'print_total'):
+            handle_card.print_total()
 
 if __name__ == '__main__':
     cli()

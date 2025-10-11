@@ -1,8 +1,46 @@
+"""
+Card PDF Generator with Image Enhancement
+
+This script lays out card images into printable PDFs with registration marks for
+use with Silhouette cutting machines. Includes optional AI-powered upscaling and
+image enhancement features for professional-quality output.
+
+Features:
+    - Automatic card layout with registration marks
+    - Support for single and double-sided cards
+    - AI-powered upscaling to 1200 DPI (optional)
+    - Saturation and contrast adjustments for vibrant colors
+    - Multiple card and paper size support
+    - Offset calibration for precise alignment
+
+Usage:
+    Basic usage:
+        python create_pdf.py
+    
+    With upscaling and enhancements:
+        python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
+    
+    Custom sizes:
+        python create_pdf.py --card_size poker --paper_size a4
+
+For detailed documentation, see README.md
+
+Author: Silhouette Card Maker Contributors
+Version: 1.5.1
+"""
+
 import os
 import re
 
 import click
 from utilities import Registration, CardSize, PaperSize, generate_pdf
+
+# Try to import upscale functionality (optional dependency)
+try:
+    from upscale import upscale_for_create_pdf
+    UPSCALE_AVAILABLE = True
+except ImportError:
+    UPSCALE_AVAILABLE = False
 
 front_directory = os.path.join('game', 'front')
 back_directory = os.path.join('game', 'back')
@@ -28,6 +66,10 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--load_offset", default=False, is_flag=True, help="Apply saved offsets. See `offset_pdf.py` for more information.")
 @click.option("--skip", type=click.IntRange(min=0), multiple=True, help="Skip a card based on its index. Useful for registration issues. Examples: 0, 4.")
 @click.option("--name", help="Label each page of the PDF with a name.")
+@click.option("--upscale", default=False, is_flag=True, help="Upscale images before creating PDF using Real-ESRGAN.")
+@click.option("--upscale_target_dpi", default=1200, type=click.IntRange(min=300), show_default=True, help="Target DPI when upscaling (used with --upscale).")
+@click.option("--saturation", default=1.0, type=click.FloatRange(min=0.0, max=2.0), show_default=True, help="Saturation multiplier (1.0=no change, >1.0=boost, <1.0=reduce).")
+@click.option("--contrast", default=1.0, type=click.FloatRange(min=0.0, max=2.0), show_default=True, help="Contrast multiplier (1.0=no change, >1.0=boost, <1.0=reduce).")
 @click.version_option("1.5.1")
 
 def cli(
@@ -46,8 +88,65 @@ def cli(
     quality,
     skip,
     load_offset,
-    name
+    name,
+    upscale,
+    upscale_target_dpi,
+    saturation,
+    contrast
 ):
+    """
+    Generate a PDF with card images laid out for cutting with Silhouette machines.
+    
+    This command-line interface provides comprehensive control over PDF generation,
+    including optional AI upscaling and image enhancements for professional results.
+    
+    The tool will:
+    1. Optionally upscale images to target DPI using Real-ESRGAN (if --upscale is set)
+    2. Apply saturation and contrast adjustments (if specified)
+    3. Layout cards with registration marks for precise cutting
+    4. Generate a print-ready PDF (or individual images if --output_images is set)
+    
+    Examples:
+        Basic usage:
+            python create_pdf.py
+        
+        With AI upscaling and color enhancement:
+            python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
+        
+        Custom card/paper sizes with offset:
+            python create_pdf.py --card_size poker --paper_size a4 --load_offset
+    """
+    
+    # Step 1: Upscale images if requested (before PDF generation)
+    if upscale:
+        if not UPSCALE_AVAILABLE:
+            print("\n" + "=" * 60)
+            print("⚠️  WARNING: Upscaling dependencies not installed")
+            print("=" * 60)
+            print("\nThe --upscale flag requires additional dependencies.")
+            print("Skipping upscaling and proceeding with PDF generation...")
+            print("\nTo enable upscaling, install dependencies:")
+            print("  pip install -r requirements.txt")
+            print("\n" + "=" * 60 + "\n")
+        else:
+            print("\n" + "=" * 60)
+            print("🎨 Upscaling images to " + str(upscale_target_dpi) + " DPI...")
+            print("=" * 60 + "\n")
+            
+            upscale_for_create_pdf(
+                front_dir_path,
+                back_dir_path,
+                double_sided_dir_path,
+                card_size,
+                target_dpi=upscale_target_dpi
+            )
+            
+            print("=" * 60)
+            print("✓ Upscaling complete!")
+            print("=" * 60 + "\n")
+    
+    # Step 2: Generate PDF with layout, registration marks, and optional enhancements
+    # The saturation and contrast parameters are applied during image processing
     generate_pdf(
         front_dir_path,
         back_dir_path,
@@ -64,7 +163,9 @@ def cli(
         quality,
         skip,
         load_offset,
-        name
+        name,
+        saturation,  # Color saturation multiplier (1.0 = no change)
+        contrast     # Contrast multiplier (1.0 = no change)
     )
 
 if __name__ == '__main__':
