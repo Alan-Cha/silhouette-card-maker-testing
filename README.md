@@ -218,8 +218,11 @@ Options:
   --skip INTEGER RANGE            Skip a card based on its index. Useful for
                                   registration issues. Examples: 0, 4.  [x>=0]
   --name TEXT                     Label each page of the PDF with a name.
-  --upscale                       Upscale images to 1200 DPI before creating
-                                  PDF using Real-ESRGAN.
+  --upscale                       Upscale images before creating PDF using
+                                  Real-ESRGAN.
+  --upscale_target_dpi INTEGER RANGE
+                                  Target DPI when upscaling (used with
+                                  --upscale).  [default: 1200; x>=300]
   --saturation FLOAT RANGE        Saturation multiplier (1.0=no change,
                                   >1.0=boost, <1.0=reduce).  [default: 1.0;
                                   0.0<=x<=2.0]
@@ -266,6 +269,12 @@ Combine upscaling with image enhancements.
 
 ```sh
 python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
+```
+
+Upscale to a custom target DPI (e.g., 1500 DPI for extra high quality).
+
+```sh
+python create_pdf.py --upscale --upscale_target_dpi 1500
 ```
 
 ## upscale.py

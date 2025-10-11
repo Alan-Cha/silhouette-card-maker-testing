@@ -44,6 +44,10 @@ Options:
                                   borderless, or extended art.
   --fix_borders                   Fix grey/dark blue borders by painting them
                                   pure black.
+  --show_cost                     Display the USD cost of each card and the
+                                  total deck cost.
+  --cheapest_version              Fetch the cheapest available printing of
+                                  each card (overrides all other preferences).
   --help                          Show this message and exit.
 ```
 
@@ -83,6 +87,24 @@ Fix grey or dark blue borders on cards by painting them pure black for a cleaner
 
 ```sh
 python plugins/mtg/fetch.py game/decklist/deck.txt mtga --fix_borders
+```
+
+Show the cost of your deck using TCGPlayer market prices.
+
+```sh
+python plugins/mtg/fetch.py game/decklist/deck.txt mtga --show_cost
+```
+
+Fetch the cheapest version of each card and show the total deck cost.
+
+```sh
+python plugins/mtg/fetch.py game/decklist/deck.txt mtga --cheapest_version --show_cost
+```
+
+Combine cheapest version with border fix for budget proxy creation.
+
+```sh
+python plugins/mtg/fetch.py game/decklist/deck.txt moxfield --cheapest_version --show_cost --fix_borders
 ```
 
 ## Formats
