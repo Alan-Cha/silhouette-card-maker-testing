@@ -1,22 +1,62 @@
-click==8.1.8
-natsort==8.4.0
-numpy<2,>=1.21.2
-Pillow==11.3.0
-pydantic==2.11.1
-Requests==2.32.3
-pypdfium2==4.30.0
-split-image==2.0.1
+# ============================================================================
+# Silhouette Card Maker - Python Dependencies
+# ============================================================================
+#
+# This file lists all required Python packages for the Silhouette Card Maker
+# project, including both core dependencies and optional AI upscaling features.
+#
+# Installation:
+#   pip install -r requirements.txt
+# ============================================================================
 
-# Real-ESRGAN dependencies
-# For AMD GPU on Windows, install torch-directml instead:
-#   pip install torch-directml
-# For NVIDIA GPU, install CUDA version:
-#   pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu118
-torch-directml==0.2.5.dev240914; platform_system == "Windows"
-torch==2.4.1; platform_system != "Windows"
-torchvision==0.19.1; platform_system != "Windows"
-basicsr==1.4.2
-facexlib==0.3.0
-gfpgan==1.3.8
-realesrgan==0.3.0
-opencv-python==4.9.0.80
+# ----------------------------------------------------------------------------
+# Core Dependencies (Required)
+# ----------------------------------------------------------------------------
+# These packages are required for basic PDF creation and card layout
+
+click==8.1.8           # Command-line interface framework
+natsort==8.4.0         # Natural sorting for filenames
+numpy<2,>=1.21.2       # Numerical computing library
+Pillow==11.3.0         # Image processing library
+pydantic==2.11.1       # Data validation and settings management
+Requests==2.32.3       # HTTP library for fetching card images
+pypdfium2==4.30.0      # PDF creation and manipulation
+split-image==2.0.1     # Image splitting utilities
+
+# ----------------------------------------------------------------------------
+# AI Image Upscaling Dependencies (Optional but Recommended)
+# ----------------------------------------------------------------------------
+# These packages enable AI-powered image upscaling with Real-ESRGAN
+# If you don't need upscaling, you can skip these and still use basic features
+
+# PyTorch - Deep learning framework
+# Note: Default installation uses DirectML for AMD/Intel GPUs on Windows
+#       For NVIDIA GPUs, see instructions below
+torch-directml==0.2.5.dev240914; platform_system == "Windows"  # AMD/Intel GPU support (Windows)
+torch==2.4.1; platform_system != "Windows"                     # CPU/CUDA support (macOS/Linux)
+torchvision==0.19.1; platform_system != "Windows"              # Vision utilities
+
+# Real-ESRGAN and dependencies
+basicsr==1.4.2         # Basic super-resolution framework
+facexlib==0.3.0        # Face detection and enhancement
+gfpgan==1.3.8          # Image restoration algorithms
+realesrgan==0.3.0      # Real-ESRGAN AI upscaling model
+opencv-python==4.9.0.80  # Computer vision library
+
+# ----------------------------------------------------------------------------
+# GPU Acceleration Setup (Optional)
+# ----------------------------------------------------------------------------
+#
+# By default, this installs DirectML support for AMD/Intel GPUs on Windows.
+# For NVIDIA GPUs, uninstall the default packages and install CUDA versions:
+#
+#   1. Uninstall default PyTorch:
+#      pip uninstall torch torchvision torch-directml -y
+#
+#   2. Install CUDA-enabled PyTorch:
+#      pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu118
+#
+# For macOS with Apple Silicon (M1/M2/M3), MPS acceleration is automatic.
+# For CPU-only usage, no additional setup is needed - it works out of the box.
+#
+# ----------------------------------------------------------------------------

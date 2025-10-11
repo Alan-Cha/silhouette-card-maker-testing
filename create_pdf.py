@@ -1,3 +1,34 @@
+"""
+Card PDF Generator with Image Enhancement
+
+This script lays out card images into printable PDFs with registration marks for
+use with Silhouette cutting machines. Includes optional AI-powered upscaling and
+image enhancement features for professional-quality output.
+
+Features:
+    - Automatic card layout with registration marks
+    - Support for single and double-sided cards
+    - AI-powered upscaling to 1200 DPI (optional)
+    - Saturation and contrast adjustments for vibrant colors
+    - Multiple card and paper size support
+    - Offset calibration for precise alignment
+
+Usage:
+    Basic usage:
+        python create_pdf.py
+    
+    With upscaling and enhancements:
+        python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
+    
+    Custom sizes:
+        python create_pdf.py --card_size poker --paper_size a4
+
+For detailed documentation, see README.md
+
+Author: Silhouette Card Maker Contributors
+Version: 1.5.1
+"""
+
 import os
 import re
 
@@ -63,13 +94,45 @@ def cli(
     saturation,
     contrast
 ):
-    # Upscale images if requested
+    """
+    Generate a PDF with card images laid out for cutting with Silhouette machines.
+    
+    This command-line interface provides comprehensive control over PDF generation,
+    including optional AI upscaling and image enhancements for professional results.
+    
+    The tool will:
+    1. Optionally upscale images to target DPI using Real-ESRGAN (if --upscale is set)
+    2. Apply saturation and contrast adjustments (if specified)
+    3. Layout cards with registration marks for precise cutting
+    4. Generate a print-ready PDF (or individual images if --output_images is set)
+    
+    Examples:
+        Basic usage:
+            python create_pdf.py
+        
+        With AI upscaling and color enhancement:
+            python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
+        
+        Custom card/paper sizes with offset:
+            python create_pdf.py --card_size poker --paper_size a4 --load_offset
+    """
+    
+    # Step 1: Upscale images if requested (before PDF generation)
     if upscale:
         if not UPSCALE_AVAILABLE:
-            print("Warning: Upscaling dependencies not installed. Skipping upscaling.")
-            print("Install with: pip install torch torchvision basicsr facexlib gfpgan realesrgan opencv-python")
-            print()
+            print("\n" + "=" * 60)
+            print("⚠️  WARNING: Upscaling dependencies not installed")
+            print("=" * 60)
+            print("\nThe --upscale flag requires additional dependencies.")
+            print("Skipping upscaling and proceeding with PDF generation...")
+            print("\nTo enable upscaling, install dependencies:")
+            print("  pip install -r requirements.txt")
+            print("\n" + "=" * 60 + "\n")
         else:
+            print("\n" + "=" * 60)
+            print("🎨 Upscaling images to " + str(upscale_target_dpi) + " DPI...")
+            print("=" * 60 + "\n")
+            
             upscale_for_create_pdf(
                 front_dir_path,
                 back_dir_path,
@@ -77,7 +140,13 @@ def cli(
                 card_size,
                 target_dpi=upscale_target_dpi
             )
+            
+            print("=" * 60)
+            print("✓ Upscaling complete!")
+            print("=" * 60 + "\n")
     
+    # Step 2: Generate PDF with layout, registration marks, and optional enhancements
+    # The saturation and contrast parameters are applied during image processing
     generate_pdf(
         front_dir_path,
         back_dir_path,
@@ -95,8 +164,8 @@ def cli(
         skip,
         load_offset,
         name,
-        saturation,
-        contrast
+        saturation,  # Color saturation multiplier (1.0 = no change)
+        contrast     # Contrast multiplier (1.0 = no change)
     )
 
 if __name__ == '__main__':

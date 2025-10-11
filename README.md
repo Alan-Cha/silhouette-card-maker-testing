@@ -14,6 +14,17 @@ Watch me cut **104 cards in 26 minutes** without breaking a sweat!
 
 [![Proxying a MTG Commander Deck in 26 minutes](hugo/static/images/youtube_demo.png)](https://www.youtube.com/watch?v=RVHtqsRW8t8)
 
+## ✨ New: AI-Powered Image Enhancements
+
+Take your card quality to the next level with these new features:
+
+- **🎨 AI Upscaling**: Automatically upscale card images to 1200 DPI using Real-ESRGAN for crisp, professional prints
+- **🌈 Color Enhancement**: Boost saturation and contrast for more vibrant cards
+- **⚡ GPU Acceleration**: Automatic support for NVIDIA, AMD, Intel, and Apple Silicon GPUs
+- **🧠 Smart Processing**: Only upscales images that need it, skipping high-res images
+
+See [upscale.py](#upscalepy) and [UPSCALING_GUIDE.md](UPSCALING_GUIDE.md) for details!
+
 ## Purpose
 
 The purpose of this repo is to enable you to use a Silhouette cutting machine to create card games and proxies. Proxies are only intended to be used for casual play and playtesting.
@@ -259,23 +270,35 @@ Produce a 600 pixels per inch (PPI) file with minimal compression.
 python create_pdf.py --ppi 600 --quality 100
 ```
 
-Boost saturation and contrast for more vibrant cards.
+### Image Enhancement Features
+
+Boost saturation and contrast for more vibrant, professional-looking cards:
 
 ```sh
 python create_pdf.py --saturation 1.2 --contrast 1.15
 ```
 
-Combine upscaling with image enhancements.
+**When to use:**
+- Cards look washed out or dull
+- Want more vibrant colors for better visual appeal
+- Compensating for printer color limitations
+
+Combine upscaling with image enhancements for best results:
 
 ```sh
 python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
 ```
 
-Upscale to a custom target DPI (e.g., 1500 DPI for extra high quality).
+Upscale to a custom target DPI (e.g., 1500 DPI for extra high quality):
 
 ```sh
 python create_pdf.py --upscale --upscale_target_dpi 1500
 ```
+
+**Recommended values:**
+- `--saturation 1.0-1.3` - Subtle to moderate boost
+- `--contrast 1.0-1.2` - Subtle to moderate boost
+- Start with 1.1 for both and adjust to taste
 
 ## upscale.py
 
@@ -291,19 +314,12 @@ First, ensure you have the upscaling dependencies installed:
 pip install -r requirements.txt
 ```
 
-Then run the compatibility fix for Real-ESRGAN:
-
-```sh
-python fix_realesrgan.py
-```
-
 **GPU Support:**
 - **AMD/Intel GPU on Windows:** Already included with `torch-directml` in requirements.txt
 - **NVIDIA GPU on Windows:** Install CUDA version:
   ```sh
   pip uninstall torch torchvision torch-directml -y
   pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu118
-  python fix_realesrgan.py
   ```
 - **macOS with Apple Silicon:** MPS support is automatic
 

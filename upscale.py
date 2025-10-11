@@ -1,3 +1,35 @@
+"""
+AI-Powered Card Image Upscaling Tool
+
+This module provides intelligent upscaling of card images using Real-ESRGAN,
+a state-of-the-art AI model for image super-resolution. It automatically detects
+and utilizes GPU acceleration when available (CUDA, DirectML, MPS) and falls back
+to CPU processing when needed.
+
+Key Features:
+    - Smart DPI-based upscaling (only processes images below target DPI)
+    - GPU acceleration with automatic device detection
+    - Preserves image transparency for PNG files
+    - Supports all standard card sizes (MTG, Pokémon, Yu-Gi-Oh!, etc.)
+    - Fallback to simple Lanczos upscaling if Real-ESRGAN unavailable
+
+Usage:
+    Basic upscaling to 1200 DPI:
+        python upscale.py
+    
+    Custom target DPI:
+        python upscale.py --target_dpi 800
+    
+    Force upscale all images:
+        python upscale.py --force
+    
+    Use CPU only:
+        python upscale.py --gpu_id -1
+
+Author: Silhouette Card Maker Contributors
+Version: 1.0.0
+"""
+
 import os
 import sys
 from pathlib import Path
@@ -11,6 +43,7 @@ from PIL import Image
 import numpy as np
 
 # Card size dimensions in millimeters
+# These define the physical dimensions of different card types
 CARD_DIMENSIONS_MM = {
     'standard': (63, 88),
     'standard_double': (126, 88),
@@ -26,13 +59,26 @@ CARD_DIMENSIONS_MM = {
 
 def setup_realesrgan_model(gpu_id=None):
     """
-    Initialize the Real-ESRGAN model with GPU support if available.
+    Initialize the Real-ESRGAN AI upscaling model with automatic GPU detection.
+    
+    This function sets up the Real-ESRGAN model and automatically detects the best
+    available hardware acceleration:
+    - NVIDIA GPUs: CUDA (fastest, requires NVIDIA GPU)
+    - AMD/Intel GPUs on Windows: DirectML  
+    - Apple Silicon: MPS (M1/M2/M3 chips)
+    - CPU: Fallback if no GPU detected (slower but reliable)
     
     Args:
-        gpu_id: GPU device ID (None for auto-detect, -1 for CPU)
+        gpu_id: GPU device ID to use
+            - None: Automatically detect and use best available GPU
+            - -1: Force CPU-only processing
+            - 0+: Use specific GPU device ID (for multi-GPU systems)
     
     Returns:
-        RealESRGANer instance
+        RealESRGANer: Configured upscaling model instance
+        
+    Raises:
+        SystemExit: If Real-ESRGAN dependencies are not installed
     """
     try:
         import torch
@@ -118,15 +164,26 @@ def setup_realesrgan_model(gpu_id=None):
 
 def calculate_current_dpi(image_width: int, image_height: int, card_size: str) -> Tuple[float, float]:
     """
-    Calculate the current DPI of an image based on card dimensions.
+    Calculate the current DPI (dots per inch) of an image based on physical card dimensions.
+    
+    DPI is calculated by dividing image pixels by the physical card dimension in inches.
+    For example, a 744x1039 pixel image of a standard card (63x88mm) has ~300 DPI.
     
     Args:
         image_width: Width of image in pixels
-        image_height: Height of image in pixels
-        card_size: Card size type (e.g., 'standard', 'poker')
+        image_height: Height of image in pixels  
+        card_size: Card size type (e.g., 'standard', 'poker', 'japanese')
+            Must match one of the supported card sizes in CARD_DIMENSIONS_MM
     
     Returns:
-        Tuple of (dpi_width, dpi_height)
+        Tuple[float, float]: (dpi_width, dpi_height) - DPI for width and height
+        
+    Raises:
+        ValueError: If card_size is not recognized
+        
+    Example:
+        >>> calculate_current_dpi(744, 1039, 'standard')
+        (300.0, 297.0)  # Approximately 300 DPI
     """
     if card_size not in CARD_DIMENSIONS_MM:
         raise ValueError(f"Unknown card size: {card_size}")
@@ -241,18 +298,32 @@ def process_directory(
     use_simple: bool = False
 ) -> Tuple[int, int]:
     """
-    Process all images in a directory, upscaling as needed.
+    Process all image files in a directory, intelligently upscaling those below target DPI.
+    
+    This function:
+    1. Scans the directory for image files (.png, .jpg, .jpeg, .bmp, .tiff, .webp)
+    2. Calculates current DPI for each image
+    3. Upscales only images below target DPI (unless force=True)
+    4. Preserves original file format and transparency
+    5. Uses atomic file replacement to avoid corruption
     
     Args:
-        dir_path: Path to the directory
-        card_size: Card size type for DPI calculation
-        target_dpi: Target DPI (default: 1200)
-        force: Force upscale even if already high-res
-        upsampler: RealESRGANer instance (None for simple upscaling)
-        use_simple: Use simple Lanczos upscaling instead of Real-ESRGAN
+        dir_path: Path to the directory containing images
+        card_size: Card size type for DPI calculation (e.g., 'standard', 'poker')
+        target_dpi: Target DPI for upscaling (default: 1200)
+        force: If True, upscale all images even if already at target DPI
+        upsampler: RealESRGANer instance for AI upscaling (None uses simple method)
+        use_simple: If True, use simple Lanczos upscaling instead of Real-ESRGAN
     
     Returns:
-        Tuple of (processed_count, skipped_count)
+        Tuple[int, int]: (processed_count, skipped_count)
+            - processed_count: Number of images successfully upscaled
+            - skipped_count: Number of images skipped (already high-res)
+    
+    Example:
+        >>> upsampler = setup_realesrgan_model()
+        >>> processed, skipped = process_directory('game/front', 'standard', 1200, False, upsampler, False)
+        >>> print(f"Processed {processed} images, skipped {skipped}")
     """
     if not os.path.exists(dir_path):
         return 0, 0
@@ -359,10 +430,28 @@ def cli(
     gpu_id: int
 ):
     """
-    Upscale card images to target DPI using Real-ESRGAN or simple Lanczos resampling.
+    Upscale card images to target DPI using AI-powered Real-ESRGAN or simple Lanczos resampling.
     
     This tool intelligently upscales images only when needed, preserving image quality
-    and utilizing GPU acceleration when available.
+    and utilizing GPU acceleration when available. Perfect for improving print quality
+    of card images fetched from online sources.
+    
+    The tool will:
+    - Automatically detect and use GPU acceleration (CUDA/DirectML/MPS)
+    - Calculate current DPI based on image size and card dimensions  
+    - Only upscale images below the target DPI (smart upscaling)
+    - Preserve transparency for PNG images
+    - Save files atomically to prevent corruption
+    
+    Examples:
+        Basic upscaling to 1200 DPI:
+            python upscale.py
+        
+        Upscale poker-sized cards to 800 DPI:
+            python upscale.py --card_size poker --target_dpi 800
+        
+        Force upscale all images using CPU:
+            python upscale.py --force --gpu_id -1
     """
     print("=" * 60)
     print("Card Image Upscaler")
@@ -432,14 +521,22 @@ def upscale_for_create_pdf(
     target_dpi: int = 1200
 ):
     """
-    Upscale images for use with create_pdf.py. Called internally from create_pdf.
+    Upscale card images for PDF creation. Called internally by create_pdf.py.
+    
+    This is a convenience function that automatically upscales images when using
+    the --upscale flag with create_pdf.py. It processes all three image directories
+    (front, back, and double-sided) with smart upscaling.
     
     Args:
-        front_dir_path: Path to front images
-        back_dir_path: Path to back images
-        double_sided_dir_path: Path to double-sided images
-        card_size: Card size type
-        target_dpi: Target DPI (default: 1200)
+        front_dir_path: Path to directory containing front card images
+        back_dir_path: Path to directory containing back card images
+        double_sided_dir_path: Path to directory containing double-sided back images
+        card_size: Card size type for DPI calculation (e.g., 'standard', 'poker')
+        target_dpi: Target DPI for upscaling (default: 1200)
+    
+    Note:
+        This function automatically handles missing dependencies by falling back
+        to simple Lanczos upscaling if Real-ESRGAN is not available.
     """
     print("Starting automatic upscaling...")
     
