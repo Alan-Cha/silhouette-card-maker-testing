@@ -113,14 +113,15 @@ def convertInToCrop(crop_in: float, card_width_px: int, card_height_px: int) -> 
 
     return (crop_x_percent, crop_y_percent)
 
-def enhance_image(image: Image.Image, saturation: float = 1.0, contrast: float = 1.0) -> Image.Image:
+def enhance_image(image: Image.Image, saturation: float = 1.0, contrast: float = 1.0, brightness: float = 1.0) -> Image.Image:
     """
-    Apply saturation and contrast enhancements to an image.
+    Apply saturation, contrast, and brightness enhancements to an image.
     
     Args:
         image: PIL Image to enhance
         saturation: Saturation multiplier (1.0 = no change, >1.0 = boost, <1.0 = reduce)
         contrast: Contrast multiplier (1.0 = no change, >1.0 = boost, <1.0 = reduce)
+        brightness: Brightness multiplier (1.0 = no change, >1.0 = brighter, <1.0 = darker)
     
     Returns:
         Enhanced PIL Image
@@ -133,7 +134,23 @@ def enhance_image(image: Image.Image, saturation: float = 1.0, contrast: float =
         enhancer = ImageEnhance.Contrast(image)
         image = enhancer.enhance(contrast)
     
+    if brightness != 1.0:
+        enhancer = ImageEnhance.Brightness(image)
+        image = enhancer.enhance(brightness)
+    
     return image
+
+def has_card_content(card_images: List[Image.Image | None]) -> bool:
+    """
+    Check if a card images list contains any actual card content.
+    
+    Args:
+        card_images: List of card images where None represents empty slots
+    
+    Returns:
+        True if there are any non-None images, False if all slots are empty
+    """
+    return any(img is not None for img in card_images)
 
 def delete_hidden_files_in_directory(path: str):
     if len(path) > 0:
@@ -249,7 +266,8 @@ def draw_card_layout(
     extend_corners: int,
     flip: bool,
     saturation: float = 1.0,
-    contrast: float = 1.0
+    contrast: float = 1.0,
+    brightness: float = 1.0
 ):
     num_cards = num_rows * num_cols
 
@@ -268,9 +286,9 @@ def draw_card_layout(
             # Rotate the back image to account for orientation
             card_image = card_image.rotate(180)
         
-        # Apply saturation and contrast enhancements (skip for backs when flip=True)
-        if not flip and (saturation != 1.0 or contrast != 1.0):
-            card_image = enhance_image(card_image, saturation, contrast)
+        # Apply saturation, contrast, and brightness enhancements (skip for backs when flip=True)
+        if not flip and (saturation != 1.0 or contrast != 1.0 or brightness != 1.0):
+            card_image = enhance_image(card_image, saturation, contrast, brightness)
 
         # Crop the outer portion of a card to remove preexisting print bleed
         crop_x_percent, crop_y_percent = crop
@@ -299,8 +317,13 @@ def draw_card_layout(
             tuple(math.ceil(bleed * ppi_ratio) + extend_corners_ppi for bleed in print_bleed)
         )
 
-def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, name: str):
-    # Add template version number to the back
+def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, name: str, skip_blank_pages: bool = False, front_has_content: bool = True, back_has_content: bool = True):
+    # Skip blank pages if requested
+    if skip_blank_pages and not front_has_content:
+        print(f"Skipping blank front page (sheet {num_sheet})")
+        return
+
+    # Add template version number to the front page
     draw = ImageDraw.Draw(front_page)
     font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 40 * ppi_ratio)
 
@@ -315,10 +338,15 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
 
     draw.text((math.floor((page_width / 2) * ppi_ratio), math.floor((page_height - 140) * ppi_ratio)), label, fill = (0, 0, 0), anchor="ma", font=font)
 
-    # Add a back page for every front page template
+    # Add the front page
     pages.append(front_page)
+    
+    # Add the back page if needed (and not skipping blank backs)
     if not only_fronts:
-        pages.append(back_page)
+        if skip_blank_pages and not back_has_content:
+            print(f"Skipping blank back page (sheet {num_sheet})")
+        else:
+            pages.append(back_page)
 
 def generate_pdf(
     front_dir_path: str,
@@ -338,7 +366,9 @@ def generate_pdf(
     load_offset: bool,
     name: str,
     saturation: float = 1.0,
-    contrast: float = 1.0
+    contrast: float = 1.0,
+    brightness: float = 1.0,
+    skip_blank_pages: bool = False
 ):
     # Sanity checks for the different directories
     f_path = Path(front_dir_path)
@@ -471,7 +501,8 @@ def generate_pdf(
                         extend_corners,
                         flip=True,
                         saturation=saturation,
-                        contrast=contrast
+                        contrast=contrast,
+                        brightness=brightness
                     )
 
             # Create single-sided card layout
@@ -528,7 +559,8 @@ def generate_pdf(
                     extend_corners,
                     flip=False,
                     saturation=saturation,
-                    contrast=contrast
+                    contrast=contrast,
+                    brightness=brightness
                 )
 
                 add_front_back_pages(
@@ -540,7 +572,10 @@ def generate_pdf(
                     ppi_ratio,
                     card_layout.template,
                     only_fronts,
-                    name
+                    name,
+                    skip_blank_pages,
+                    has_card_content(front_card_images),
+                    True  # Back page always has content for single-sided cards
                 )
 
             # Create double-sided card layout
@@ -610,7 +645,8 @@ def generate_pdf(
                     extend_corners,
                     flip=False,
                     saturation=saturation,
-                    contrast=contrast
+                    contrast=contrast,
+                    brightness=brightness
                 )
 
                 # Create back layout for double-sided cards
@@ -629,7 +665,8 @@ def generate_pdf(
                     extend_corners,
                     flip=True,
                     saturation=saturation,
-                    contrast=contrast
+                    contrast=contrast,
+                    brightness=brightness
                 )
 
                 # Add the front and back layouts
@@ -642,7 +679,10 @@ def generate_pdf(
                     ppi_ratio,
                     card_layout.template,
                     False,
-                    name
+                    name,
+                    skip_blank_pages,
+                    has_card_content(front_card_images),
+                    has_card_content(back_card_images)
                 )
 
             if len(pages) == 0:

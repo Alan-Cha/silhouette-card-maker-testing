@@ -9,7 +9,8 @@ Features:
     - Automatic card layout with registration marks
     - Support for single and double-sided cards
     - AI-powered upscaling to 1200 DPI (optional)
-    - Saturation and contrast adjustments for vibrant colors
+    - Saturation, contrast, and brightness adjustments for vibrant colors
+    - Blank page exclusion to reduce PDF size (optional)
     - Multiple card and paper size support
     - Offset calibration for precise alignment
 
@@ -18,7 +19,7 @@ Usage:
         python create_pdf.py
     
     With upscaling and enhancements:
-        python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
+        python create_pdf.py --upscale --saturation 1.1 --contrast 1.1 --brightness 1.1
     
     Custom sizes:
         python create_pdf.py --card_size poker --paper_size a4
@@ -70,6 +71,8 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--upscale_target_dpi", default=1200, type=click.IntRange(min=300), show_default=True, help="Target DPI when upscaling (used with --upscale).")
 @click.option("--saturation", default=1.0, type=click.FloatRange(min=0.0, max=2.0), show_default=True, help="Saturation multiplier (1.0=no change, >1.0=boost, <1.0=reduce).")
 @click.option("--contrast", default=1.0, type=click.FloatRange(min=0.0, max=2.0), show_default=True, help="Contrast multiplier (1.0=no change, >1.0=boost, <1.0=reduce).")
+@click.option("--brightness", default=1.0, type=click.FloatRange(min=0.0, max=2.0), show_default=True, help="Brightness multiplier (1.0=no change, >1.0=brighter, <1.0=darker).")
+@click.option("--skip_blank_pages", default=False, is_flag=True, help="Skip pages that contain no card images to reduce PDF size.")
 @click.version_option("1.5.1")
 
 def cli(
@@ -92,7 +95,9 @@ def cli(
     upscale,
     upscale_target_dpi,
     saturation,
-    contrast
+    contrast,
+    brightness,
+    skip_blank_pages
 ):
     """
     Generate a PDF with card images laid out for cutting with Silhouette machines.
@@ -102,16 +107,20 @@ def cli(
     
     The tool will:
     1. Optionally upscale images to target DPI using Real-ESRGAN (if --upscale is set)
-    2. Apply saturation and contrast adjustments (if specified)
+    2. Apply saturation, contrast, and brightness adjustments (if specified)
     3. Layout cards with registration marks for precise cutting
-    4. Generate a print-ready PDF (or individual images if --output_images is set)
+    4. Optionally skip blank pages to reduce PDF size (if --skip_blank_pages is set)
+    5. Generate a print-ready PDF (or individual images if --output_images is set)
     
     Examples:
         Basic usage:
             python create_pdf.py
         
         With AI upscaling and color enhancement:
-            python create_pdf.py --upscale --saturation 1.1 --contrast 1.1
+            python create_pdf.py --upscale --saturation 1.1 --contrast 1.1 --brightness 1.1
+        
+        Optimized PDF with blank page skipping:
+            python create_pdf.py --skip_blank_pages
         
         Custom card/paper sizes with offset:
             python create_pdf.py --card_size poker --paper_size a4 --load_offset
@@ -146,7 +155,7 @@ def cli(
             print("=" * 60 + "\n")
     
     # Step 2: Generate PDF with layout, registration marks, and optional enhancements
-    # The saturation and contrast parameters are applied during image processing
+    # The saturation, contrast, and brightness parameters are applied during image processing
     generate_pdf(
         front_dir_path,
         back_dir_path,
@@ -164,8 +173,10 @@ def cli(
         skip,
         load_offset,
         name,
-        saturation,  # Color saturation multiplier (1.0 = no change)
-        contrast     # Contrast multiplier (1.0 = no change)
+        saturation,       # Color saturation multiplier (1.0 = no change)
+        contrast,         # Contrast multiplier (1.0 = no change)
+        brightness,       # Brightness multiplier (1.0 = no change)
+        skip_blank_pages  # Skip pages with no card content
     )
 
 if __name__ == '__main__':
