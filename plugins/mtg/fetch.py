@@ -2,7 +2,8 @@ import os
 
 import click
 from deck_formats import DeckFormat, parse_deck
-from scryfall import get_handle_card
+from scryfall import get_handle_card as scryfall_get_handle_card
+from mpcfill import get_handle_card as mpc_get_handle_card
 
 from typing import Set
 
@@ -34,6 +35,25 @@ def cli(
     if not os.path.isfile(deck_path):
         print(f'{deck_path} is not a valid file.')
         return
+    
+    if format == DeckFormat.MPCFILL:
+        get_handle_card = mpc_get_handle_card(
+            front_directory,
+            double_sided_directory
+        )
+    else:
+        get_handle_card = scryfall_get_handle_card(
+            ignore_set_and_collector_number,
+
+            prefer_older_sets,
+            prefer_set,
+            
+            prefer_showcase,
+            prefer_extra_art,
+
+            front_directory,
+            double_sided_directory
+        )
 
     with open(deck_path, 'r') as deck_file:
         deck_text = deck_file.read()
@@ -41,19 +61,7 @@ def cli(
         parse_deck(
             deck_text,
             format,
-            get_handle_card(
-                ignore_set_and_collector_number,
-
-                prefer_older_sets,
-                prefer_set,
-
-                prefer_showcase,
-                prefer_extra_art,
-                tokens,
-
-                front_directory,
-                double_sided_directory
-            )
+            get_handle_card,
         )
 
 if __name__ == '__main__':

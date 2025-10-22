@@ -3,6 +3,9 @@ import re
 
 from enum import Enum
 from typing import Callable, Tuple
+from xml.etree import ElementTree as ET
+
+from scryfall import remove_nonalphanumeric
 
 card_data_tuple = Tuple[str, str, int, int]
 
@@ -206,6 +209,44 @@ def parse_scryfall_json(deck_text, handle_card: Callable) -> None:
         print(f'Index: {index}, quantity: {quantity}, set code: {set_code}, collector number: {collector_number}, name: {name}')
         handle_card(index, name, set_code, collector_number, quantity)
 
+# MPCFill XML parser
+def parse_mpcfill(deck_text, handle_card: Callable) -> None:
+    # We need to convert this into a more usable format for sanity
+    # The back field will only exist if the back of a card exists
+    # {
+    #     "id": "card_id",
+    #     "name": "clean_card_name",
+    #     "quantity": "quantity"
+    #     "back": "back_card_id"
+    # }
+    data = ET.fromstring(deck_text)
+    fronts = data.find("fronts")
+    backs = data.find("backs")
+
+    card_qty = int(data.find("details").find("quantity").text)
+
+    decklist = [None] * card_qty
+    if fronts is None:
+        raise ValueError("No fronts found in decklist")
+    for front in fronts.findall("card"):
+        card_id = front.find("id").text
+        clean_card_name = remove_nonalphanumeric(".".join(front.find("name").text.split(".")[:-1]))
+        slots = front.find("slots").text.split(",")
+        quantity = len(slots)
+        print(clean_card_name, quantity)
+        decklist[int(slots[0])] = {"id": card_id, "name": clean_card_name, "quantity": quantity}
+    if backs:
+        for back in backs.findall("card"):
+            card_id = back.find("id").text
+            slots = back.find("slots").text.split(",")
+            decklist[int(slots[0])]["back"] = card_id
+
+    decklist = [x for x in decklist if x]
+
+    for index, item in enumerate(decklist, start=1):
+        print(f"Index: {index}, Quantity: {item['quantity']}, name: {item['name']}")
+        handle_card(index, item["id"], item["name"], item.get("back", None), item["quantity"])
+
 class DeckFormat(str, Enum):
     SIMPLE = "simple"
     MTGA = "mtga"
@@ -214,6 +255,7 @@ class DeckFormat(str, Enum):
     DECKSTATS = "deckstats"
     MOXFIELD = "moxfield"
     SCRYFALL_JSON = "scryfall_json"
+    MPCFILL = "mpcfill"
 
 def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> None:
     if format == DeckFormat.SIMPLE:
@@ -230,5 +272,7 @@ def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> Non
         parse_moxfield(deck_text, handle_card)
     elif format == DeckFormat.SCRYFALL_JSON:
         parse_scryfall_json(deck_text, handle_card)
+    elif format == DeckFormat.MPCFILL:
+        parse_mpcfill(deck_text, handle_card)
     else:
         raise ValueError("Unrecognized deck format")
