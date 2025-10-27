@@ -318,19 +318,19 @@ def draw_card_layout(
         )
 
 def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, name: str, skip_blank_pages: bool = False, front_has_content: bool = True, back_has_content: bool = True):
+    # Calculate sheet number first
+    num_sheet = len(pages) + 1
+    if not only_fronts:
+        num_sheet = int(len(pages) / 2) + 1
+
     # Skip blank pages if requested
     if skip_blank_pages and not front_has_content:
-        print(f"Skipping blank front page (sheet {num_sheet})")
+        print(f"🚫 Skipping blank front page (sheet {num_sheet}) - no card content")
         return
 
     # Add template version number to the front page
     draw = ImageDraw.Draw(front_page)
     font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 40 * ppi_ratio)
-
-    # "Raw" specified location
-    num_sheet = len(pages) + 1
-    if not only_fronts:
-        num_sheet = int(len(pages) / 2) + 1
 
     label = f'sheet: {num_sheet}, template: {template}'
     if name is not None:
@@ -340,11 +340,13 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
 
     # Add the front page
     pages.append(front_page)
+    if skip_blank_pages:
+        print(f"✅ Added front page (sheet {num_sheet}) - has card content")
     
     # Add the back page if needed (and not skipping blank backs)
     if not only_fronts:
         if skip_blank_pages and not back_has_content:
-            print(f"Skipping blank back page (sheet {num_sheet})")
+            print(f"🚫 Skipping blank back page (sheet {num_sheet}) - no card content")
         else:
             pages.append(back_page)
 
