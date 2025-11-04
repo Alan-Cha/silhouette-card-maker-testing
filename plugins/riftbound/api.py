@@ -4,7 +4,7 @@ from enum import Enum
 import time
 import requests
 
-PILTOVER_URL_TEMPLATE = 'https://piltoverarchive.com/_next/image?url=https://cdn.piltoverarchive.com/cards/{card_number}.webp&w=1920&q=75'
+PILTOVER_URL_TEMPLATE = 'https://cdn.piltoverarchive.com/cards/{card_number}.webp'
 RIFTMANA_URL_TEMPLATE = 'https://riftmana.com/wp-content/uploads/Cards/{card_number}.webp'
 
 class ImageServer(str, Enum):
