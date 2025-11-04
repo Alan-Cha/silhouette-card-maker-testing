@@ -2,7 +2,7 @@ from enum import Enum
 import itertools
 import json
 import math
-import mimetypes
+import filetype
 import os
 import re
 from glob import glob
@@ -143,7 +143,7 @@ def get_image_file_paths(dir_path: str) -> List[str]:
             full_path = os.path.join(current_folder, filename)
             
             # Skip invalid files
-            if mimetypes.guess_file_type(full_path)[0] not in valid_mimetypes:
+            if filetype.guess_mime(full_path) not in valid_mimetypes:
                 continue
 
             relative_path = os.path.relpath(full_path, dir_path)
@@ -154,7 +154,7 @@ def get_image_file_paths(dir_path: str) -> List[str]:
 def get_back_card_image_path(back_dir_path) -> str | None:
     # List all files in the directory that are pngs and jpegs
     # The directory may contain markdown and/or other files
-    files = [f for f in Path(back_dir_path).glob("*") if f.is_file() and mimetypes.guess_file_type(f)[0] in valid_mimetypes]
+    files = [f for f in Path(back_dir_path).glob("*") if f.is_file() and filetype.guess_mime(f) in valid_mimetypes]
 
     if len(files) == 0:
         return None
