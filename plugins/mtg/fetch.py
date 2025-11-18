@@ -36,7 +36,7 @@ def cli(
         print(f'{deck_path} is not a valid file.')
         return
     
-    if format == DeckFormat.MPCFILL:
+    if format == DeckFormat.MPCFILL_XML:
         get_handle_card = mpc_get_handle_card(
             front_directory,
             double_sided_directory

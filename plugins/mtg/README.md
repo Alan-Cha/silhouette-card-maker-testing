@@ -25,8 +25,7 @@ Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy)
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH
-                {simple|mtga|mtgo|archidekt|deckstats|moxfield|scryfall_json}
+Usage: fetch.py [OPTIONS] DECK_PATH {simple|mtga|mtgo|archidekt|deckstats|moxfield|scryfall_json|mpcfill_xml}
 
 Options:
   -i, --ignore_set_and_collector_number
@@ -204,4 +203,66 @@ Scryfall JSON format.
     ]
   }
 }
+```
+
+### `mpcfill_xml`
+
+MPCFill XML format.
+
+```xml
+<order>
+    <details>
+        <quantity>6</quantity>
+        <bracket>18</bracket>
+        <stock>(S30) Standard Smooth</stock>
+        <foil>false</foil>
+    </details>
+    <fronts>
+        <card>
+            <id>1tc4fgHl6ZGYvg_HATosZydWgtHZSg0kc</id>
+            <slots>0,5</slots>
+            <name>Treasure (Rachta Lin).jpg</name>
+            <query>t:treasure</query>
+        </card>
+        <card>
+            <id>1iMS2cqqqfhx7kDrtzYhqrrjKsZyRFPeK</id>
+            <slots>1</slots>
+            <name>Alrund, God of the Cosmos (Kieran Yanner).jpg</name>
+            <query>alrund god of cosmos</query>
+        </card>
+        <card>
+            <id>1Ibb8tpwwPn6nhg0TlMzeaDvcqXPlfmLe</id>
+            <slots>2</slots>
+            <name>Titania, Voice of Gaea (Borderless Cristi Balanescu).jpg</name>
+            <query>titania voice of gaea</query>
+        </card>
+        <card>
+            <id>1ezjK8iXEdNIE_Ks0CpsTdSHfbePvw_dJ</id>
+            <slots>3,4</slots>
+            <name>Aberrant Researcher.png</name>
+            <query>aberrant researcher</query>
+        </card>
+    </fronts>
+    <backs>
+        <card>
+            <id>1htRd369fxKsPap5RbI7HUOdAL8-Fn6y2</id>
+            <slots>1</slots>
+            <name>Hakka, Whispering Raven (Kieran Yanner).jpg</name>
+            <query>hakka whispering raven</query>
+        </card>
+        <card>
+            <id>1lqUE-pjgjW74Q-vAu9IRLjHYtwa_CnnO</id>
+            <slots>2</slots>
+            <name>Titania, Gaea Incarnate Top.png</name>
+            <query>titania gaea incarnate top</query>
+        </card>
+        <card>
+            <id>1X9bpWccFfqBjNAhp3j8uJf85ihtMabWi</id>
+            <slots>3,4</slots>
+            <name>Perfected Form.png</name>
+            <query>perfected form</query>
+        </card>
+    </backs>
+    <cardback>1LrVX0pUcye9n_0RtaDNVl2xPrQgn7CYf</cardback>
+</order>
 ```

@@ -1,9 +1,9 @@
 import os
 from base64 import b64decode
-from typing import List, Set, Tuple
-
 import requests
 from filetype.filetype import guess_extension
+
+from common import remove_nonalphanumeric
 
 def request_mpcfill(card_id: str) -> requests.Response:
     base_url = "https://script.google.com/macros/s/AKfycbw8laScKBfxda2Wb0g63gkYDBdy8NWNxINoC4xDOwnCQ3JMFdruam1MdmNmN4wI5k4/exec?id="
@@ -14,11 +14,11 @@ def request_mpcfill(card_id: str) -> requests.Response:
     return r
 
 def fetch_card(
-        index: int, 
-        quantity: int, 
-        
+        index: int,
+        quantity: int,
+
         card_id: str,
-        clean_card_name: str,
+        name: str,
         back_card_id: str | None,
 
         front_img_dir: str,
@@ -26,6 +26,8 @@ def fetch_card(
 
 ) -> None:
     card_art = request_mpcfill(card_id).content
+
+    clean_card_name = remove_nonalphanumeric(name)
 
     if card_art is not None:
         card_art = b64decode(card_art)
@@ -35,7 +37,7 @@ def fetch_card(
 
             with open(image_path, 'wb') as f:
                 f.write(card_art)
-    
+
     if back_card_id:
         card_art = request_mpcfill(back_card_id).content
 
@@ -63,6 +65,5 @@ def get_handle_card(
 
             front_img_dir,
             double_sided_dir,
-
         )
     return configured_fetch_card

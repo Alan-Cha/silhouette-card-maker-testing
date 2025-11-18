@@ -1,8 +1,9 @@
 import os
 from typing import List, Set, Tuple
-import re
 import requests
 import time
+
+from common import remove_nonalphanumeric
 
 double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card']
 
@@ -55,9 +56,6 @@ def fetch_card_art(
 
                 with open(image_path, 'wb') as f:
                     f.write(card_art)
-
-def remove_nonalphanumeric(s: str) -> str:
-    return re.sub(r'[^\w]', '', s)
 
 def partition_printings(printings: List, condition: List) -> Tuple[List, List]:
     matches = []
@@ -128,9 +126,9 @@ def fetch_card(
             raise Exception()
 
         # Filter out symbols from card names
-        clear_card_name = remove_nonalphanumeric(name)
+        clean_card_name = remove_nonalphanumeric(name)
 
-        card_info_query = f'https://api.scryfall.com/cards/named?exact={clear_card_name}'
+        card_info_query = f'https://api.scryfall.com/cards/named?exact={clean_card_name}'
 
         # Query for card info
         card_json = request_scryfall(card_info_query).json()
@@ -172,7 +170,7 @@ def fetch_card(
         fetch_card_art(
             index,
             quantity,
-            clear_card_name,
+            clean_card_name,
             set,
             collector_number,
             card_json['layout'],

@@ -228,13 +228,14 @@ def parse_mpcfill(deck_text, handle_card: Callable) -> None:
     decklist = [None] * card_qty
     if fronts is None:
         raise ValueError("No fronts found in decklist")
+
     for front in fronts.findall("card"):
         card_id = front.find("id").text
-        clean_card_name = remove_nonalphanumeric(".".join(front.find("name").text.split(".")[:-1]))
+        name = front.find("name").text.split(".")[:-1][0]
         slots = front.find("slots").text.split(",")
         quantity = len(slots)
-        print(clean_card_name, quantity)
-        decklist[int(slots[0])] = {"id": card_id, "name": clean_card_name, "quantity": quantity}
+        decklist[int(slots[0])] = {"id": card_id, "name": name, "quantity": quantity}
+
     if backs:
         for back in backs.findall("card"):
             card_id = back.find("id").text
@@ -244,7 +245,7 @@ def parse_mpcfill(deck_text, handle_card: Callable) -> None:
     decklist = [x for x in decklist if x]
 
     for index, item in enumerate(decklist, start=1):
-        print(f"Index: {index}, Quantity: {item['quantity']}, name: {item['name']}")
+        print(f"Index: {index}, quantity: {item['quantity']}, name: {item['name']}")
         handle_card(index, item["id"], item["name"], item.get("back", None), item["quantity"])
 
 class DeckFormat(str, Enum):
@@ -255,7 +256,7 @@ class DeckFormat(str, Enum):
     DECKSTATS = "deckstats"
     MOXFIELD = "moxfield"
     SCRYFALL_JSON = "scryfall_json"
-    MPCFILL = "mpcfill"
+    MPCFILL_XML = "mpcfill_xml"
 
 def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> None:
     if format == DeckFormat.SIMPLE:
@@ -272,7 +273,7 @@ def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> Non
         parse_moxfield(deck_text, handle_card)
     elif format == DeckFormat.SCRYFALL_JSON:
         parse_scryfall_json(deck_text, handle_card)
-    elif format == DeckFormat.MPCFILL:
+    elif format == DeckFormat.MPCFILL_XML:
         parse_mpcfill(deck_text, handle_card)
     else:
         raise ValueError("Unrecognized deck format")
