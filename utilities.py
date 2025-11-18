@@ -293,15 +293,37 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
     if not only_fronts:
         pages.append(back_page)
 
-def check_subset(subset: set[str], mainset: set[str]) -> set[str]:
-    subset_lst = list(subset)
-    subset_noext = [".".join(x.split(".")[:-1]) for x in subset_lst]
-    mainset_noext = [".".join(x.split(".")[:-1]) for x in mainset]
-    diff_set = set()
-    for idx, item in enumerate(subset_noext):
-        if item not in mainset_noext:
-            diff_set.add(subset_lst[idx])
-    return diff_set
+def check_paths_subset(subset: set[str], mainset: set[str]) -> set[str]:
+    """Return the items in `subset` whose basenames do NOT appear in `mainset`,
+    ignoring extensions."""
+    subset_stems = {Path(p).stem: p for p in subset}
+    mainset_stems = {Path(p).stem for p in mainset}
+
+    return {orig for stem, orig in subset_stems.items() if stem not in mainset_stems}
+
+def resolve_image_with_any_extension(path: str) -> str:
+    """
+    If the exact path exists, return it.
+    Otherwise search for files with the same stem (basename)
+    but any extension. Returns the resolved path or raises.
+    """
+    p = Path(path)
+
+    # Case 1: exact file exists
+    if p.exists():
+        return str(p)
+
+    # Case 2: try to find any file with the same stem
+    pattern = str(p.with_suffix('')) + ".*"   # e.g. "card1.*"
+    matches = glob(pattern)
+
+    if len(matches) == 0:
+        raise FileNotFoundError(f"Missing image: {pattern}")
+
+    if len(matches) > 1:
+        raise ValueError(f"Ambiguous image match: {matches}")
+
+    return matches[0]
 
 def generate_pdf(
     front_dir_path: str,
@@ -361,7 +383,7 @@ def generate_pdf(
     # Check if double-sided back images has matching front images
     front_set = set(front_image_filenames)
     ds_set = set(ds_image_filenames)
-    diff = check_subset(ds_set, front_set)
+    diff = check_paths_subset(ds_set, front_set)
     if len(diff) > 0:
         raise Exception(f'Double-sided backs "{ds_set - front_set}" do not have matching fronts. Add the missing fronts to front image directory "{front_dir_path}".')
 
@@ -456,7 +478,7 @@ def generate_pdf(
 
             # Create single-sided card layout
             num_image = 1
-            it = iter(natsorted(list(check_subset(front_set, ds_set))))
+            it = iter(natsorted(list(check_paths_subset(front_set, ds_set))))
             while True:
                 file_group = list(itertools.islice(it, num_cards - len(clean_skip_indices)))
                 if not file_group:
@@ -479,15 +501,6 @@ def generate_pdf(
                     num_image = num_image + 1
 
                     front_image_path = os.path.join(front_dir_path, file)
-                    # Handle fronts having different extensions than back
-                    if not os.path.exists(front_image_path):
-                        front_image_path = ".".join(front_image_path.split(".")[:-1])
-                        fronts = [x for x in glob(front_image_path + "*")]
-                        if len(fronts) == 0:
-                            raise FileNotFoundError(f"Missing front image: {front_image_path}*")
-                        elif len(fronts) > 1:
-                            raise ValueError(f"Too many front images: {front_image_path}*")
-                        front_image_path = fronts[0]
                     front_image = Image.open(front_image_path)
                     front_image = ImageOps.exif_transpose(front_image)
                     front_card_images.append(front_image)
@@ -550,14 +563,7 @@ def generate_pdf(
 
                     front_image_path = os.path.join(front_dir_path, file)
                     # Handle fronts having different extensions than back
-                    if not os.path.exists(front_image_path):
-                        front_image_path = ".".join(front_image_path.split(".")[:-1])
-                        fronts = [x for x in glob(front_image_path + "*")]
-                        if len(fronts) == 0:
-                            raise FileNotFoundError(f"Missing front image: {front_image_path}*")
-                        elif len(fronts) > 1:
-                            raise ValueError(f"Too many front images: {front_image_path}*")
-                        front_image_path = fronts[0]
+                    front_image_path = resolve_image_with_any_extension(front_image_path)
                     front_image = Image.open(front_image_path)
                     front_image = ImageOps.exif_transpose(front_image)
                     front_card_images.append(front_image)
