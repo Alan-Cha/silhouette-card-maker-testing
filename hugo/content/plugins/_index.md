@@ -23,3 +23,4 @@ The following plugins are currently available:
 * [One Piece]({{% ref "one_piece.md" %}})
 * [Riftbound]({{% ref "riftbound.md" %}})
 * [Star Wars Unlimited]({{% ref "star_wars_unlimited.md" %}})
+* [Final Fantasy]({{% ref "final_fantasy.md" %}})
