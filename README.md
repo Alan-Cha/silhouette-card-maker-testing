@@ -157,6 +157,8 @@ The [Riftbound plugin](plugins/riftbound/README.md) supports **Tabletop Simulato
 
 The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **SWUDB JSON**, **Melee**, and **Picklist** formats.
 
+The [Final Fantasy plugin](plugins/final_fantasy/README.md) supports **Tabletop Simulator** and **Untap** formats.
+
 ### Double-Sided Cards
 
 To create double-sided cards, put front images in the `game/front/` folder and back images in the `game/double_sided/` folder. The filenames (and file extensions) must match for each pair.
