@@ -44,7 +44,7 @@ def parse_astra(deck_text: str, handle_card: Callable) -> None:
     parse_deck_helper(deck_text, handle_card, get_astra_deck, is_astra_line, extract_astra_card_data)
 
 class DeckFormat(str, Enum):
-    ASTRA = 'astra'
+    ASTRA = 'astrabuilder'
 
 def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> None:
     if format == DeckFormat.ASTRA:
