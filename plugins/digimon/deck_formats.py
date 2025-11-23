@@ -157,6 +157,3 @@ def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable):
         parse_untap(deck_text, handle_card)
     else:
         raise ValueError('Unrecognized deck format.')
-
-if __name__ == '__main__':
-    parse_deck()
