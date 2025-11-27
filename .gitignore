@@ -3,6 +3,9 @@
 venv
 __pycache__
 
+# Generated CSS files
+GUI/styles/main.css
+
 game/back/*
 !game/back/EMPTY.md
 game/front/*
@@ -13,8 +16,12 @@ game/output/*
 !game/output/EMPTY.md
 game/decklist/*
 !game/decklist/EMPTY.md
-
+node_modules
+GUI/dist
+GUI/bin/
 data
+create_pdf.exe
+/dist
 
 images/*.xcf
 

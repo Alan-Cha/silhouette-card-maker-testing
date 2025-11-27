@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="../shared/navbar.js"></script>
+    <script type="module" src="decklist.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintLister - Magic: The Gathering</title>
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body class="min-h-screen bg-surface text-content">
+    <nav-bar current-step="2"></nav-bar>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 pt-24 pb-8 max-w-6xl">
+      <header class="paper-element text-center mb-12 p-8">
+        <h1 class="text-4xl font-bold text-primary-dark mb-4">Card List Generator</h1>
+        <p class="text-primary text-lg mb-8">Enter your deck list below to generate printable cards</p>
+      </header>
+
+      <div class="paper-element p-6 max-w-4xl mx-auto">
+        <form id="longForm" class="space-y-6">
+          <!-- Decklist Input -->
+          <div>
+            <label for="longText" class="block text-xl font-semibold text-primary-dark mb-4">
+              Deck List
+            </label>
+            <textarea 
+              id="longText" 
+              rows="8" 
+              placeholder="1x Sol Ring (eoc) 57&#10;1x Black Lotus (lea) 232&#10;1x Mox Pearl (leb) 262..."
+              class="w-full px-4 py-3 rounded-lg bg-surface border-2 border-primary-light/20 focus:border-primary focus:ring-1 focus:ring-primary-light placeholder-content-light/40 text-content transition-all duration-200 resize-none font-mono text-sm"
+            ></textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button 
+              type="submit" 
+              id="searchBtn"
+              class="paper-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Search Cards
+            </button>
+            <button 
+              type="button" 
+              id="exportBtn"
+              class="paper-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Export Decklist
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button 
+              type="button" 
+              id="exportImagesZipBtn"
+              class="paper-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Export as ZIP
+            </button>
+            <button 
+              type="button" 
+              id="exportImagesFSBtn"
+              class="paper-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Export to Folder
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Results Output -->
+      <section class="paper-element p-6 mt-8">
+        <h2 class="text-xl font-semibold text-primary-dark mb-6">Search Results</h2>
+        <div id="output" class="paper-surface p-4 rounded-lg min-h-[200px]">
+          <!-- Card results will be dynamically added here -->
+        </div>
+      </section>
+
+      <!-- Next Step Button -->
+      <div class="mt-12 max-w-xl mx-auto">
+        <button 
+          onclick="location.href='../CreatePDF/create.html'" 
+          class="paper-button w-full flex items-center justify-center gap-2"
+        >
+          Next: Create PDF
+        </button>
+      </div>
+    </div>
+  </body>
+</html>
