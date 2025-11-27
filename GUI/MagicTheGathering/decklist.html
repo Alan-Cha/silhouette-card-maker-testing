@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="../shared/navbar.js"></script>
     <script type="module" src="decklist.js"></script>
     <meta charset="UTF-8">
@@ -51,23 +50,6 @@
               Export Decklist
             </button>
           </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button 
-              type="button" 
-              id="exportImagesZipBtn"
-              class="paper-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Export as ZIP
-            </button>
-            <button 
-              type="button" 
-              id="exportImagesFSBtn"
-              class="paper-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Export to Folder
-            </button>
-          </div>
         </form>
       </div>
 
@@ -82,7 +64,7 @@
       <!-- Next Step Button -->
       <div class="mt-12 max-w-xl mx-auto">
         <button 
-          onclick="location.href='../CreatePDF/create.html'" 
+          id="nextCreatePdfBtn"
           class="paper-button w-full flex items-center justify-center gap-2"
         >
           Next: Create PDF

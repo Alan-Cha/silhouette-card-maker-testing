@@ -5,24 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Silhouette Card Maker - PDF Preview</title>
     <link rel="stylesheet" href="../styles/main.css">
+    <script src="pdf_viewer.js"></script>
 </head>
 <body class="min-h-screen bg-surface text-content">
     <!-- Navigation Bar -->
     <div class="fixed top-0 left-0 right-0 p-4 z-50 bg-surface/90 backdrop-blur-sm">
         <div class="container mx-auto px-4">
-            <button 
-                onclick="location.href='../Home/home.html'" 
-                class="paper-button inline-flex items-center gap-2 !px-4 !py-2"
-            >
-                Back to Home
-            </button>
+            <div class="flex gap-4">
+                <button 
+                    onclick="location.href='../Home/home.html'" 
+                    class="paper-button inline-flex items-center gap-2 !px-4 !py-2"
+                >
+                    Back to Home
+                </button>
+                <button 
+                    onclick="openInFileExplorer()" 
+                    class="paper-button inline-flex items-center gap-2 !px-4 !py-2"
+                >
+                    Open in Folder
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- PDF Viewer -->
-    <iframe 
-        src="../../game/output/game.pdf" 
-        class="w-full h-screen border-none bg-surface"
-    ></iframe>
+    <div class="pt-20">
+        <iframe 
+            src="../../game/output/game.pdf" 
+            class="w-full border-none bg-surface"
+            style="height: calc(100vh - 5rem);"
+        ></iframe>
+    </div>
 </body>
 </html>
