@@ -17,7 +17,8 @@ game/output/*
 game/decklist/*
 !game/decklist/EMPTY.md
 node_modules
-
+GUI/dist
+GUI/bin/
 data
 create_pdf.exe
 /dist

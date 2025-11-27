@@ -1,0 +1,11 @@
+{
+  "name": "silhouette-card-maker-root",
+  "private": true,
+  "scripts": {
+  "build:create_pdf": "if [ \"$OS\" = \"Windows_NT\" ]; then ./build_create_pdf.bat; else ./build_create_pdf.sh; fi",
+  "copy:create_pdf": "cp create_pdf GUI/bin/create_pdf && cp create_pdf.exe GUI/bin/create_pdf.exe || true",
+  "build:css": "cd GUI && npm run build:css",
+  "build:gui": "cd GUI && npm run dist:mac && npm run dist:win",
+  "build-all": "npm run build:create_pdf && npm run copy:create_pdf && npm run build:css && npm run build:gui"
+  }
+}

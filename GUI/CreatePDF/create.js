@@ -1,5 +1,5 @@
 const { ipcRenderer } = require('electron');
-const { FRONT_DIR } = require('../shared/constants');
+const { getFrontDir } = require('../shared/constants');
 
 function loadImages() {
     ipcRenderer.invoke('get-front-images').then(files => {
@@ -10,7 +10,7 @@ function loadImages() {
             div.style.textAlign = 'center';
             div.style.wordBreak = 'break-all';
             const img = document.createElement('img');
-            img.src = `${FRONT_DIR}/${f}`;
+            img.src = `${getFrontDir()}/${f}`;
             img.alt = f;
             img.style.width = '100px';
             img.style.height = '140px';

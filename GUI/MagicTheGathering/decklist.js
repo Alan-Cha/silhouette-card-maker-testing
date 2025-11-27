@@ -1,4 +1,4 @@
-const { FRONT_DIR } = require('../shared/constants');
+const { getFrontDir } = require('../shared/constants');
 let cardData = [];
 let parsedCards = []; // Array of { name, setCode, setNumber, qty }
 
@@ -44,8 +44,9 @@ window.onload = function () {
     document.getElementById('exportImagesFSBtn').addEventListener('click', async function () {
         const fs = window.require ? window.require('fs') : require('fs');
         const path = window.require ? window.require('path') : require('path');
-        if (!fs.existsSync(FRONT_DIR)) {
-            fs.mkdirSync(FRONT_DIR, { recursive: true });
+        const frontDir = getFrontDir();
+        if (!fs.existsSync(frontDir)) {
+            fs.mkdirSync(frontDir, { recursive: true });
         }
         let imgCount = 1;
         for (let i = 0; i < cardData.length; i++) {
@@ -59,7 +60,7 @@ window.onload = function () {
                     let faceName = data.card_faces[f].name.replace(/[^a-zA-Z0-9]/g, ' ');
                     faceName = faceName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
                     faceName = faceName.replace(/\s+/g, '');
-                    let filename = path.join(FRONT_DIR, `${imgCount}${faceName}1.png`);
+                    let filename = path.join(frontDir, `${imgCount}${faceName}1.png`);
                     const response = await fetch(imgUrl);
                     const buffer = Buffer.from(await response.arrayBuffer());
                     fs.writeFileSync(filename, buffer);
@@ -71,7 +72,7 @@ window.onload = function () {
                 let cardName = data.name.replace(/[^a-zA-Z0-9]/g, ' ');
                 cardName = cardName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
                 cardName = cardName.replace(/\s+/g, '');
-                let filename = path.join(FRONT_DIR, `${imgCount}${cardName}1.png`);
+                let filename = path.join(frontDir, `${imgCount}${cardName}1.png`);
                 const response = await fetch(imgUrl);
                 const buffer = Buffer.from(await response.arrayBuffer());
                 fs.writeFileSync(filename, buffer);

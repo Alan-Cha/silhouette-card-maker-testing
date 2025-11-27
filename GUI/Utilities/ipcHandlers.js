@@ -2,13 +2,24 @@ const { BrowserWindow, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const { FRONT_DIR } = require('../shared/constants');
+const {
+  getFrontDir,
+  getBackDir,
+  getOutputDir,
+  getDecklistDir,
+  getDoubleSidedDir
+} = require('../shared/constants');
 let watcher = null;
 
 function startFrontDirWatcher() {
   if (watcher) return;
   const fs = require('fs');
-  watcher = fs.watch(FRONT_DIR, { persistent: true }, (eventType, filename) => {
+  const frontDir = getFrontDir();
+  // Ensure directory exists
+  if (!fs.existsSync(frontDir)) {
+    fs.mkdirSync(frontDir, { recursive: true });
+  }
+  watcher = fs.watch(frontDir, { persistent: true }, (eventType, filename) => {
     if (filename && filename.endsWith('.png')) {
       BrowserWindow.getAllWindows().forEach(win => {
         win.webContents.send('front-images-changed');
@@ -19,11 +30,12 @@ function startFrontDirWatcher() {
 startFrontDirWatcher();
 ipcMain.handle('clear-front-images', async () => {
   const fs = require('fs');
+  const frontDir = getFrontDir();
   try {
-    const files = await fs.promises.readdir(FRONT_DIR);
+    const files = await fs.promises.readdir(frontDir);
     for (const file of files) {
       if (file.endsWith('.png')) {
-        await fs.promises.unlink(require('path').join(FRONT_DIR, file));
+        await fs.promises.unlink(require('path').join(frontDir, file));
       }
     }
     return 'Front images cleared.';
@@ -36,10 +48,15 @@ ipcMain.handle('run-create-pdf', async (event, argsString) => {
     // Split argsString into array, respecting quotes
     const args = argsString.match(/(?:[^"\s]+|"[^"]*")+/g) || [];
     
-    // Use platform-specific executable name
-    const executableName = process.platform === 'win32' ? 'create_pdf.exe' : 'create_pdf';
-    const exePath = require('path').join(__dirname, '../../', executableName);
-    const cwd = require('path').join(__dirname, '../../');
+  // Use platform-specific executable name in the packaged bin directory
+  const executableName = process.platform === 'win32' ? 'create_pdf.exe' : 'create_pdf';
+  // In production, use process.resourcesPath; in dev, use __dirname
+  const isPackaged = require('electron').app.isPackaged;
+  const baseDir = isPackaged
+    ? require('path').join(process.resourcesPath, 'bin')
+    : require('path').join(__dirname, '../bin');
+  const exePath = require('path').join(baseDir, executableName);
+  const cwd = baseDir;
 
     // Ensure the executable has proper permissions on Unix-like systems
     if (process.platform !== 'win32') {
@@ -75,9 +92,20 @@ ipcMain.handle('run-create-pdf', async (event, argsString) => {
 
 ipcMain.handle('get-front-images', async () => {
   try {
-    const files = await fs.promises.readdir(FRONT_DIR);
+    const files = await fs.promises.readdir(getFrontDir());
     return files.filter(f => f.endsWith('.png'));
   } catch (err) {
     return [];
   }
 });
+
+// Example for other directories (add similar handlers as needed):
+ipcMain.handle('get-back-images', async () => {
+  try {
+    const files = await fs.promises.readdir(getBackDir());
+    return files.filter(f => f.endsWith('.png'));
+  } catch (err) {
+    return [];
+  }
+});
+// Add similar logic for output, decklist, double_sided as needed
