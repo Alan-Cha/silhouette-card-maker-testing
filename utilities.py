@@ -5,6 +5,7 @@ import math
 import os
 from pathlib import Path
 import re
+import sys
 from typing import Dict, List
 from xml.dom import ValidationErr
 
@@ -13,7 +14,16 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 from pydantic import BaseModel
 
 # Specify directory locations
-asset_directory = 'assets'
+# When running as a PyInstaller bundle, use the _MEIPASS temp directory
+# Otherwise use the normal assets directory
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    base_path = sys._MEIPASS
+else:
+    # Running as script
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+asset_directory = os.path.join(base_path, 'assets')
 
 layouts_filename = 'layouts.json'
 layouts_path = os.path.join(asset_directory, layouts_filename)
@@ -305,7 +315,7 @@ def generate_pdf(
     load_offset: bool,
     name: str
 ):
-    # Sanity checks for the different directories
+    # Validate directories exist
     f_path = Path(front_dir_path)
     if not f_path.exists() or not f_path.is_dir():
         raise Exception(f'Front image directory path "{f_path}" is invalid.')
@@ -326,9 +336,15 @@ def generate_pdf(
     # Sanity check for output images
     if output_images:
         output_path = get_directory(output_path)
+        # Ensure output directory exists
+        os.makedirs(output_path, exist_ok=True)
     else:
         if not output_path.lower().endswith(".pdf"):
             raise Exception(f'Cannot save PDF to output path "{output_path}" because it is not a valid PDF file path.')
+        # Ensure output directory exists for PDF
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
 
     # Get the back image, if it exists
     back_card_image_path = None

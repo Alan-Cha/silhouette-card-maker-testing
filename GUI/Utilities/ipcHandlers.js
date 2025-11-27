@@ -11,14 +11,22 @@ const {
 } = require('../shared/constants');
 let watcher = null;
 
+// Ensure all game directories exist on startup
+function ensureDirectoriesExist() {
+  const dirs = [getFrontDir(), getBackDir(), getOutputDir(), getDecklistDir(), getDoubleSidedDir()];
+  dirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`Created directory: ${dir}`);
+    }
+  });
+}
+ensureDirectoriesExist();
+
 function startFrontDirWatcher() {
   if (watcher) return;
   const fs = require('fs');
   const frontDir = getFrontDir();
-  // Ensure directory exists
-  if (!fs.existsSync(frontDir)) {
-    fs.mkdirSync(frontDir, { recursive: true });
-  }
   watcher = fs.watch(frontDir, { persistent: true }, (eventType, filename) => {
     if (filename && filename.endsWith('.png')) {
       BrowserWindow.getAllWindows().forEach(win => {
@@ -70,7 +78,13 @@ ipcMain.handle('run-create-pdf', async (event, argsString) => {
     const pdfProcess = spawn(exePath, args, { 
       shell: false, // Set to false for better security
       cwd,
-      env: { ...process.env }, // Pass through environment variables
+      env: { 
+        ...process.env,
+        CARD_MAKER_FRONT_DIR: getFrontDir(),
+        CARD_MAKER_BACK_DIR: getBackDir(),
+        CARD_MAKER_OUTPUT_DIR: getOutputDir(),
+        CARD_MAKER_DOUBLE_SIDED_DIR: getDoubleSidedDir()
+      },
     });
 
     let stdout = '';

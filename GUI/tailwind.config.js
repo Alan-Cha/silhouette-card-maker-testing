@@ -1,13 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./**/*.{html,js,jsx,ts,tsx}",
-    "./src/**/*.{html,js,jsx,ts,tsx}",
+    "./*.{html,js}",
+    "./CreatePDF/**/*.{html,js}",
+    "./Home/**/*.{html,js}",
+    "./MagicTheGathering/**/*.{html,js}",
+    "./shared/**/*.{html,js}",
+    "./Utilities/**/*.{html,js}",
     "./styles/**/*.{css,scss}",
-  ],
-  exclude: [
-    '**/node_modules/**',
-    './node_modules/**',
   ],
   theme: {
     extend: {

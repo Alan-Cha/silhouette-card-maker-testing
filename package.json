@@ -2,10 +2,12 @@
   "name": "silhouette-card-maker-root",
   "private": true,
   "scripts": {
-  "build:create_pdf": "if [ \"$OS\" = \"Windows_NT\" ]; then ./build_create_pdf.bat; else ./build_create_pdf.sh; fi",
-  "copy:create_pdf": "cp create_pdf GUI/bin/create_pdf && cp create_pdf.exe GUI/bin/create_pdf.exe || true",
+  "build:create_pdf": "node -e \"process.platform === 'win32' ? require('child_process').execSync('build_create_pdf.bat', {stdio: 'inherit'}) : require('child_process').execSync('./build_create_pdf.sh', {stdio: 'inherit'})\"",
+  "copy:create_pdf": "node -e \"const fs=require('fs'),path=require('path');const binDir=path.join('GUI','bin');fs.mkdirSync(binDir,{recursive:true});['create_pdf','create_pdf.exe'].forEach(f=>{try{fs.copyFileSync(f,path.join(binDir,f))}catch(e){}})\"",
+  "check:create_pdf": "node check_and_build.js",
   "build:css": "cd GUI && npm run build:css",
   "build:gui": "cd GUI && npm run dist:mac && npm run dist:win",
-  "build-all": "npm run build:create_pdf && npm run copy:create_pdf && npm run build:css && npm run build:gui"
+  "build-all": "npm run build:create_pdf && npm run copy:create_pdf && npm run build:css && npm run build:gui",
+  "dev": "npm run check:create_pdf && cd GUI && npm run dev"
   }
 }

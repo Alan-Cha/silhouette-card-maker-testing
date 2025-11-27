@@ -4,10 +4,11 @@ import re
 import click
 from utilities import CardSize, PaperSize, generate_pdf
 
-front_directory = os.path.join('game', 'front')
-back_directory = os.path.join('game', 'back')
-double_sided_directory = os.path.join('game', 'double_sided')
-output_directory = os.path.join('game', 'output')
+# Use environment variables if available, otherwise fall back to local game directory
+front_directory = os.environ.get('CARD_MAKER_FRONT_DIR', os.path.join('game', 'front'))
+back_directory = os.environ.get('CARD_MAKER_BACK_DIR', os.path.join('game', 'back'))
+double_sided_directory = os.environ.get('CARD_MAKER_DOUBLE_SIDED_DIR', os.path.join('game', 'double_sided'))
+output_directory = os.environ.get('CARD_MAKER_OUTPUT_DIR', os.path.join('game', 'output'))
 
 default_output_path = os.path.join(output_directory, 'game.pdf')
 

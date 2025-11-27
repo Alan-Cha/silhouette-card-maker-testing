@@ -1,6 +1,8 @@
 {
   "name": "gui",
   "version": "1.0.0",
+  "description": "Silhouette Card Maker - Create professional card PDFs for cutting",
+  "author": "Casey Crocamo",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -25,18 +27,32 @@
     "productName": "Silhouette Card Maker",
     "files": [
       "**/*",
-      "!node_modules/.cache/**",
-      "bin/create_pdf",
-      "bin/create_pdf.exe"
+      "!node_modules/.cache/**"
+    ],
+    "extraResources": [
+      {
+        "from": "bin/create_pdf.exe",
+        "to": "bin/create_pdf.exe",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "bin/create_pdf",
+        "to": "bin/create_pdf",
+        "filter": ["**/*"]
+      }
     ],
     "directories": {
       "buildResources": "assets"
     },
     "mac": {
-      "target": ["dmg", "zip"]
+      "target": ["dmg", "zip"],
+      "identity": null,
+      "hardenedRuntime": false
     },
     "win": {
-      "target": ["nsis", "zip"]
+      "target": ["nsis", "zip"],
+      "sign": null,
+      "signingHashAlgorithms": []
     }
   }
 }
