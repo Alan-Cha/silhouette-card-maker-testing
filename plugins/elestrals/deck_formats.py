@@ -1,6 +1,5 @@
 from enum import Enum
-from _collections_abc import Set
-from typing import Callable, Tuple
+from typing import Callable
 from elestrals import DECK_ID_URL_TEMPLATE, request_elestrals
 
 # card_data_tuple = Tuple[str, str, int] # name, image, quantity
@@ -32,7 +31,13 @@ from elestrals import DECK_ID_URL_TEMPLATE, request_elestrals
 #     if len(error_lines) > 0:
 #         print(f'Errors: {error_lines}')
 
-def parse_elestrals(deck_text: str, handle_card: Callable):
+def parse_elestrals(file_path: str, handle_card: Callable):
+    if file_path.endswith(".txt"):
+        with open(file_path, 'r') as deck_file:
+            deck_text = deck_file.read()
+    else:
+        deck_text = file_path
+
     deck_response = request_elestrals(DECK_ID_URL_TEMPLATE.format(deck_id=deck_text))
 
     data = deck_response.json().get("data")
@@ -63,10 +68,10 @@ def parse_elestrals(deck_text: str, handle_card: Callable):
             handle_card(index + 1, name, image, quantity)
 
 class DeckFormat(str, Enum):
-    ELESTRALS_PLAY_NETWORK = 'elestrals'
+    ELESTRALS = 'elestrals'
 
 def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable):
-    if format == DeckFormat.ELESTRALS_PLAY_NETWORK:
+    if format == DeckFormat.ELESTRALS:
         parse_elestrals(deck_text, handle_card)
     else:
         raise ValueError('Unrecognized deck format.')

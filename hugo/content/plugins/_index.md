@@ -12,6 +12,7 @@ The following plugins are currently available:
 * [Yu-Gi-Oh!]({{% ref "yugioh.md" %}})
 * [Altered]({{% ref "altered.md" %}})
 * [Digimon]({{% ref "digimon.md" %}})
+* [Elestrals]({{% ref "elestrals.md" %}})
 * [Flesh and Blood]({{% ref "flesh_and_blood.md" %}})
 * [Grand Archive]({{% ref "grand_archive.md" %}})
 * [Gundam]({{% ref "gundam.md" %}})

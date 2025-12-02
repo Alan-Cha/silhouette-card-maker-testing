@@ -35,8 +35,14 @@ Options:
 
 ### `elestrals`
 
-The format for ``Elestrals Play Network``.
+The format for Elestrals Play Network.
 
 ```
 6883b784bd9cf7315d565843
+```
+
+You can also use YDKE directly in the command line. Note the single quotes around the YDKE.
+
+```sh
+python plugins/elestrals/fetch.py 6883b784bd9cf7315d565843 elestrals
 ```

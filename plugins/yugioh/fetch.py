@@ -12,7 +12,7 @@ double_sided_directory = os.path.join('game', 'double_sided')
 @click.argument('format', type=click.Choice([t.value for t in DeckFormat], case_sensitive=False))
 
 def cli(deck_path: str, format: DeckFormat):
-    if format == DeckFormat.YDK and not os.path.isfile(deck_path):
+    if format != DeckFormat.YDKE and not os.path.isfile(deck_path):
         print(f'{deck_path} is not a valid file.')
         return
 

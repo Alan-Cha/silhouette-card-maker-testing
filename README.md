@@ -128,6 +128,8 @@ The [Altered plugin](plugins/altered/README.md) supports **Ajordat** format.
 
 The [Digimon plugin](plugins/digimon/README.md) supports **Tabletop Simulator**, **Digimoncard.io**, **Digimoncard.dev**, **Digimoncard.app**, **DigimonMeta**, and **Untap** formats.
 
+The [Elestrals plugin](plugins/elestrals/README.md) supports **Elestrals** format.
+
 The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
 
 The [Grand Archive plugin](plugins/grand_archive/README.md) supports **Omnideck** format.
