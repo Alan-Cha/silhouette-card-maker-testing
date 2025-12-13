@@ -173,7 +173,7 @@ def get_back_card_image_path(back_dir_path) -> str | None:
 
     return os.path.join(back_dir_path, files[index])
 
-def draw_card_with_bleed(card_image: Image, base_image: Image, box: tuple[int, int, int, int], print_bleed: tuple[int, int]):
+def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, box: tuple[int, int, int, int], print_bleed: tuple[int, int]):
     origin_x, origin_y, _, _ = box
 
     x_bleed = print_bleed[0]
@@ -245,31 +245,79 @@ def draw_card_layout(
             # Rotate the back image to account for orientation
             card_image = card_image.rotate(180)
 
-        # Crop the outer portion of a card to remove preexisting print bleed
         crop_x_percent, crop_y_percent = crop
+
+        desired_bleed_x_ppi = math.ceil(print_bleed[0] * ppi_ratio)
+        desired_bleed_y_ppi = math.ceil(print_bleed[1] * ppi_ratio)
+        synthetic_bleed = (desired_bleed_x_ppi, desired_bleed_y_ppi)
+
+        # Apply cropping and scaling if required
         if crop_x_percent > 0 or crop_y_percent > 0:
             card_width, card_height = card_image.size
-            card_width_crop = math.floor(card_width / 2 * (crop_x_percent / 100))
-            card_height_crop = math.floor(card_height / 2 * (crop_y_percent / 100))
 
-            card_image = card_image.crop((
-                card_width_crop,
-                card_height_crop,
-                card_width - card_width_crop,
-                card_height - card_height_crop
-            ))
+            # Calculate the original size minus the desired crop: "cropped size"
+            post_crop_width = math.floor(card_width * (1 - (crop_x_percent / 100)))
+            post_crop_height = math.floor(card_height * (1 - (crop_y_percent / 100)))
 
-        # Resize the image to normalize extend_corners
-        card_image = card_image.resize((math.floor(width * ppi_ratio), math.floor(height * ppi_ratio)))
+            # Calculate the size of the card after scaling: "scaled size"
+            post_scale_width = math.floor(width * ppi_ratio)
+            post_scale_height = math.floor(height * ppi_ratio)
 
+            # Calculate the size of the card after adding bleed: "bleed size"
+            post_bleed_width = math.floor(width * ppi_ratio) + 2 * desired_bleed_x_ppi
+            post_bleed_height = math.floor(height * ppi_ratio) + 2 * desired_bleed_y_ppi
+
+            # Calculate the ratio between the cropped size and the scaled size: "scale ratio"
+            scale_ratio_x = post_crop_width / post_scale_width
+            scale_ratio_y = post_crop_height / post_scale_height
+
+            # Calculate the size of the card after adding bleed, but before scaling: "unscaled bleed size"
+            unscaled_bleed_width = math.floor(post_bleed_width * scale_ratio_x)
+            unscaled_bleed_height = math.floor(post_bleed_height * scale_ratio_y)
+
+            # Check if the unscaled bleed size is smaller than the original card size
+            # If so, crop the card directly to the unscaled bleed size
+            if unscaled_bleed_width < card_width and unscaled_bleed_height < card_height:
+                crop_x = (card_width - unscaled_bleed_width) // 2
+                crop_y = (card_height - unscaled_bleed_height) // 2
+                card_image = card_image.crop((
+                    crop_x,
+                    crop_y,
+                    card_width - crop_x,
+                    card_height - crop_y,
+                ))
+                synthetic_bleed = (0, 0)
+                card_image = card_image.resize((post_bleed_width, post_bleed_height))
+
+            # Otherwise, crop the card to the cropped size, then resize it to the scaled size
+            else:
+                card_image = card_image.crop((
+                    math.floor(card_width * (crop_x_percent / 100) / 2),
+                    math.floor(card_height * (crop_y_percent / 100) / 2),
+                    math.floor(card_width - (card_width * (crop_x_percent / 100) / 2)),
+                    math.floor(card_height - (card_height * (crop_y_percent / 100) / 2)),
+                ))
+                card_image = card_image.resize((math.floor(width * ppi_ratio), math.floor(height * ppi_ratio)))
+
+        # If the card is not cropped, just resize it to the desired size
+        else:
+            card_image = card_image.resize((math.floor(width * ppi_ratio), math.floor(height * ppi_ratio)))
+
+        # Extend the corners if required
         extend_corners_ppi = math.floor(extend_corners * ppi_ratio)
         card_image = card_image.crop((extend_corners_ppi, extend_corners_ppi, card_image.width - extend_corners_ppi, card_image.height - extend_corners_ppi))
 
+        # Push the card to the document with bleed
         draw_card_with_bleed(
             card_image,
             base_image,
-            (new_origin_x + extend_corners_ppi, new_origin_y + extend_corners_ppi, math.floor(width * ppi_ratio) - (2 * extend_corners_ppi), math.floor(height * ppi_ratio) - (2 * extend_corners_ppi)),
-            tuple(math.ceil(bleed * ppi_ratio) + extend_corners_ppi for bleed in print_bleed)
+            (
+                new_origin_x + extend_corners_ppi, 
+                new_origin_y + extend_corners_ppi, 
+                math.floor(width * ppi_ratio) - (2 * extend_corners_ppi), 
+                math.floor(height * ppi_ratio) - (2 * extend_corners_ppi),
+            ),
+            synthetic_bleed
         )
 
 def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, name: str):
