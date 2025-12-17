@@ -30,16 +30,18 @@ def fetch_card_art(
     layout: str,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
+    token: bool = False
 ) -> None:
     # Query for the front side
     card_front_image_query = f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
     card_art = request_scryfall(card_front_image_query).content
+    token_str = "_T_" if token else ""
     if card_art is not None:
 
         # Save image based on quantity
         for counter in range(quantity):
-            image_path = os.path.join(front_img_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
+            image_path = os.path.join(front_img_dir, f'{str(index)}{token_str}{clean_card_name}{str(counter + 1)}.png')
 
             with open(image_path, 'wb') as f:
                 f.write(card_art)
@@ -119,7 +121,7 @@ def fetch_card(
                     if related["component"] == "token":
                         card_info_query = related["uri"]
                         card_json = request_scryfall(card_info_query).json()
-                        fetch_card_art(index, quantity, remove_nonalphanumeric(related["name"]), card_json["set"], card_json["collector_number"], card_json["layout"], front_img_dir, double_sided_dir)
+                        fetch_card_art(index, quantity, remove_nonalphanumeric(related["name"]), card_json["set"], card_json["collector_number"], card_json["layout"], front_img_dir, double_sided_dir, token=True)
 
     else:
         if name == "":
