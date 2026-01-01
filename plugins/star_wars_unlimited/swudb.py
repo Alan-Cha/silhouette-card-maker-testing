@@ -40,6 +40,12 @@ def fetch_name_and_title(card_id: str) -> card_tuple:
 
         title = json.get('Subtitle') or '' if json.get('Type') != 'Base' else ''
 
+        # These are incorrectly hosted by swu-db
+        if name == 'Darth Tyrannus':
+            name = 'Darth Tyranus'
+        if title == 'Darth Tyrannus':
+            title = 'Darth Tyranus'
+
         return (name, title)
     
     else:
