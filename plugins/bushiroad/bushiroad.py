@@ -2,6 +2,8 @@ from os import path
 from requests import Response, get
 from time import sleep
 from PIL import Image
+from re import sub
+from unicodedata import normalize, category
 
 DECK_API_URL = 'https://decklog-en.bushiroad.com/system/app/api/view/{deck_code}'
 
@@ -62,10 +64,12 @@ def fetch_card(
     if back_image != '':
         back_card_art = request_bushiroad(image_url.format(card_image=back_image)).content
 
+    sanitized_name = sub(r'[^A-Za-z0-9 \-]+', '', ''.join(c for c in normalize('NFD', name) if category(c) != 'Mn'))
+
     for counter in range(quantity):
 
         if front_card_art is not None:
-            front_image_path = path.join(front_img_dir, f'{str(index)}{name}{str(counter + 1)}.png')
+            front_image_path = path.join(front_img_dir, f'{str(index)}{sanitized_name}{str(counter + 1)}.png')
 
             with open(front_image_path, 'wb') as f:
                 f.write(front_card_art)
@@ -77,7 +81,7 @@ def fetch_card(
                 front_image_rotated.save(front_image_path) 
 
         if back_card_art is not None:
-            back_image_path = path.join(back_img_dir, f'{str(index)}{name}{str(counter + 1)}.png')
+            back_image_path = path.join(back_img_dir, f'{str(index)}{sanitized_name}{str(counter + 1)}.png')
 
             with open(back_image_path, 'wb') as f:
                 f.write(back_card_art)
