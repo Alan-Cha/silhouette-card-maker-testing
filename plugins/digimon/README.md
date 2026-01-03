@@ -129,7 +129,7 @@ BT9-109 X Antibody 4
 
 ### `digimonmeta`
 
-The format for ``DigimonMeta``.
+[DigimonMeta](https://digimonmeta.com/) format.
 
 ```
 4 (BT22-002)
@@ -158,7 +158,7 @@ The format for ``DigimonMeta``.
 
 ### `untap`
 
-The format for ``Untap``.
+Untap format.
 
 ```
 1 MetalTyrannomon                      (DCG) (BT11-055)
