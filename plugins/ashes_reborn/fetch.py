@@ -11,21 +11,18 @@ front_directory = path.join('game', 'front')
 @argument('format', type=Choice([t.value for t in DeckFormat], case_sensitive=False))
 @option("--source", default=ImageServer.ASHES.value, type=Choice([t.value for t in ImageServer], case_sensitive=False), show_default=True, help="The desired image source.")
 def cli(deck_path: str, format: DeckFormat, source: ImageServer):
-    if not path.isfile(deck_path):
+    if not (format == DeckFormat.ASHES_SHARE_URL or format == DeckFormat.ASHESDB_SHARE_URL) and not path.isfile(deck_path):
         print(f'{deck_path} is not a valid file.')
         return
 
-    with open(deck_path, 'r') as deck_file:
-        deck_text = deck_file.read()
-
-        parse_deck(
-            deck_text,
-            format,
-            get_handle_card(
-                source,
-                front_directory
-            )
+    parse_deck(
+        deck_path,
+        format,
+        get_handle_card(
+            source,
+            front_directory
         )
+    )
 
 if __name__ == '__main__':
     cli()

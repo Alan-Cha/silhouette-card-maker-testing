@@ -126,6 +126,8 @@ The [Yu-Gi-Oh! plugin](plugins/yugioh/README.md) supports **YDK** and **YDKE** f
 
 The [Altered plugin](plugins/altered/README.md) supports **Ajordat** format.
 
+The [Ashes Reborn plugin](plugins/ashes_reborn/README.md) supports **Ashes** and **Ashes DB** formats.
+
 The [Digimon plugin](plugins/digimon/README.md) supports **Tabletop Simulator**, **Digimoncard.io**, **Digimoncard.dev**, **Digimoncard.app**, **DigimonMeta**, and **Untap** formats.
 
 The [Elestrals plugin](plugins/elestrals/README.md) supports **Elestrals** format.

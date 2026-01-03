@@ -1,5 +1,6 @@
 from enum import Enum
 from _collections_abc import Set
+import os
 from typing import Callable, Tuple
 from ashes import fetch_deck_data
 from re import compile
@@ -36,11 +37,11 @@ def parse_deck_helper(
         print(f'Errors: {error_lines}')
 
 def parse_ashes(deck_text: str, handle_card: Callable):
-    SHARE_DECK_PATTERN = compile(r'https\:\/\/ashes.live\/decks\/share\/(.+)\/*')
+    SHARE_URL_PATTERN = compile(r'https\:\/\/ashes.live\/decks\/share\/(.+)\/*')
     DECK_API_URL_TEMPLATE = 'https://api.ashes.live/v2/decks/shared/{share_id}'
 
     def is_ashes_deck(deck_url: str) -> bool:
-        return bool(SHARE_DECK_PATTERN.match(deck_url))
+        return bool(SHARE_URL_PATTERN.match(deck_url))
 
     def is_ashes_line(line) -> bool:
         return line.get("name") and line.get("stub")
@@ -58,19 +59,22 @@ def parse_ashes(deck_text: str, handle_card: Callable):
         decks = []
         for text in text_iterable:
             if is_ashes_deck(text):
-                match = SHARE_DECK_PATTERN.match(text)
+                match = SHARE_URL_PATTERN.match(text)
                 deck = fetch_deck_data(DECK_API_URL_TEMPLATE.format(share_id=match.group(1)))
                 decks += deck
-        return deck
+        return decks
+
+    if os.path.isfile(deck_text):
+        deck_text = open(deck_text,"r").read()
 
     parse_deck_helper(deck_text, handle_card, split_ashes_deck, is_ashes_line, extract_ashes_card_data)
 
 def parse_ashesdb(deck_text: str, handle_card: Callable):
-    SHARE_DECK_PATTERN = compile(r'https\:\/\/apiasheslive.plaidhatgames.com\/v2\/decks\/shared\/(.+)\/*')
+    SHARE_URL_PATTERN = compile(r'https\:\/\/ashesdb.plaidhatgames.com\/decks\/share\/(.+)\/*')
     DECK_API_URL_TEMPLATE = 'https://apiasheslive.plaidhatgames.com/v2/decks/shared/{share_id}'
 
     def is_ashesdb_deck(deck_url: str) -> bool:
-        return bool(SHARE_DECK_PATTERN.match(deck_url))
+        return bool(SHARE_URL_PATTERN.match(deck_url))
 
     def is_ashesdb_line(line) -> bool:
         return line.get("name") and line.get("stub")
@@ -88,24 +92,24 @@ def parse_ashesdb(deck_text: str, handle_card: Callable):
         decks = []
         for text in text_iterable:
             if is_ashesdb_deck(text):
-                match = SHARE_DECK_PATTERN.match(text)
+                match = SHARE_URL_PATTERN.match(text)
                 deck = fetch_deck_data(DECK_API_URL_TEMPLATE.format(share_id=match.group(1)))
                 decks += deck
-        return deck
+        return decks
+    
+    if os.path.isfile(deck_text):
+        deck_text = open(deck_text,"r").read()
 
     parse_deck_helper(deck_text, handle_card, split_ashesdb_deck, is_ashesdb_line, extract_ashesdb_card_data)
 
 class DeckFormat(str, Enum):
-    ASHES   = 'ashes'
-    ASHESDB = 'ashesdb'
+    ASHES_SHARE_URL   = 'ashes_share_url'
+    ASHESDB_SHARE_URL = 'ashesdb_share_url'
 
 def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable):
-    if format == DeckFormat.ASHES:
+    if format == DeckFormat.ASHES_SHARE_URL:
         parse_ashes(deck_text, handle_card)
-    elif format == DeckFormat.ASHESDB:
+    elif format == DeckFormat.ASHESDB_SHARE_URL:
         parse_ashesdb(deck_text, handle_card)
     else:
         raise ValueError('Unrecognized deck format.')
-
-if __name__ == '__main__':
-    parse_deck()
