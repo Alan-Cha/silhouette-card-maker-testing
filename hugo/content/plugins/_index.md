@@ -11,6 +11,7 @@ The following plugins are currently available:
 * [Magic: The Gathering]({{% ref "mtg.md" %}})
 * [Yu-Gi-Oh!]({{% ref "yugioh.md" %}})
 * [Altered]({{% ref "altered.md" %}})
+* [Ashes Reborn]({{% ref "ashes_reborn.md" %}})
 * [Digimon]({{% ref "digimon.md" %}})
 * [Elestrals]({{% ref "elestrals.md" %}})
 * [Flesh and Blood]({{% ref "flesh_and_blood.md" %}})

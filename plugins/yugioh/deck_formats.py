@@ -1,5 +1,6 @@
 # Based on https://github.com/Yeet195/DeckParser
 
+import os
 import numpy as np
 import base64
 from enum import Enum
@@ -17,10 +18,10 @@ def base64_to_passcodes(b64_string):
     return np.frombuffer(base64.b64decode(b64_string), dtype=np.uint32).tolist()
 
 def parse_ydke(file_path):
-    if not (file_path.startswith("ydke://") or file_path.endswith(".txt")):
+    if not (file_path.startswith("ydke://") or os.path.isfile(file_path)):
         raise ValueError('Unrecognized YDKe format. Expected valid file path or "ydke://[main]![extra]![side]!"')
 
-    if file_path.endswith(".txt"):
+    if os.path.isfile(file_path):
         ydke_text = open(file_path,"r").read()
 
     else:
