@@ -4,6 +4,7 @@ import json
 import math
 import os
 import re
+import time
 from glob import glob
 from pathlib import Path
 from typing import Dict, List
@@ -343,6 +344,9 @@ def generate_pdf(
     load_offset: bool,
     name: str
 ):
+    #Create timestamp to check how long process takes
+    startTime = time.time()
+
     # Sanity checks for the different directories
     f_path = Path(front_dir_path)
     if not f_path.exists() or not f_path.is_dir():
@@ -587,7 +591,7 @@ def generate_pdf(
 
             else:
                 pages[0].save(output_path, format='PDF', save_all=True, append_images=pages[1:], resolution=math.floor(300 * ppi_ratio), speed=0, subsampling=0, quality=quality)
-                print(f'Generated PDF: {output_path}')
+                print(f'Generated PDF: {output_path} ({round(time.time() - startTime, 4)} seconds)')
 
 class OffsetData(BaseModel):
     x_offset: int
