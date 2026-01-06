@@ -3,7 +3,7 @@ from base64 import b64decode
 import requests
 from filetype.filetype import guess_extension
 
-from common import remove_nonalphanumeric
+from .common import remove_nonalphanumeric
 
 def request_mpcfill(card_id: str) -> requests.Response:
     base_url = "https://script.google.com/macros/s/AKfycbw8laScKBfxda2Wb0g63gkYDBdy8NWNxINoC4xDOwnCQ3JMFdruam1MdmNmN4wI5k4/exec?id="

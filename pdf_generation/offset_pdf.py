@@ -1,19 +1,6 @@
-import os
-import click
 import pypdfium2 as pdfium
 
-from utilities import load_saved_offset, offset_images, save_offset
-
-output_directory = os.path.join('game', 'output')
-default_output_pdf_path = os.path.join(output_directory, 'game.pdf')
-
-@click.command()
-@click.option("--pdf_path", default=default_output_pdf_path, help="The path of the input PDF.")
-@click.option("--output_pdf_path", help="The desired path of the offset PDF.")
-@click.option("-x", "--x_offset", type=int, help="The desired offset in the x-axis.")
-@click.option("-y", "--y_offset", type=int, help="The desired offset in the y-axis.")
-@click.option("-s", "--save", default=False, is_flag=True, help="Save the x and y offset values.")
-@click.option("--ppi", default=300, type=click.IntRange(min=0), show_default=True, help="Pixels per inch (PPI) when creating PDF.")
+from .utilities import load_saved_offset, offset_images, save_offset
 
 def offset_pdf(pdf_path, output_pdf_path, x_offset, y_offset, save, ppi):
     new_x_offset = 0
@@ -61,6 +48,3 @@ def offset_pdf(pdf_path, output_pdf_path, x_offset, y_offset, save, ppi):
         print(f'Offset PDF: {output_pdf_path}')
     except FileNotFoundError as e:
         print(f"Cannot offset nonexistent PDF: {e}")
-
-if __name__ == '__main__':
-    offset_pdf()

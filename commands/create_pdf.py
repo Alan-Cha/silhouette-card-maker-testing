@@ -1,8 +1,8 @@
 import os
-import re
-
 import click
-from utilities import Registration, CardSize, PaperSize, generate_pdf
+
+from pdf_generation.utilities import Registration, CardSize, PaperSize
+from pdf_generation.create_pdf import create_pdf
 
 front_directory = os.path.join('game', 'front')
 back_directory = os.path.join('game', 'back')
@@ -11,7 +11,7 @@ output_directory = os.path.join('game', 'output')
 
 default_output_path = os.path.join(output_directory, 'game.pdf')
 
-@click.command()
+@click.command(name="create_pdf")
 @click.option("--front_dir_path", default=front_directory, show_default=True, help="The path to the directory containing the card fronts.")
 @click.option("--back_dir_path", default=back_directory, show_default=True, help="The path to the directory containing one or more card backs.")
 @click.option("--double_sided_dir_path", default=double_sided_directory, show_default=True, help="The path to the directory containing card backs for double-sided cards.")
@@ -30,7 +30,7 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--name", help="Label each page of the PDF with a name.")
 @click.version_option("1.6.0")
 
-def cli(
+def create_pdf_cli(
     front_dir_path,
     back_dir_path,
     double_sided_dir_path,
@@ -48,7 +48,8 @@ def cli(
     load_offset,
     name
 ):
-    generate_pdf(
+    """Lay out your cards in a PDF"""
+    create_pdf(
         front_dir_path,
         back_dir_path,
         double_sided_dir_path,
@@ -66,6 +67,3 @@ def cli(
         load_offset,
         name
     )
-
-if __name__ == '__main__':
-    cli()

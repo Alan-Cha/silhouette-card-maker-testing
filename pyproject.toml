@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "silhouette-card-maker"
+dynamic = ["version"]
+requires-python = ">= 3.12"
+
+description = "A suite of tools for making custom cards and proxies with Silhouette cutting machines."
+readme = "README.md"
+
+license = "MIT"
+license-files = ["LICENSE.md"]
+
+keywords = [
+]
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Other Audience",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Games/Entertainment",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
+dependencies = [
+    "natsort==8.4.0",
+    "numpy==2.3.3",
+    "Pillow==11.3.0",
+    "pydantic==2.12.0",
+    "Requests==2.32.3",
+    "pypdfium2==4.30.0",
+    "split-image==2.0.1",
+    "filetype==1.2.0",
+]
+
+[project.optional-dependencies]
+cli = [
+    "click==8.1.8",
+]
+gui = []
+
+[project.scripts]
+silhouette-card-maker-cli = "cli_runner:cli"
+
+[project.gui-scripts]
+silhouette-card-maker-gui = "gui_runner:gui"
+
+[project.urls]
+Homepage = "https://alan-cha.github.io/silhouette-card-maker"
+Repository = "https://github.com/Alan-Cha/silhouette-card-maker"
+Issues = "https://github.com/Alan-Cha/silhouette-card-maker/issues"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+only-include = [
+  "cli_runner.py",
+  "gui_runner.py",
+  "commands",
+  "pdf_generation",
+  "utilities",
+  "assets",
+  "calibration",
+  "cutting_templates",
+  "game",
+  "plugins",
+]

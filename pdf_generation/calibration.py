@@ -2,7 +2,7 @@ import math
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-from utilities import PaperSize
+from .utilities import PaperSize
 
 # Specify directory locations
 asset_directory = 'assets'

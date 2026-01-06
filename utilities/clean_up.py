@@ -2,9 +2,10 @@
 import os
 import shutil
 
+root_path = 'game'
+image_folders = ['front', 'double_sided']
+
 def delete_files():
-    root_path = 'game'
-    image_folders = ['front', 'double_sided']
     i = 0
 
     for folder_name in image_folders:
@@ -26,6 +27,3 @@ def delete_files():
                 i += 1
 
     print(f'Deleted {i} item{"s" if i != 1 else ""}')
-
-if __name__ == '__main__':
-    delete_files()

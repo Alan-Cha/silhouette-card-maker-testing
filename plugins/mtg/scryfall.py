@@ -3,7 +3,7 @@ from typing import List, Set, Tuple
 import requests
 import time
 
-from common import remove_nonalphanumeric
+from .common import remove_nonalphanumeric
 
 double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card']
 

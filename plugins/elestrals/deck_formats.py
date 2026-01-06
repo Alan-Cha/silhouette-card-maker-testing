@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Callable
-from elestrals import DECK_ID_URL_TEMPLATE, request_elestrals
+from .elestrals import DECK_ID_URL_TEMPLATE, request_elestrals
 
 # card_data_tuple = Tuple[str, str, int] # name, image, quantity
 

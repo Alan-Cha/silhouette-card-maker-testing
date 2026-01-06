@@ -1,7 +1,7 @@
 from re import compile
 from enum import Enum
 from typing import Callable, Tuple
-from api import is_valid_set
+from .api import is_valid_set
 
 card_data_tuple = Tuple[str, str, str, int] # Name, Set, URL, Quantity
 

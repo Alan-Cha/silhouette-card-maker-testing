@@ -1,16 +1,11 @@
 from os import path
-from click import command, argument, Choice
 
-from deck_formats import DeckFormat, parse_deck
-from elestrals import get_handle_card
+from .deck_formats import DeckFormat, parse_deck
+from .elestrals import get_handle_card
 
 front_directory = path.join('game', 'front')
 
-@command()
-@argument('deck_path')
-@argument('format', type=Choice([t.value for t in DeckFormat], case_sensitive=False))
-
-def cli(deck_path: str, format: DeckFormat):
+def fetch(deck_path: str, format: DeckFormat):
     # if format != DeckFormat.ELESTRALS and not path.isfile(deck_path):
     #     print(f'{deck_path} is not a valid file.')
     #     return
@@ -22,6 +17,3 @@ def cli(deck_path: str, format: DeckFormat):
             front_directory
         )
     )
-
-if __name__ == '__main__':
-    cli()
