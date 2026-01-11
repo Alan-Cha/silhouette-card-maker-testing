@@ -399,9 +399,7 @@ def generate_pdf(
     back_card_image_path = None
     use_default_back_page = True
     if not only_fronts:
-        print(back_dir_path, back_card_image_path)
         back_card_image_path = get_back_card_image_path(back_dir_path)
-        print(back_dir_path, back_card_image_path)
         use_default_back_page = back_card_image_path is None
         if use_default_back_page:
             print(f'No back image provided in back image directory \"{back_dir_path}\". Using default instead.')
