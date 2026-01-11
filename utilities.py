@@ -21,7 +21,28 @@ layouts_filename = 'layouts.json'
 layouts_path = os.path.join(asset_directory, layouts_filename)
 
 # Specify valid mimetypes for images
-valid_mimetypes = ("image/jpeg", "image/png", "image/tiff")
+# List can be found here: https://github.com/h2non/filetype.py?tab=readme-ov-file#image
+valid_mimetypes = (
+    "image/vnd.dwg",
+    "image/x-xcf",
+    "image/jpeg",
+    "image/jpx",
+    "image/jxl",
+    "image/png",
+    "image/apng",
+    "image/gif",
+    "image/webp",
+    "image/x-canon-cr2",
+    "image/tiff",
+    "image/bmp",
+    "image/vnd.ms-photo",
+    "image/vnd.adobe.photoshop",
+    "image/x-icon",
+    "image/heic",
+    "image/avif",
+    "image/qoi",
+    "image/dds"
+)
 
 class CardSize(str, Enum):
     STANDARD = "standard"
@@ -141,7 +162,7 @@ def get_image_file_paths(dir_path: str) -> List[str]:
     for current_folder, _, files in os.walk(dir_path):
         for filename in files:
             full_path = os.path.join(current_folder, filename)
-            
+
             # Skip invalid files
             if filetype.guess_mime(full_path) not in valid_mimetypes:
                 continue
