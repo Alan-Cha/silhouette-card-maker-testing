@@ -181,7 +181,7 @@ def get_back_card_image_path(back_dir_path) -> str | None:
         return None
 
     if len(files) == 1:
-        return os.path.join(back_dir_path, files[0])
+        return files[0]
 
     # Multiple back files detected, provide a selection menu
     for i, f in enumerate(files):
@@ -197,7 +197,7 @@ def get_back_card_image_path(back_dir_path) -> str | None:
         if index >= 0 and index < len(files):
             break
 
-    return os.path.join(back_dir_path, files[index])
+    return files[index]
 
 def draw_card_with_bleed(card_image: Image, base_image: Image, box: tuple[int, int, int, int], print_bleed: tuple[int, int]):
     origin_x, origin_y, _, _ = box
@@ -398,7 +398,9 @@ def generate_pdf(
     back_card_image_path = None
     use_default_back_page = True
     if not only_fronts:
+        print(back_dir_path, back_card_image_path)
         back_card_image_path = get_back_card_image_path(back_dir_path)
+        print(back_dir_path, back_card_image_path)
         use_default_back_page = back_card_image_path is None
         if use_default_back_page:
             print(f'No back image provided in back image directory \"{back_dir_path}\". Using default instead.')
