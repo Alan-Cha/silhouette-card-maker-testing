@@ -30,18 +30,16 @@ def fetch_card_art(
     layout: str,
 
     front_img_dir: str,
-    double_sided_dir: str,
-    token: bool = False
+    double_sided_dir: str
 ) -> None:
     # Query for the front side
     card_front_image_query = f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
     card_art = request_scryfall(card_front_image_query).content
-    token_str = "_T_" if token else ""
     if card_art is not None:
 
         # Save image based on quantity
         for counter in range(quantity):
-            image_path = os.path.join(front_img_dir, f'{str(index)}{clean_card_name}{token_str}{str(counter + 1)}.png')
+            image_path = os.path.join(front_img_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
 
             with open(image_path, 'wb') as f:
                 f.write(card_art)
@@ -106,13 +104,23 @@ def fetch_card(
     front_img_dir: str,
     double_sided_dir: str
 ):
+    # Query based on card set and card collector number if provided
     if not ignore_set_and_collector_number and card_set != "" and card_collector_number != "":
         card_info_query = f"https://api.scryfall.com/cards/{card_set}/{card_collector_number}"
 
         # Query for card info
         card_json = request_scryfall(card_info_query).json()
 
-        fetch_card_art(index, quantity, remove_nonalphanumeric(card_json['name']), card_set, card_collector_number, card_json['layout'], front_img_dir, double_sided_dir)
+        fetch_card_art(
+            index,
+            quantity,
+            remove_nonalphanumeric(card_json['name']),
+            card_set,
+            card_collector_number,
+            card_json['layout'],
+            front_img_dir,
+            double_sided_dir
+        )
 
         # Fetch tokens
         if tokens:
@@ -121,8 +129,19 @@ def fetch_card(
                     if related["component"] == "token":
                         card_info_query = related["uri"]
                         card_json = request_scryfall(card_info_query).json()
-                        fetch_card_art(index, quantity, remove_nonalphanumeric(related["name"]), card_json["set"], card_json["collector_number"], card_json["layout"], front_img_dir, double_sided_dir, token=True)
+                        fetch_card_art(
+                            index,
+                            quantity,
+                            # Offsprint tokens have the same name as the card, so append _token to differentiate
+                            f'{remove_nonalphanumeric(related["name"])}_token',
+                            card_json["set"],
+                            card_json["collector_number"],
+                            card_json["layout"],
+                            front_img_dir,
+                            double_sided_dir
+                        )
 
+    # Query based on card name
     else:
         if name == "":
             raise Exception()
@@ -168,7 +187,6 @@ def fetch_card(
                 set = best_print["set"]
                 collector_number = best_print["collector_number"]
 
-        # Fetch card art
         fetch_card_art(
             index,
             quantity,
@@ -187,7 +205,17 @@ def fetch_card(
                     if related["component"] == "token":
                         card_info_query = related["uri"]
                         card_json = request_scryfall(card_info_query).json()
-                        fetch_card_art(index, quantity, remove_nonalphanumeric(related["name"]), card_json["set"], card_json["collector_number"], card_json["layout"], front_img_dir, double_sided_dir)
+                        fetch_card_art(
+                            index,
+                            quantity,
+                            # Offsprint tokens have the same name as the card, so append _token to differentiate
+                            f'{remove_nonalphanumeric(related["name"])}_token',
+                            card_json["set"],
+                            card_json["collector_number"],
+                            card_json["layout"],
+                            front_img_dir,
+                            double_sided_dir
+                        )
 
 def get_handle_card(
     ignore_set_and_collector_number: bool,
