@@ -180,7 +180,7 @@ def parse_deckstats(deck_text, handle_card: Callable) -> None:
 # 1 Disruptor Flute (MH3) 209
 def parse_moxfield(deck_text, handle_card: Callable) -> None:
     pattern = re.compile(
-        r'(\d+)x?\s+(.+?)\s+\((\w+)\)\s+([\w★]+)',
+        r'(\d+)x?\s+(.+?)\s+\((\w+)\)\s+([^\s]+)',
         re.IGNORECASE
     )
     def is_moxfield_card_line(line: str) -> bool:
