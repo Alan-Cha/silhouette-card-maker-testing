@@ -56,9 +56,8 @@ def cli(
             double_sided_directory
         )
 
-    with open(deck_path, 'r') as deck_file:
+    with open(deck_path, 'r', encoding='utf-8') as deck_file:
         deck_text = deck_file.read()
-
         parse_deck(
             deck_text,
             format,
