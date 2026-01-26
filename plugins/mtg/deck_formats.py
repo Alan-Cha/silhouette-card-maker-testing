@@ -227,45 +227,74 @@ def parse_scryfall_json(deck_text, handle_card: Callable) -> None:
             handle_card(index, name, set_code, collector_number, quantity)
 
 # MPCFill XML
+def extract_mpcfill_card_ids(deck_text: str) -> set[str]:
+    """Extract all unique card IDs from MPCFill XML for prefetching."""
+    data = ET.fromstring(deck_text)
+    card_ids = set()
+
+    fronts = data.find("fronts")
+    if fronts:
+        for front in fronts.findall("card"):
+            card_ids.add(front.find("id").text)
+
+    backs = data.find("backs")
+    if backs:
+        for back in backs.findall("card"):
+            card_ids.add(back.find("id").text)
+
+    return card_ids
+
+
 def parse_mpcfill_xml(deck_text, handle_card: Callable) -> None:
-    # We need to convert this into a more usable format for sanity
-    # The back field will only exist if the back of a card exists
-    # {
-    #     "id": "card_id",
-    #     "name": "clean_card_name",
-    #     "quantity": "quantity"
-    #     "back": "back_card_id"
-    # }
+    """
+    Parse MPCFill XML and call handle_card once per slot.
+
+    Each slot represents one physical card. handle_card signature:
+        handle_card(slot, front_id, front_name, back_id, back_name)
+
+    back_id and back_name will be None if the slot has no custom back.
+    """
     data = ET.fromstring(deck_text)
     fronts = data.find("fronts")
     backs = data.find("backs")
 
     card_qty = int(data.find("details").find("quantity").text)
 
-    decklist = [None] * card_qty
+    # Create per-slot entries: {front_id, front_name, back_id, back_name}
+    slots = [{"front_id": None, "front_name": None, "back_id": None, "back_name": None} for _ in range(card_qty)]
+
     if fronts is None:
         raise ValueError("No fronts found in decklist")
 
+    # Assign fronts to ALL their slots
     for front in fronts.findall("card"):
         card_id = front.find("id").text
-        name = front.find("name").text.split(".")[:-1][0]
-        slots = front.find("slots").text.split(",")
-        quantity = len(slots)
-        decklist[int(slots[0])] = {"id": card_id, "name": name, "quantity": quantity}
+        name_parts = front.find("name").text.split(".")
+        name = ".".join(name_parts[:-1]) if len(name_parts) > 1 else name_parts[0]
+        slot_indices = [int(s) for s in front.find("slots").text.split(",")]
+        for slot_idx in slot_indices:
+            slots[slot_idx]["front_id"] = card_id
+            slots[slot_idx]["front_name"] = name
 
+    # Assign backs to ALL their slots
     if backs:
         for back in backs.findall("card"):
             card_id = back.find("id").text
-            slots = back.find("slots").text.split(",")
-            decklist[int(slots[0])]["back"] = card_id
+            name_parts = back.find("name").text.split(".")
+            name = ".".join(name_parts[:-1]) if len(name_parts) > 1 else name_parts[0]
+            slot_indices = [int(s) for s in back.find("slots").text.split(",")]
+            for slot_idx in slot_indices:
+                slots[slot_idx]["back_id"] = card_id
+                slots[slot_idx]["back_name"] = name
 
-    decklist = [x for x in decklist if x]
+    # Call handle_card once per slot
+    for slot_idx, slot in enumerate(slots):
+        if slot["front_id"] is None:
+            print(f"Warning: Slot {slot_idx} has no front image, skipping")
+            continue
 
-    for index, item in enumerate(decklist, start=1):
-        parts = [f'Index: {index}', f"quantity: {item['quantity']}"]
-        if item['name']: parts.append(f"name: {item['name']}")
-        print(', '.join(parts))
-        handle_card(index, item["id"], item["name"], item.get("back", None), item["quantity"])
+        print(f"Slot {slot_idx}: {slot['front_name']}" + (f" / {slot['back_name']}" if slot['back_id'] else ""))
+        handle_card(slot_idx, slot["front_id"], slot["front_name"], slot["back_id"], slot["back_name"])
 
 # CubeCobra CSV
 # Exported from CubeCobra (https://cubecobra.com)
