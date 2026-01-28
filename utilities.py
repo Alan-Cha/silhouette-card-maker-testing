@@ -663,8 +663,8 @@ def generate_pdf(
                 if saved_offset is None:
                     print('Offset cannot be applied')
                 else:
-                    print(f'Loaded x offset: {saved_offset.x_offset}, y offset: {saved_offset.y_offset}')
-                    pages = offset_images(pages, saved_offset.x_offset, saved_offset.y_offset, ppi)
+                    print(f'Loaded x offset: {saved_offset.x_offset}, y offset: {saved_offset.y_offset}, angle offset: {saved_offset.angle_offset}')
+                    pages = offset_images(pages, saved_offset.x_offset, saved_offset.y_offset, ppi, saved_offset.angle_offset)
 
             # Save the pages array as a PDF
             if output_images:
@@ -680,14 +680,15 @@ def generate_pdf(
 class OffsetData(BaseModel):
     x_offset: int
     y_offset: int
+    angle_offset: float = 0.0
 
-def save_offset(x_offset, y_offset) -> None:
+def save_offset(x_offset: int, y_offset: int, angle_offset: float = 0.0) -> None:
     # Create the directory if it doesn't exist
     os.makedirs('data', exist_ok=True)
 
     # Save the offset data to a JSON file
     with open('data/offset_data.json', 'w') as offset_file:
-        offset_file.write(OffsetData(x_offset=x_offset, y_offset=y_offset).model_dump_json(indent=4))
+        offset_file.write(OffsetData(x_offset=x_offset, y_offset=y_offset, angle_offset=angle_offset).model_dump_json(indent=4))
 
     print('Offset data saved!')
 
@@ -706,19 +707,24 @@ def load_saved_offset() -> OffsetData:
 
     return None
 
-def offset_images(images: List[Image.Image], x_offset: int, y_offset: int, ppi: int) -> List[Image.Image]:
-    offset_images = []
+def offset_images(images: List[Image.Image], x_offset: int, y_offset: int, ppi: int, angle_offset: float = 0.0) -> List[Image.Image]:
+    result_images = []
 
     add_offset = False
     for image in images:
         if add_offset:
-            offset_images.append(ImageChops.offset(image, math.floor(x_offset * ppi / 300), math.floor(y_offset * ppi / 300)))
+            result = ImageChops.offset(image, math.floor(x_offset * ppi / 300), math.floor(y_offset * ppi / 300))
+            # Apply angle rotation if specified
+            # Negative angle because PIL rotates counter-clockwise, but we want positive = clockwise
+            if angle_offset != 0.0:
+                result = result.rotate(-angle_offset, center=(image.width / 2, image.height / 2), fillcolor='white')
+            result_images.append(result)
         else:
-            offset_images.append(image)
+            result_images.append(image)
 
         add_offset = not add_offset
 
-    return offset_images
+    return result_images
 
 def calculate_max_print_bleed(x_pos: List[int], y_pos: List[int], width: int, height: int) -> tuple[int, int]:
     if len(x_pos) == 1 & len(y_pos) == 1:
