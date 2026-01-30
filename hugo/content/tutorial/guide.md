@@ -94,7 +94,7 @@ python -m venv venv
 
 Then, activate the environment:
 
-{{< tabs items="macOS/Linux,Windows" defaultIndex="1" >}}
+{{< tabs items="macOS/Linux,Windows" defaultIndex="0" >}}
 
   {{< tab >}}
 ```sh
@@ -128,15 +128,26 @@ pip install -r requirements.txt
 Put card front images into the `game/front/` folder. Then, put a card back image into the `game/back/` folder.
 
 > [!TIP]
-> I've prepared the game, Zero sumZ, as an [example](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/examples/ZERO%20SUMZ). Simply move the assets to the appropriate image folders.
+> You can use the game, Zero sumZ, as an example. Simply move the [game assets](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/examples/ZERO%20SUMZ) to the appropriate image folders.
 >
-> You can also use a [plugin]({{% ref "../plugins" %}}) to populate the image folders. [Magic: The Gathering]({{% ref "../plugins/mtg.md" %}}), [Yu-Gi-Oh!]({{% ref "../plugins/yugioh.md" %}}), and [Lorcana]({{% ref "../plugins/lorcana.md" %}}) are currently supported.
+> You can also use a [plugin]({{% ref "../plugins" %}}) to populate the image folders. Many games, including [Magic: The Gathering]({{% ref "../plugins/mtg.md" %}}), [Yu-Gi-Oh!]({{% ref "../plugins/yugioh.md" %}}), [Riftbound]({{% ref "../plugins/riftbound.md" %}}), [One Piece]({{% ref "../plugins/one_piece.md" %}}), and [Lorcana]({{% ref "../plugins/lorcana.md" %}}), are currently supported.
 
 Generate the PDF with the following:
 
+{{< tabs items="Letter size paper,A4 size paper" defaultIndex="0" >}}
+
+  {{< tab >}}
 ```sh
 python create_pdf.py
 ```
+  {{< /tab >}}
+  {{< tab >}}
+```sh
+python create_pdf.py --paper_size a4
+```
+  {{< /tab >}}
+
+{{< /tabs >}}
 
 > [!TIP]
 >`create_pdf.py` has many options such as **paper and card size** and **double-sided cards**. To learn more, see [here]({{% ref "../docs/create.md" %}}).
@@ -147,10 +158,10 @@ You can find the PDF in `game/output/game.pdf` and it should look similar to the
 
 ### Prepare the sheets
 
-Print out the PDF and laminate the sheets. Because cardstock is thick, you may need to use a higher setting on your laminator. If not, you may have cloudy lamination and delamination issues.
+Print out the PDF and laminate the sheets. Because cardstock is thicker than printer paper, you may need to use a higher setting on your laminator. If not, you may have cloudy lamination or delamination issues.
 
 > [!TIP]
-> You don't need to laminate if you don't want to. You can cut whatever you want, including unlaminated cardstock, vinyl stickers, and vinyl sticker on cardstock. Your machine should be able to cut anything within reason.
+> You are not limited to making laminated cards. You can cut whatever you want, including plain cardstock, vinyl stickers, and foil on cardstock.
 
 ![Print](/images/lamination.jpg)
 ![Into the lamination pouch](/images/lamination2.jpg)
@@ -221,6 +232,6 @@ Please join our [Discord server](https://discord.gg/jhsKmAgbXc)! While you're th
 
 As mentioned previously, the `create_pdf.py` script offers many [configuration options]({{% ref "../docs/create.md" %}}). `create_pdf.py` can make double-sided cards, use different paper sizes, cut various card sizes, and more!
 
-If you're interested in making proxies for TCGs, try using a [plugin]({{% ref "../plugins" %}}). Currently, we have support for [Magic: The Gathering]({{% ref "../plugins/mtg.md" %}}), [Yu-Gi-Oh!]({{% ref "../plugins/yugioh.md" %}}), and [Lorcana]({{% ref "../plugins/lorcana.md" %}}). All you need to do is provide a decklist and the plugin will automatically fetch the images for you!
+If you're interested in making proxies for TCGs, try using a [plugin]({{% ref "../plugins" %}}). Currently, we have support for many games including [Magic: The Gathering]({{% ref "../plugins/mtg.md" %}}), [Yu-Gi-Oh!]({{% ref "../plugins/yugioh.md" %}}), [Riftbound]({{% ref "../plugins/riftbound.md" %}}), [One Piece]({{% ref "../plugins/one_piece.md" %}}), and [Lorcana]({{% ref "../plugins/lorcana.md" %}}). All you need to do is provide a decklist and the plugin will automatically fetch the images for you!
 
-Thanks for reading and have fun cutting cards!
+Thanks and have fun cutting cards!

@@ -110,8 +110,15 @@ Put your front images in the `game/front/` folder.
 Put your back image in the `game/back/` folder.
 
 Run the script.
+
+**Letter size paper:**
 ```sh
 python create_pdf.py
+```
+
+**A4 size paper:**
+```sh
+python create_pdf.py --paper_size a4
 ```
 
 Get your PDF at `game/output/game.pdf`.

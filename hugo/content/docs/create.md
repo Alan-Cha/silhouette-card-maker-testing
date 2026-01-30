@@ -15,7 +15,7 @@ python -m venv venv
 ```
 
 ### Activate the Python virtual environment
-{{< tabs items="macOS/Linux,Windows" defaultIndex="1" >}}
+{{< tabs items="macOS/Linux,Windows" defaultIndex="0" >}}
 
   {{< tab >}}
 ```sh
@@ -49,9 +49,21 @@ Put your front images in the `game/front/` folder.
 Put your back image in the `game/back/` folder.
 
 ### Run the script
+
+{{< tabs items="Letter size paper,A4 size paper" defaultIndex="0" >}}
+
+  {{< tab >}}
 ```sh
 python create_pdf.py
 ```
+  {{< /tab >}}
+  {{< tab >}}
+```sh
+python create_pdf.py --paper_size a4
+```
+  {{< /tab >}}
+
+{{< /tabs >}}
 
 Get your PDF at `game/output/game.pdf`.
 
