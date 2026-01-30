@@ -151,11 +151,11 @@ The [Netrunner plugin](plugins/netrunner/README.md) supports **text**, **bbCode*
 
 The [One Piece plugin](plugins/one_piece/README.md) supports **OPTCG Simulator** and **Egman Events** formats.
 
+The [Pokemon plugin](plugins/pokemon/README.md) supports **Limitless TCG** format.
+
 The [Riftbound plugin](plugins/riftbound/README.md) supports **Tabletop Simulator**, **Pixelborn**, and **Piltover Archive** formats.
 
 The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **SWUDB JSON**, **Melee**, and **Picklist** formats.
-
-The [Pokemon plugin](plugins/pokemon/README.md) supports **Limitless TCG** format.
 
 ### Double-Sided Cards
 

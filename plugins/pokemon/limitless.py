@@ -1,5 +1,6 @@
 from os import path
 from requests import Response, get
+from requests.exceptions import HTTPError
 from time import sleep
 
 LIMITLESS_TCG_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/{set_id}/{set_id}_{card_no}_R_EN_LG.png'
@@ -8,8 +9,10 @@ LIMITLESS_POCKET_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspace
 def request_limitless(query: str) -> Response:
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
+    # Check for 2XX response code
     r.raise_for_status()
-    sleep(0.15)
+
+    sleep(0.075)
 
     return r
 
@@ -21,19 +24,25 @@ def fetch_card(
     card_number: int,
     front_img_dir: str,
 ):
-    # Query for card info
-    url = ''
     card_art = None
+    file_ext = 'png'
 
+    # Try Pokemon TCG format first
     try:
-        url = LIMITLESS_TCG_URL_TEMPLATE.format(set_id=set_id, card_no=str(card_number).zfill(3)) # This format supports Pokemon TCG
+        url = LIMITLESS_TCG_URL_TEMPLATE.format(set_id=set_id, card_no=str(card_number).zfill(3))
         card_art = request_limitless(url).content
-    except:
-        url = LIMITLESS_POCKET_URL_TEMPLATE.format(set_id=set_id, card_no=str(card_number).zfill(3)) # This format supports Pokemon Pocket
-        card_art = request_limitless(url).content
+        file_ext = 'png'
+    except HTTPError:
+        # Fall back to Pokemon Pocket format
+        try:
+            url = LIMITLESS_POCKET_URL_TEMPLATE.format(set_id=set_id, card_no=str(card_number).zfill(3))
+            card_art = request_limitless(url).content
+            file_ext = 'webp'
+        except HTTPError as e:
+            raise Exception(f'Failed to fetch card "{card_name}" (set: {set_id}, number: {card_number}): {e}')
 
     for counter in range(quantity):
-        image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}.png')
+        image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}.{file_ext}')
 
         with open(image_path, 'wb') as f:
             f.write(card_art)

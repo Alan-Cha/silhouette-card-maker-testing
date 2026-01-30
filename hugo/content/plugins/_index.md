@@ -20,6 +20,7 @@ The following plugins are currently available:
 * [Lorcana]({{% ref "lorcana.md" %}})
 * [Netrunner]({{% ref "netrunner.md" %}})
 * [One Piece]({{% ref "one_piece.md" %}})
+* [Pokemon]({{% ref "pokemon.md" %}})
 * [Riftbound]({{% ref "riftbound.md" %}})
 * [Star Wars Unlimited]({{% ref "star_wars_unlimited.md" %}})
 * [Pokemon]({{% ref "pokemon.md" %}})

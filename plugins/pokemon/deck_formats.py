@@ -14,7 +14,11 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, is_card_line: Calla
 
             name, quantity, set_id, card_no = extract_card_data(line)
 
-            print(f'Index: {index}, quantity: {quantity}, name: {name}, set: {set_id}, card number: {card_no}')
+            parts = [f'Index: {index}', f'quantity: {quantity}']
+            if name: parts.append(f'name: {name}')
+            if set_id: parts.append(f'set: {set_id}')
+            if card_no: parts.append(f'card number: {card_no}')
+            print(', '.join(parts))
             try:
                 handle_card(index, name, set_id, card_no, quantity)
             except Exception as e:
