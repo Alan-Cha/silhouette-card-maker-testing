@@ -23,4 +23,3 @@ The following plugins are currently available:
 * [Pokemon]({{% ref "pokemon.md" %}})
 * [Riftbound]({{% ref "riftbound.md" %}})
 * [Star Wars Unlimited]({{% ref "star_wars_unlimited.md" %}})
-* [Pokemon]({{% ref "pokemon.md" %}})
