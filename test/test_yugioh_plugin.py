@@ -85,6 +85,7 @@ class TestYDKEFormat:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestYgoprodeckAPI:
     """Test YGOProDeck API requests."""
 
@@ -105,6 +106,7 @@ class TestYgoprodeckAPI:
         assert len(response.content) > 0
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 

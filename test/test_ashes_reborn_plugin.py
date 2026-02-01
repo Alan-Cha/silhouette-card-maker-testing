@@ -47,6 +47,7 @@ class TestAshesDBShareUrlFormat:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestAshesAPI:
     """Test Ashes API requests."""
 
@@ -65,6 +66,7 @@ class TestAshesAPI:
         assert len(deck_data) > 0
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 

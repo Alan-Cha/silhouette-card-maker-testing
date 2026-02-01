@@ -35,6 +35,7 @@ class TestElestralsFormat:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestElestralsAPI:
     """Test Elestrals API requests."""
 
@@ -49,6 +50,7 @@ class TestElestralsAPI:
         assert 'data' in json_data
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 

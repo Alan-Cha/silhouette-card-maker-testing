@@ -85,6 +85,7 @@ class TestOmnideckFormat:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestGatcgAPI:
     """Test Grand Archive TCG API requests."""
 
@@ -94,6 +95,7 @@ class TestGatcgAPI:
         assert response.status_code == 200
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 

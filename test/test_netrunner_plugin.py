@@ -146,6 +146,7 @@ class TestJintekiFormat:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestNetrunnerAPI:
     """Test Netrunner API requests."""
 
@@ -155,6 +156,7 @@ class TestNetrunnerAPI:
         assert response.status_code == 200
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 

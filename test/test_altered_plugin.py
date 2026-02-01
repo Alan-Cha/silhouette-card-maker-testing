@@ -59,6 +59,7 @@ class TestAjordatFormat:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestAlteredAPI:
     """Test Altered API requests."""
 
@@ -69,6 +70,7 @@ class TestAlteredAPI:
         assert response.status_code == 200
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 

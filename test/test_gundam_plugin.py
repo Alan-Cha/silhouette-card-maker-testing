@@ -119,6 +119,7 @@ class TestExburstFormat:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestGundamAPI:
     """Test Gundam API requests."""
 
@@ -129,6 +130,7 @@ class TestGundamAPI:
         assert response.status_code == 200
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 

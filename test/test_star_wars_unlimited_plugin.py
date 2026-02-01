@@ -134,6 +134,7 @@ class TestSwudbJsonFormat:
 
 # --- Unit Tests for Data Corrections ---
 
+@pytest.mark.integration
 class TestDataCorrections:
     """Test data correction logic."""
 
@@ -154,6 +155,7 @@ class TestDataCorrections:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestSwudbAPI:
     """Test SWUDB API requests."""
 
@@ -179,6 +181,7 @@ class TestSwudbAPI:
         assert title == ""
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 

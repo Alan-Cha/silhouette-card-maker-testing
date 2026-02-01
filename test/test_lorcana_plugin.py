@@ -104,6 +104,7 @@ class TestUtilityFunctions:
 
 # --- Integration Tests for API and Image Fetching ---
 
+@pytest.mark.integration
 class TestLorcastAPI:
     """Test Lorcast API requests."""
 
@@ -115,6 +116,7 @@ class TestLorcastAPI:
         assert 'results' in json_data
 
 
+@pytest.mark.integration
 class TestFullFetchWorkflow:
     """Integration tests for the complete card fetching workflow."""
 
