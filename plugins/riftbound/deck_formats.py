@@ -4,7 +4,7 @@ from _collections_abc import Set
 from typing import Callable, Dict, Optional, Tuple
 from base64 import b64decode
 
-from api import fetch_card_number
+from .api import fetch_card_number
 
 card_data_tuple = Tuple[str, str, int] # Name, Card Number, Quantity
 def parse_deck_helper(

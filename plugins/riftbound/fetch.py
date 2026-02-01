@@ -1,8 +1,8 @@
 from os import path
 from click import command, argument, option, Choice
 
-from deck_formats import DeckFormat, parse_deck
-from api import fetch_card_art, ImageServer, get_handle_card
+from .deck_formats import DeckFormat, parse_deck
+from .api import fetch_card_art, ImageServer, get_handle_card
 
 front_directory = path.join('game', 'front')
 double_sided_directory = path.join('game', 'double_sided')

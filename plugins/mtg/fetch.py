@@ -2,6 +2,9 @@ import os
 from typing import Set
 
 import click
+from .deck_formats import DeckFormat, parse_deck
+from .scryfall import get_handle_card as scryfall_get_handle_card
+from .mpcfill import get_handle_card as mpc_get_handle_card
 
 from deck_formats import DeckFormat, parse_deck, extract_mpcfill_card_ids
 from scryfall import get_handle_card as scryfall_get_handle_card

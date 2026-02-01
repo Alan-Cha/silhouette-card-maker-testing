@@ -25,7 +25,7 @@ from typing import Set
 import requests
 from filetype.filetype import guess_extension
 
-from common import remove_nonalphanumeric
+from .common import remove_nonalphanumeric
 
 # Cache for fetched images: card_id -> decoded image bytes.
 # Populated by prefetch_mpcfill() and read by get_cached_image().

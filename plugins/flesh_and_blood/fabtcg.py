@@ -2,7 +2,7 @@ from os import path
 from requests import Response, get
 from time import sleep
 from re import sub
-from deck_formats import Pitch
+from .deck_formats import Pitch
 
 CARD_URL_TEMPLATE = 'https://cards.fabtcg.com/api/search/v1/cards/?name={card_name}{pitch}'
 

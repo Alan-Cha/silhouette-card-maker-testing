@@ -3,7 +3,7 @@ from typing import List, Set, Tuple
 import requests
 import time
 
-from common import remove_nonalphanumeric
+from .common import remove_nonalphanumeric
 
 double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card']
 
@@ -96,7 +96,7 @@ def fetch_card(
     name: str,
 
     prefer_older_sets: bool,
-    preferred_sets: Set[str],
+    prefer_sets: Set[str],
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
@@ -159,7 +159,7 @@ def fetch_card(
         collector_number = card_json["collector_number"]
 
         # If preferred options are used, then filter over prints
-        if prefer_older_sets or len(preferred_sets) > 0 or prefer_showcase or prefer_extra_art:
+        if prefer_older_sets or len(prefer_sets) > 0 or prefer_showcase or prefer_extra_art:
             # Get available printings
             prints_search_json = request_scryfall(card_json['prints_search_uri']).json()
             card_printings = prints_search_json['data']
@@ -173,7 +173,7 @@ def fetch_card(
                 lambda c: c['nonfoil'],
                 lambda c: not c['digital'],
                 lambda c: not c['promo'],
-                lambda c: c['set'] in preferred_sets,
+                lambda c: c['set'] in prefer_sets,
                 lambda c: not prefer_showcase ^ ('frame_effects' in c and 'showcase' in c['frame_effects']),
                 lambda c: not prefer_extra_art ^ (c['full_art'] or c['border_color'] == "borderless" or ('frame_effects' in c and 'extendedart' in c['frame_effects']))
             ]
@@ -222,7 +222,7 @@ def get_handle_card(
     ignore_set_and_collector_number: bool,
 
     prefer_older_sets: bool,
-    preferred_sets: Set[str],
+    prefer_sets: Set[str],
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
@@ -243,7 +243,7 @@ def get_handle_card(
             name,
 
             prefer_older_sets,
-            preferred_sets,
+            prefer_sets,
 
             prefer_showcase,
             prefer_extra_art,

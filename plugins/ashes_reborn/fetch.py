@@ -1,8 +1,8 @@
 from os import path
 from click import command, argument, Choice, option
 
-from deck_formats import DeckFormat, parse_deck
-from ashes import get_handle_card, ImageServer
+from .deck_formats import DeckFormat, parse_deck
+from .ashes import get_handle_card, ImageServer
 
 front_directory = path.join('game', 'front')
 

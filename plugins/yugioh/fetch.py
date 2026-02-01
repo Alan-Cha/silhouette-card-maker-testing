@@ -1,8 +1,8 @@
 import os
 import click
 
-from deck_formats import DeckFormat, parse_deck
-from ygoprodeck import fetch_card_art
+from .deck_formats import DeckFormat, parse_deck
+from .ygoprodeck import fetch_card_art
 
 front_directory = os.path.join('game', 'front')
 double_sided_directory = os.path.join('game', 'double_sided')

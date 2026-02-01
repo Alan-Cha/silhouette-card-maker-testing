@@ -2,7 +2,7 @@ from re import compile
 from enum import Enum
 from typing import Callable, Tuple
 from json import loads, dumps
-from swudb import fetch_name_and_title
+from .swudb import fetch_name_and_title
 
 card_data_tuple = Tuple[str, str, str, int] # Name, Title, Card Number, Quantity
 

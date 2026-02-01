@@ -1,0 +1,14 @@
+[project]
+name = "silhouette-card-maker"
+version = "1.6.0"
+description = "Card maker tool for Silhouette cutting machines"
+requires-python = ">=3.8"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+pythonpath = ["."]
+markers = [
+    "unit: Unit tests that don't require network access",
+    "integration: Integration tests that require network access",
+    "slow: Tests that take a long time to run",
+]

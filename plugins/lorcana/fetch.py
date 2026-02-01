@@ -1,8 +1,8 @@
 import os
 
 import click
-from deck_formats import DeckFormat, parse_deck
-from lorcast import get_handle_card
+from .deck_formats import DeckFormat, parse_deck
+from .lorcast import get_handle_card
 
 front_directory = os.path.join('game', 'front')
 
