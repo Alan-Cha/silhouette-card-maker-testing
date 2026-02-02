@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Callable, Tuple
 from xml.etree import ElementTree as ET
 
-from patterns import MOXFIELD_PATTERN
+from patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 from scryfall import remove_nonalphanumeric
 
 card_data_tuple = Tuple[str, str, int, int]
@@ -151,12 +151,11 @@ def parse_archidekt(deck_text, handle_card: Callable) -> None:
 # //Maybeboard
 # 1 [MID#159] Smoldering Egg // Ashmouth Dragon
 def parse_deckstats(deck_text, handle_card: Callable) -> None:
-    pattern = re.compile(r'^(\d+)\s+(?:\[(\w+)?#(\w+)\]\s+)?(.+)$')
     def is_deckstats_card_line(line: str) -> bool:
-        return bool(pattern.match(line))
+        return bool(DECKSTATS_PATTERN.match(line))
 
     def extract_deckstats_card_data(line: str) -> card_data_tuple:
-        match = pattern.match(line)
+        match = DECKSTATS_PATTERN.match(line)
         quantity = int(match.group(1))
         set_code = match.group(2) or ""
         collector_number = match.group(3) or ""

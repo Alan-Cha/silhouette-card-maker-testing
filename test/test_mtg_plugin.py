@@ -1,4 +1,4 @@
-from plugins.mtg.patterns import MOXFIELD_PATTERN
+from plugins.mtg.patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 
 
 def test_star_symbol_in_collector_number():
@@ -33,3 +33,16 @@ def test_quantity_with_x():
     assert match.group(2) == "Lightning Bolt"
     assert match.group(3) == "2XM"
     assert match.group(4) == "117"
+
+
+def test_deckstats_star_symbol_in_collector_number():
+    # Deckstats can include ★ in collector numbers
+    # e.g. "1 [SLD#1494★] Sol Ring"
+    line = "1 [SLD#1494★] Sol Ring"
+    match = DECKSTATS_PATTERN.match(line)
+
+    assert match is not None
+    assert match.group(1) == "1"
+    assert match.group(2) == "SLD"
+    assert match.group(3) == "1494★"
+    assert match.group(4) == "Sol Ring"
