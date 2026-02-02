@@ -5,10 +5,12 @@ from xml.etree import ElementTree
 
 card_data_tuple = Tuple[str, int, str] # Name, Quantity, Serial Code
 
-def print_card_info(index: int, quantity: int, name: str, serial_code: str) -> None:
+def print_card_info(index: int, quantity: int, name: str, serial_code: str = '', category: str = '') -> None:
     parts = [f'Index: {index}', f'quantity: {quantity}', f'name: {name}']
     if serial_code:
         parts.append(f'serial code: {serial_code}')
+    if category:
+        parts.append(f'category: {category}')
     print(', '.join(parts))
 
 def parse_deck_helper(deck_text: str, handle_card: Callable, is_card_line: Callable[[str], bool], extract_card_data: Callable[[str], card_data_tuple]) -> None:
@@ -53,6 +55,7 @@ def parse_untap(deck_text: str, handle_card: Callable) -> None:
 
 def parse_octgn(deck_text: str, handle_card: Callable) -> None:
     root = ElementTree.fromstring(deck_text)
+    category_pattern = compile(r'^(.+?)\s*\(([^)]+)\)$')  # 'Name (Category)'
     error_lines = []
 
     index = 0
@@ -60,12 +63,21 @@ def parse_octgn(deck_text: str, handle_card: Callable) -> None:
         for card in section.findall('card'):
             index += 1
             quantity = int(card.get('qty', 1))
-            card_name = card.text.strip() if card.text else ''
+            raw_name = card.text.strip() if card.text else ''
             serial_code = ''  # OCTGN format does not include serial codes
 
-            print_card_info(index, quantity, card_name, serial_code)
+            # Extract category from name if present (e.g., "Sol (FFBE)" -> name="Sol", category="FFBE")
+            match = category_pattern.match(raw_name)
+            if match:
+                card_name = match.group(1).strip()
+                category = match.group(2).strip()
+            else:
+                card_name = raw_name
+                category = ''
+
+            print_card_info(index, quantity, card_name, serial_code, category)
             try:
-                handle_card(index, card_name, serial_code, quantity)
+                handle_card(index, card_name, serial_code, quantity, category)
             except Exception as e:
                 print(f'Error: {e}')
                 error_lines.append((card_name, e))

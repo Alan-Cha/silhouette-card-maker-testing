@@ -115,3 +115,19 @@ Untap format.
 2 Mist Dragon (9-068H)
 3 Genesis (24-025L)
 ```
+
+### `octgn`
+
+OCTGN XML format.
+
+```xml
+<deck game="285a8cdb-1d02-4edd-a9de-1ade9d5a4f43">
+<section name="Forwards" shared="False">
+<card qty="3" id="6048684b-b336-40e3-bbd4-8b47adde3e85">Wuk Lamat</card>
+<card qty="3" id="4c162e0a-689b-4eec-b7b0-0e5c3065a894">Taivas</card>
+</section>
+<section name="Backups" shared="False">
+<card qty="3" id="bf14d905-80cc-401f-b329-719b93715820">Naji</card>
+</section>
+</deck>
+```
