@@ -3,6 +3,7 @@ from typing import List, Set, Tuple
 import requests
 import time
 from pathlib import Path
+import shutil
 
 from common import remove_nonalphanumeric
 
