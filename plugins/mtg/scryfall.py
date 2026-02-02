@@ -2,6 +2,7 @@ import os
 from typing import List, Set, Tuple
 import requests
 import time
+from pathlib import Path
 
 from common import remove_nonalphanumeric
 
@@ -31,32 +32,63 @@ def fetch_card_art(
     layout: str,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
+    update_prefetch: bool
 ) -> None:
+    previously_fetched_front_dir = os.path.join('previously_fetched', 'mtg', 'front')
+    previously_fetched_double_sided_dir = os.path.join('previously_fetched', 'mtg', 'double_sided')
+
+    card_set_collection_file = f'{card_set}_{card_collector_number}.png'
+    prefetched_front = os.path.join(previously_fetched_front_dir,  card_set_collection_file)
+    prefetched_double_sided = os.path.join(previously_fetched_double_sided_dir, card_set_collection_file)
+
     # Query for the front side
     card_front_image_query = f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
-    card_art = request_scryfall(card_front_image_query).content
-    if card_art is not None:
 
-        # Save image based on quantity
-        for counter in range(quantity):
-            image_path = os.path.join(front_img_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
-
-            with open(image_path, 'wb') as f:
+    if os.path.isfile(prefetched_front):
+        if not update_prefetch:
+            for counter in range(quantity):
+                shutil.copy2(
+                    prefetched_front,
+                    os.path.join(front_img_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
+                )                
+    else:
+        card_art = request_scryfall(card_front_image_query).content
+        if card_art is not None:
+            with open(prefetched_front, 'wb') as f:
                 f.write(card_art)
+            if not update_prefetch:
+                # Save image based on quantity
+                for counter in range(quantity):
+                    image_path = os.path.join(front_img_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
+
+                    with open(image_path, 'wb') as f:
+                        f.write(card_art)
+
 
     # Get backside of card, if it exists
-    if layout in double_sided_layouts:
+    if os.path.isfile(prefetched_double_sided):
+        if not update_prefetch:
+            # Save image based on quantity
+            for counter in range(quantity):
+                shutil.copy2(
+                    prefetched_double_sided,
+                    os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
+                )
+    elif layout in double_sided_layouts:
         card_back_image_query = f'{card_front_image_query}&face=back'
         card_art = request_scryfall(card_back_image_query).content
         if card_art is not None:
+            #save as prefetched
+            with open(prefetched_double_sided, 'wb') as f:
+                f.write(card_art)
+            if not update_prefetch:
+                # Save image based on quantity
+                for counter in range(quantity):
+                    image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
 
-            # Save image based on quantity
-            for counter in range(quantity):
-                image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
-
-                with open(image_path, 'wb') as f:
-                    f.write(card_art)
+                    with open(image_path, 'wb') as f:
+                        f.write(card_art)
 
 def partition_printings(printings: List, condition: List) -> Tuple[List, List]:
     matches = []
@@ -103,25 +135,49 @@ def fetch_card(
     tokens: bool,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
+
+    update_prefetch: bool
 ):
     # Query based on card set and card collector number if provided
     if not ignore_set_and_collector_number and card_set != "" and card_collector_number != "":
-        card_info_query = f"https://api.scryfall.com/cards/{card_set}/{card_collector_number}"
+        previously_fetched_front_dir = os.path.join('previously_fetched', 'mtg', 'front')
+        previously_fetched_double_sided_dir = os.path.join('previously_fetched', 'mtg', 'double_sided')
 
-        # Query for card info
-        card_json = request_scryfall(card_info_query).json()
+        card_set_collection_file = f'{card_set}_{card_collector_number}.png'
+        prefetched_front = os.path.join(previously_fetched_front_dir, card_set_collection_file)
+        prefetched_double_sided = os.path.join(previously_fetched_double_sided_dir, card_set_collection_file)
+        
+        Path(previously_fetched_front_dir).mkdir(parents=True, exist_ok=True)
+        Path(previously_fetched_double_sided_dir).mkdir(parents=True, exist_ok=True)
 
-        fetch_card_art(
-            index,
-            quantity,
-            remove_nonalphanumeric(card_json['name']),
-            card_set,
-            card_collector_number,
-            card_json['layout'],
-            front_img_dir,
-            double_sided_dir
-        )
+        if os.path.isfile(prefetched_front):
+            fetch_card_art(
+                index, 
+                quantity, 
+                remove_nonalphanumeric(name), 
+                card_set, 
+                card_collector_number,
+                None, 
+                front_img_dir, 
+                double_sided_dir, 
+                update_prefetch
+                )
+        else:
+            card_info_query = f"https://api.scryfall.com/cards/{card_set}/{card_collector_number}"
+            # Query for card info
+            card_json = request_scryfall(card_info_query).json()
+            fetch_card_art(
+                index, 
+                quantity, 
+                remove_nonalphanumeric(card_json['name']), 
+                card_set, 
+                card_collector_number,
+                card_json['layout'], 
+                front_img_dir, 
+                double_sided_dir, 
+                update_prefetch
+                )
 
         # Fetch tokens
         if tokens:
@@ -139,7 +195,8 @@ def fetch_card(
                             card_json["collector_number"],
                             card_json["layout"],
                             front_img_dir,
-                            double_sided_dir
+                            double_sided_dir,
+                            update_prefetch
                         )
 
     # Query based on card name
@@ -196,7 +253,8 @@ def fetch_card(
             collector_number,
             card_json['layout'],
             front_img_dir,
-            double_sided_dir
+            double_sided_dir,
+            update_prefetch
         )
 
         # Fetch tokens
@@ -215,7 +273,8 @@ def fetch_card(
                             card_json["collector_number"],
                             card_json["layout"],
                             front_img_dir,
-                            double_sided_dir
+                            double_sided_dir, 
+                            update_prefetch
                         )
 
 def get_handle_card(
@@ -229,7 +288,9 @@ def get_handle_card(
     tokens: bool,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
+
+    update_prefetch: bool
 ):
     def configured_fetch_card(index: int, name: str, card_set: str = None, card_collector_number: int = None, quantity: int = 1):
         fetch_card(
@@ -250,6 +311,8 @@ def get_handle_card(
             tokens,
 
             front_img_dir,
-            double_sided_dir
+            double_sided_dir,
+
+            update_prefetch
         )
     return configured_fetch_card

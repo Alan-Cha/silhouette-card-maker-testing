@@ -19,6 +19,7 @@ double_sided_directory = os.path.join('game', 'double_sided')
 @click.option('--prefer_showcase', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with showcase treatment")
 @click.option('--prefer_extra_art', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with full art, borderless, or extended art.")
 @click.option('--tokens', default=False, is_flag=True, show_default=True, help="Fetch related tokens when fetching cards")
+@click.option('--update_prefetch', default=False, is_flag=True, show_default=True, help="Updates the files in your prefetch folder, doesn't copy them into the current game list for pdf creation")
 
 def cli(
     deck_path: str,
@@ -30,7 +31,8 @@ def cli(
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
-    tokens: bool
+    tokens: bool,
+    update_prefetch: bool
 ):
     if not os.path.isfile(deck_path):
         print(f'{deck_path} is not a valid file.')
@@ -53,7 +55,9 @@ def cli(
             tokens,
 
             front_directory,
-            double_sided_directory
+            double_sided_directory,
+
+            update_prefetch
         )
 
     with open(deck_path, 'r', encoding='utf-8') as deck_file:
