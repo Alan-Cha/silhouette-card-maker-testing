@@ -1,6 +1,6 @@
 ---
 title: 'Sorcery: Contested Realm'
-weight: 120
+weight: 105
 ---
 
 This plugin reads a decklist, automatically fetches card art from [Curiosa](https://curiosa.io/) and puts them in the proper `game/` directories.
