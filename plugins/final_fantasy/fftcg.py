@@ -26,7 +26,11 @@ def get_card_art_from_fftcg(card_name: str, serial_code: str) -> str:
     r.raise_for_status()
     sleep(0.15)
 
-    return r.json().get('cards')[0].get('images').get('full')[0]
+    cards = r.json().get('cards', [])
+    if not cards:
+        raise ValueError(f'Card not found: "{card_name}" (serial code: "{serial_code}")')
+
+    return cards[0].get('images').get('full')[0]
 
 def request_fftcg(query: str) -> Response:
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
