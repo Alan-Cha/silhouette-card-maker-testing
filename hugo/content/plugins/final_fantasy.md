@@ -1,11 +1,11 @@
 ---
 title: 'Final Fantasy'
-weight: 120
+weight: 37
 ---
 
 This plugin reads a decklist, automatically fetches card art from [FFTCG](https://fftcg.square-enix-games.com/na/card-browser) and puts them in the proper `game/` directories.
 
-This plugin supports many decklist formats such as ``tts`` and ``untap``. To learn more, see [here](#formats).
+This plugin supports many decklist formats such as `tts`, `untap`, and `octgn_xml`. To learn more, see [here](#formats).
 
 ## Basic Instructions
 

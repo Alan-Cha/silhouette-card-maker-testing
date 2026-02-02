@@ -141,6 +141,8 @@ The [Digimon plugin](plugins/digimon/README.md) supports **Tabletop Simulator**,
 
 The [Elestrals plugin](plugins/elestrals/README.md) supports **Elestrals** format.
 
+The [Final Fantasy plugin](plugins/final_fantasy/README.md) supports **Tabletop Simulator** and **Untap** formats.
+
 The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
 
 The [Grand Archive plugin](plugins/grand_archive/README.md) supports **Omnideck** format.
@@ -156,8 +158,6 @@ The [One Piece plugin](plugins/one_piece/README.md) supports **OPTCG Simulator**
 The [Riftbound plugin](plugins/riftbound/README.md) supports **Tabletop Simulator**, **Pixelborn**, and **Piltover Archive** formats.
 
 The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **SWUDB JSON**, **Melee**, and **Picklist** formats.
-
-The [Final Fantasy plugin](plugins/final_fantasy/README.md) supports **Tabletop Simulator** and **Untap** formats.
 
 ### Double-Sided Cards
 

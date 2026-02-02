@@ -15,6 +15,7 @@ The following plugins are currently available:
 * [Ashes Reborn]({{% ref "ashes_reborn.md" %}})
 * [Digimon]({{% ref "digimon.md" %}})
 * [Elestrals]({{% ref "elestrals.md" %}})
+* [Final Fantasy]({{% ref "final_fantasy.md" %}})
 * [Flesh and Blood]({{% ref "flesh_and_blood.md" %}})
 * [Grand Archive]({{% ref "grand_archive.md" %}})
 * [Gundam]({{% ref "gundam.md" %}})
@@ -23,4 +24,3 @@ The following plugins are currently available:
 * [One Piece]({{% ref "one_piece.md" %}})
 * [Riftbound]({{% ref "riftbound.md" %}})
 * [Star Wars Unlimited]({{% ref "star_wars_unlimited.md" %}})
-* [Final Fantasy]({{% ref "final_fantasy.md" %}})
