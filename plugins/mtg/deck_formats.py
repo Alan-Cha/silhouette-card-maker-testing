@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Callable, Tuple
 from xml.etree import ElementTree as ET
 
+from patterns import MOXFIELD_PATTERN
 from scryfall import remove_nonalphanumeric
 
 card_data_tuple = Tuple[str, str, int, int]
@@ -179,15 +180,11 @@ def parse_deckstats(deck_text, handle_card: Callable) -> None:
 # 1 Deafening Silence (MB2) 9
 # 1 Disruptor Flute (MH3) 209
 def parse_moxfield(deck_text, handle_card: Callable) -> None:
-    pattern = re.compile(
-        r'(\d+)x?\s+(.+?)\s+\((\w+)\)\s+([^\s]+)',
-        re.IGNORECASE
-    )
     def is_moxfield_card_line(line: str) -> bool:
-        return bool(pattern.match(line))
+        return bool(MOXFIELD_PATTERN.match(line))
 
     def extract_moxfield_card_data(line: str) -> card_data_tuple:
-        match = pattern.match(line)
+        match = MOXFIELD_PATTERN.match(line)
         quantity = int(match.group(1))
         name = match.group(2).strip()
         set_code = match.group(3).strip()
