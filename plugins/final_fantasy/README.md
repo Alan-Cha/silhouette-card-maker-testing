@@ -25,7 +25,7 @@ Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy)
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH {untap|octgn|tts}
+Usage: fetch.py [OPTIONS] DECK_PATH {untap|octgn_xml|tts}
 
 Options:
   --help  Show this message and exit.
@@ -116,7 +116,7 @@ Untap format.
 3 Genesis (24-025L)
 ```
 
-### `octgn`
+### `octgn_xml`
 
 OCTGN XML format.
 

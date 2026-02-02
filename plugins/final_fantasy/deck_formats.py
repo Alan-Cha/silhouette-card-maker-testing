@@ -90,13 +90,13 @@ def parse_tts(deck_text: str, handle_card: Callable) -> None:
 
 class DeckFormat(str, Enum):
     UNTAP = 'untap'
-    OCTGN = 'octgn'
+    OCTGN_XML = 'octgn_xml'
     TABLETOP_SIMULATOR = 'tts'
 
 def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> None:
     if format == DeckFormat.UNTAP:
         return parse_untap(deck_text, handle_card)
-    elif format == DeckFormat.OCTGN:
+    elif format == DeckFormat.OCTGN_XML:
         return parse_octgn(deck_text, handle_card)
     elif format == DeckFormat.TABLETOP_SIMULATOR:
         return parse_tts(deck_text, handle_card)

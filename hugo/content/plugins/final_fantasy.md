@@ -28,7 +28,7 @@ Now you can create the PDF using [`create_pdf.py`]({{% ref "../docs/create" %}})
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH {untap|octgn|tts}
+Usage: fetch.py [OPTIONS] DECK_PATH {untap|octgn_xml|tts}
 
 Options:
   --help  Show this message and exit.
@@ -119,9 +119,9 @@ Untap format.
 3 Genesis (24-025L)
 ```
 
-### `octgn`
+### `octgn_xml`
 
-OCTGN XML format. Note that OCTGN decklists do not include serial codes, so the API will attempt to look up cards by name only. Cards with ambiguous names may fail to resolve.
+OCTGN XML format.
 
 ```xml
 <deck game="285a8cdb-1d02-4edd-a9de-1ade9d5a4f43">
