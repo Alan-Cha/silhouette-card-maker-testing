@@ -1,7 +1,11 @@
 from os import path
-from requests import Response, get
+from requests import get
 from time import sleep
 from json import dumps
+import re
+
+def remove_nonalphanumeric(s: str) -> str:
+    return re.sub(r'[^\w]', '', s)
 
 CURIOSA_DECK_URL_TEMPLATE = 'https://curiosa.io/decks/{deck_id}'
 CURIOSA_DECK_API_URL = 'https://curiosa.io/api/trpc/deck.getDecklistById,deck.getAvatarById,deck.getSideboardById,deck.getMaybeboardById'
@@ -14,6 +18,7 @@ def get_cards(card_results, index: int):
       return result
 
 def get_curiosa_decklist(deck_id: str):
+    deck_id = deck_id.strip()
 
     deck_payload = {
        '0': {'json': {'id': deck_id}},
@@ -46,7 +51,7 @@ def get_curiosa_decklist(deck_id: str):
 
     return decklist
 
-def request_curiosa(query: str) -> Response:
+def request_curiosa(query: str):
 
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
@@ -63,9 +68,10 @@ def fetch_card(
     front_img_dir: str,
 ):
     card_art = request_curiosa(image_url).content
+    clean_name = remove_nonalphanumeric(card_name)
 
     for counter in range(quantity):
-        image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}.png')
+        image_path = path.join(front_img_dir, f'{index}{clean_name}{counter + 1}.png')
 
         with open(image_path, 'wb') as f:
             f.write(card_art)
