@@ -7,57 +7,50 @@ import re
 def remove_nonalphanumeric(s: str) -> str:
     return re.sub(r'[^\w]', '', s)
 
-CURIOSA_DECK_URL_TEMPLATE = 'https://curiosa.io/decks/{deck_id}'
-CURIOSA_DECK_API_URL = 'https://curiosa.io/api/trpc/deck.getDecklistById,deck.getAvatarById,deck.getSideboardById,deck.getMaybeboardById'
+CURIOSA_API_BASE = 'https://curiosa.io/api/trpc/'
+CURIOSA_REFERER = 'https://curiosa.io/'
 
-def get_cards(card_results, index: int):
-      result = card_results[index].get('result', {}).get('data', {}).get('json', [])
+DECK_ENDPOINTS = [
+    'deck.getDecklistById',
+    'deck.getAvatarById',
+    'deck.getSideboardById',
+    'deck.getMaybeboardById',
+]
 
-      if isinstance(result, dict):
-          return [result]
-      return result
+def get_cards(card_result):
+    result = card_result.get('result', {}).get('data', {}).get('json', [])
+    if isinstance(result, dict):
+        return [result]
+    return result
 
 def get_curiosa_decklist(deck_id: str):
     deck_id = deck_id.strip()
 
-    deck_payload = {
-       '0': {'json': {'id': deck_id}},
-       '1': {'json': {'id': deck_id}},
-       '2': {'json': {'id': deck_id}},
-       '3': {'json': {'id': deck_id}},
-    }
+    api_url = CURIOSA_API_BASE + ','.join(DECK_ENDPOINTS)
+    deck_payload = {str(i): {'json': {'id': deck_id}} for i in range(len(DECK_ENDPOINTS))}
+    params = {'batch': '1', 'input': dumps(deck_payload)}
+    headers = {'referer': CURIOSA_REFERER}
 
-    deck_params = { 'batch': '1', 'input': dumps(deck_payload)}
+    r = get(api_url, params=params, headers=headers)
 
-    headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*', 'referer': CURIOSA_DECK_URL_TEMPLATE.format(deck_id=deck_id)}
-
-    r = get(CURIOSA_DECK_API_URL, params=deck_params, headers=headers)
-
+    # Check for 2XX response code
     r.raise_for_status()
-    sleep(0.15)
 
-    deck_data = r.json()
-
-    main   = get_cards(deck_data, 0)
-    avatar = get_cards(deck_data, 1)
-    side   = get_cards(deck_data, 2)
-    maybe  = get_cards(deck_data, 3)
+    sleep(0.075)
 
     decklist = []
-    decklist.extend(main)
-    decklist.extend(avatar)
-    decklist.extend(side)
-    decklist.extend(maybe)
+    for result in r.json():
+        decklist.extend(get_cards(result))
 
     return decklist
 
-def request_curiosa(query: str):
+def request_curiosa(url: str):
+    r = get(url)
 
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
-
+    # Check for 2XX response code
     r.raise_for_status()
-    sleep(0.15)
 
+    sleep(0.075)
     return r
 
 def fetch_card(
