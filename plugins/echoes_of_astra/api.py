@@ -1,14 +1,19 @@
 from os import path
 from requests import Response, get
 from time import sleep
+import re
 
 ASTRA_DECK_URL_TEMPLATE = 'https://pphqxjttokwymgemkqvh.supabase.co/rest/v1/decks?select=id,is_public,deck_cards(quantity,cards(*))&id=eq.{deck_id}'
 
+# Supabase public/anon key - this is intentionally public and safe to commit.
+# It only provides read access to public decks via Row Level Security (RLS).
+ASTRA_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwaHF4anR0b2t3eW1nZW1rcXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MzQ3OTcsImV4cCI6MjA3NDMxMDc5N30.z-xZSeC4Jl_s3EpeoCXfD8nl6Q4yDV6EohAgmsSUaS0'
+
 def get_astra_deck(deck_id: str):
-       
+
     headers = {
         'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*',
-        'ApiKey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwaHF4anR0b2t3eW1nZW1rcXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MzQ3OTcsImV4cCI6MjA3NDMxMDc5N30.z-xZSeC4Jl_s3EpeoCXfD8nl6Q4yDV6EohAgmsSUaS0'
+        'ApiKey': ASTRA_ANON_KEY
     }
 
     url = ASTRA_DECK_URL_TEMPLATE.format(deck_id=deck_id)
@@ -28,6 +33,9 @@ def request_astra(query: str) -> Response:
 
     return r
 
+def remove_nonalphanumeric(s: str) -> str:
+    return re.sub(r'[^\w]', '', s)
+
 def fetch_card(
     index: int,
     quantity: int,
@@ -35,11 +43,11 @@ def fetch_card(
     image_url: str,
     front_img_dir: str,
 ):
-    # Query for card info
     card_art = request_astra(image_url).content
+    clean_card_name = remove_nonalphanumeric(card_name)
 
     for counter in range(quantity):
-        image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}.png')
+        image_path = path.join(front_img_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
 
         with open(image_path, 'wb') as f:
             f.write(card_art)
@@ -47,7 +55,7 @@ def fetch_card(
 def get_handle_card(
     front_img_dir: str,
 ):
-    def configured_fetch_card(index: int, card_name: str, image_url: int, quantity: int = 1):
+    def configured_fetch_card(index: int, card_name: str, image_url: str, quantity: int = 1):
         fetch_card(
             index,
             quantity,

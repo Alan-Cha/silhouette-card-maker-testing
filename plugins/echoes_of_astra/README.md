@@ -35,7 +35,10 @@ Options:
 
 ### `astrabuilder`
 
-AstraBuilder format utilizes the deck id found at the end of the URL of a deck.
+AstraBuilder format utilizes the deck ID found at the end of the URL of a deck.
+
+For example: https://www.astra-builder.com/en/create?deck=122
+
 ```
 122
 ```
