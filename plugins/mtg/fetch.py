@@ -32,7 +32,7 @@ def cli(
     prefer_extra_art: bool,
     tokens: bool
 ):
-    if not os.path.isfile(deck_path):
+    if not os.path.isfile(deck_path) and not format == DeckFormat.URL:
         print(f'{deck_path} is not a valid file.')
         return
     
@@ -55,6 +55,11 @@ def cli(
             front_directory,
             double_sided_directory
         )
+
+    # If format is URL, skip reading file and pass URL as deck_text (deck_url for parse_url()).
+    if format == DeckFormat.URL:
+        parse_deck(deck_path, format, get_handle_card)
+        return
 
     with open(deck_path, 'r', encoding='utf-8') as deck_file:
         deck_text = deck_file.read()

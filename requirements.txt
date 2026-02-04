@@ -7,3 +7,5 @@ Requests==2.32.3
 pypdfium2==4.30.0
 split-image==2.0.1
 filetype==1.2.0
+cloudscraper==1.2.71
+mtg_parser==0.0.1a50

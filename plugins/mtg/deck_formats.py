@@ -256,6 +256,25 @@ def parse_mpcfill_xml(deck_text, handle_card: Callable) -> None:
         print(', '.join(parts))
         handle_card(index, item["id"], item["name"], item.get("back", None), item["quantity"])
 
+# URL Auto-Import
+#   Supported sites:
+#     Moxfield
+#     Archidekt
+def parse_url(deck_url, handle_card: Callable) -> None:
+    import cloudscraper
+    import mtg_parser
+    scraper = cloudscraper.create_scraper()
+    cards = mtg_parser.parse_deck(deck_url, scraper)
+    if not cards:
+        print(f"Failed to parse deck from URL: {deck_url}")
+        return
+
+    # def extract_card_data(card: mtg_parser.Card) -> card_data_tuple:
+    #     return (card.name, card.extension, card.number, card.quantity)
+
+    for index, card in enumerate(cards, start=1):
+        handle_card(index, card.name, card.extension, card.number, card.quantity)
+
 class DeckFormat(str, Enum):
     ARCHIDEKT = "archidekt"
     DECKSTATS = "deckstats"
@@ -265,6 +284,7 @@ class DeckFormat(str, Enum):
     MTGO = "mtgo"
     SCRYFALL_JSON = "scryfall_json"
     SIMPLE = "simple"
+    URL = "url"
 
 def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> None:
     if format == DeckFormat.SIMPLE:
@@ -283,5 +303,7 @@ def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> Non
         parse_scryfall_json(deck_text, handle_card)
     elif format == DeckFormat.MPCFILL_XML:
         parse_mpcfill_xml(deck_text, handle_card)
+    elif format == DeckFormat.URL:
+        parse_url(deck_text, handle_card)
     else:
         raise ValueError("Unrecognized deck format")
