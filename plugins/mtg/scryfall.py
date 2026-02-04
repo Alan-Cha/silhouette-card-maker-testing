@@ -40,7 +40,7 @@ def fetch_card_art(
 
         # Save image based on quantity
         for counter in range(quantity):
-            image_path = os.path.join(front_img_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
+            image_path = os.path.join(front_img_dir, f'{index:03}{clean_card_name}{str(counter + 1)}.png')
 
             with open(image_path, 'wb') as f:
                 f.write(card_art)
@@ -53,7 +53,7 @@ def fetch_card_art(
 
             # Save image based on quantity
             for counter in range(quantity):
-                image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
+                image_path = os.path.join(double_sided_dir, f'{index:03}{clean_card_name}{str(counter + 1)}.png')
 
                 with open(image_path, 'wb') as f:
                     f.write(card_art)
