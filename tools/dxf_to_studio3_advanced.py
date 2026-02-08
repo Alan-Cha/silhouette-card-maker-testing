@@ -67,8 +67,24 @@ FILE_LOAD_DELAY = 5.0  # Wait for DXF file to fully load
 PANEL_SWITCH_DELAY = 1.5  # Wait after clicking a sidebar panel icon
 SAVE_DELAY = 3.0  # Wait for save dialog / file write
 
-# Default calibration file location
-CALIBRATION_FILE = Path(__file__).parent / "silhouette_ui_coordinates.json"
+# Calibration file location
+SCRIPT_DIR = Path(__file__).parent
+ASSETS_DIR = SCRIPT_DIR.parent / "assets"
+
+
+def calibration_filename(version: str) -> Path:
+    """Build calibration file path from a Silhouette Studio version string.
+
+    Example: "5.0.402ss" -> assets/coordinates_5_0_402ss.json
+    """
+    safe = version.strip().replace(".", "_")
+    return ASSETS_DIR / f"coordinates_{safe}.json"
+
+
+def find_latest_calibration() -> Optional[Path]:
+    """Find the most recently modified coordinates_*.json in assets/."""
+    files = sorted(ASSETS_DIR.glob("coordinates_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    return files[0] if files else None
 
 
 class Orientation(Enum):
@@ -78,11 +94,16 @@ class Orientation(Enum):
 
 @dataclass
 class RegistrationSettings:
-    """Settings for registration marks."""
+    """Settings for registration marks.
+
+    Values are clamped by Silhouette Studio to its allowed range,
+    so 0 gives the minimum and 100 gives the maximum regardless
+    of whether the units are set to inches or mm.
+    """
     enabled: bool = True
-    length_mm: float = 10.0
-    thickness_mm: float = 0.5
-    inset_mm: float = 5.0
+    length: float = 0  # 0 = minimum allowed by Silhouette Studio
+    thickness: float = 0  # 0 = minimum allowed by Silhouette Studio
+    inset: float = 0  # 0 = minimum allowed by Silhouette Studio
 
 
 # =============================================================================
@@ -90,9 +111,14 @@ class RegistrationSettings:
 # =============================================================================
 
 def type_in_field(value: str):
-    """Clear a field and type a new value."""
-    pyautogui.hotkey('ctrl', 'a')
-    time.sleep(0.1)
+    """Select all text in the focused field and type a new value.
+
+    Uses double-click to select the field contents (Ctrl+A doesn't
+    work because Silhouette Studio interprets it as Select All objects).
+    The mouse must already be positioned on the field.
+    """
+    pyautogui.doubleClick()
+    time.sleep(0.2)
     pyautogui.write(str(value))
     time.sleep(0.1)
     pyautogui.press('enter')
@@ -110,21 +136,30 @@ def paste():
     time.sleep(0.1)
 
 
-def load_calibration(filepath: Path = CALIBRATION_FILE) -> Optional[dict]:
-    """Load calibration data from JSON file."""
-    if not filepath.exists():
+def load_calibration(filepath: Path = None) -> Optional[dict]:
+    """Load calibration data from JSON file.
+
+    If no filepath given, auto-detects the most recent
+    coordinates_*.json in assets/.
+    """
+    if filepath is None:
+        filepath = find_latest_calibration()
+    if filepath is None or not filepath.exists():
         return None
 
     try:
         with open(filepath, 'r') as f:
-            return json.load(f)
+            data = json.load(f)
+        print(f"Loaded calibration: {filepath.name}")
+        return data
     except Exception as e:
         print(f"Warning: Could not load calibration: {e}")
         return None
 
 
-def save_calibration(data: dict, filepath: Path = CALIBRATION_FILE):
+def save_calibration(data: dict, filepath: Path):
     """Save calibration data to JSON file."""
+    filepath.parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, 'w') as f:
         json.dump(data, f, indent=2)
     print(f"\nCalibration saved to: {filepath}")
@@ -200,13 +235,12 @@ class SilhouetteAutomation:
         self.action_delay = action_delay
 
         # Load calibration if available
-        cal_file = calibration_file or CALIBRATION_FILE
-        self.calibration = load_calibration(cal_file)
+        self.calibration = load_calibration(calibration_file)
         if self.calibration:
-            print(f"Loaded calibration for Silhouette Studio {self.calibration.get('silhouette_studio_version', 'unknown')}")
+            print(f"Calibrated for Silhouette Studio {self.calibration.get('silhouette_studio_version', 'unknown')}")
         else:
             print("No calibration file found.")
-            print(f"Run 'calibrate' command to create: {cal_file}")
+            print("Run 'calibrate' command first.")
 
     def _get_window_origin(self):
         """Get the current top-left corner of the Silhouette Studio window."""
@@ -357,6 +391,14 @@ class SilhouetteAutomation:
         time.sleep(PANEL_SWITCH_DELAY)
         self._click_element("center_to_page")
 
+    def ungroup_all(self):
+        """Select all and ungroup (Ctrl+A, Ctrl+Alt+G)."""
+        print("  Ungrouping...")
+        pyautogui.hotkey('ctrl', 'a')
+        time.sleep(self.action_delay)
+        pyautogui.hotkey('ctrl', 'alt', 'g')
+        time.sleep(self.action_delay)
+
     # -------------------------------------------------------------------------
     # Registration Marks
     # -------------------------------------------------------------------------
@@ -375,15 +417,15 @@ class SilhouetteAutomation:
         if settings.enabled:
             # Set length
             self._click_element("regmark_length_field")
-            type_in_field(str(settings.length_mm))
+            type_in_field(str(settings.length))
 
             # Set thickness
             self._click_element("regmark_thickness_field")
-            type_in_field(str(settings.thickness_mm))
+            type_in_field(str(settings.thickness))
 
             # Set inset
             self._click_element("regmark_inset_field")
-            type_in_field(str(settings.inset_mm))
+            type_in_field(str(settings.inset))
 
     # -------------------------------------------------------------------------
     # Full Conversion Workflow
@@ -403,7 +445,8 @@ class SilhouetteAutomation:
         2. Set orientation
         3. Center paths
         4. Set registration marks
-        5. Save as .studio3
+        5. Ungroup cutting paths
+        6. Save as .studio3
         """
         print(f"\nConverting: {input_dxf}")
 
@@ -417,6 +460,9 @@ class SilhouetteAutomation:
 
         if registration:
             self.set_registration_marks(registration)
+
+        # Ungroup so individual cut paths are preserved in the .studio3
+        self.ungroup_all()
 
         self.save_as(output_studio3)
         self.new_document()
@@ -507,11 +553,11 @@ def cli():
 @click.option("--orientation", type=click.Choice(["portrait", "landscape"]), default="landscape", show_default=True, help="Page orientation.")
 @click.option("--no_center", is_flag=True, help="Don't center paths to page.")
 @click.option("--registration", is_flag=True, help="Enable registration marks.")
-@click.option("--reg_length", type=float, default=10.0, show_default=True, help="Registration mark length (mm).")
-@click.option("--reg_thickness", type=float, default=0.5, show_default=True, help="Registration mark thickness (mm).")
-@click.option("--reg_inset", type=float, default=5.0, show_default=True, help="Registration mark inset (mm).")
+@click.option("--reg_length", type=float, default=0, show_default=True, help="Registration mark length. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
+@click.option("--reg_thickness", type=float, default=0, show_default=True, help="Registration mark thickness. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
+@click.option("--reg_inset", type=float, default=0, show_default=True, help="Registration mark inset. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds). Increase if Silhouette Studio is slow.")
-@click.option("--calibration_file", type=click.Path(), default=str(CALIBRATION_FILE), show_default=True, help="Path to calibration JSON file.")
+@click.option("--calibration_file", type=click.Path(), default=None, help="Path to calibration JSON. Default: latest coordinates_*.json in assets/.")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
 def convert(input_file, output_file, orientation, no_center, registration,
             reg_length, reg_thickness, reg_inset, action_delay, calibration_file, studio_path):
@@ -521,9 +567,9 @@ def convert(input_file, output_file, orientation, no_center, registration,
     if registration:
         reg_settings = RegistrationSettings(
             enabled=True,
-            length_mm=reg_length,
-            thickness_mm=reg_thickness,
-            inset_mm=reg_inset
+            length=reg_length,
+            thickness=reg_thickness,
+            inset=reg_inset
         )
 
     click.echo("=" * 60)
@@ -538,7 +584,8 @@ def convert(input_file, output_file, orientation, no_center, registration,
         click.echo("Aborted.")
         return
 
-    automation = SilhouetteAutomation(studio_path, Path(calibration_file), action_delay)
+    cal_path = Path(calibration_file) if calibration_file else None
+    automation = SilhouetteAutomation(studio_path, cal_path, action_delay)
 
     try:
         automation.start()
@@ -562,20 +609,18 @@ def convert(input_file, output_file, orientation, no_center, registration,
 
 
 @cli.command()
-@click.option("--calibration_file", type=click.Path(), default=str(CALIBRATION_FILE), show_default=True, help="Output path for calibration JSON.")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
-def calibrate(calibration_file, studio_path):
+def calibrate(studio_path):
     """
     Interactively calibrate UI element coordinates.
 
     Starts Silhouette Studio at a fixed window size, then prompts you
     to hover over each UI element and press Enter to record its position.
 
-    Saves window-relative coordinates to a JSON file that can be
-    committed to the repo.
+    Saves window-relative coordinates to assets/coordinates_{version}.json
+    where {version} is the Silhouette Studio version with periods replaced
+    by underscores.
     """
-    output_file = Path(calibration_file)
-
     click.echo("=" * 60)
     click.echo("UI Coordinate Calibration Tool")
     click.echo("=" * 60)
@@ -583,8 +628,7 @@ def calibrate(calibration_file, studio_path):
     click.echo("This tool will:")
     click.echo(f"  1. Start Silhouette Studio at {WINDOW_WIDTH}x{WINDOW_HEIGHT}")
     click.echo("  2. Prompt you to hover over each UI element")
-    click.echo("  3. Save relative coordinates to:")
-    click.echo(f"     {output_file}")
+    click.echo(f"  3. Save relative coordinates to assets/coordinates_<version>.json")
     click.echo()
     click.echo("Press 's' to skip an element, Ctrl+C to abort.")
     click.echo()
@@ -598,6 +642,10 @@ def calibrate(calibration_file, studio_path):
 
     click.echo()
     version = click.prompt("What version of Silhouette Studio are you using?", default="unknown")
+    click.echo()
+
+    output_file = calibration_filename(version)
+    click.echo(f"Calibration will be saved to: {output_file}")
     click.echo()
 
     calibration = {
@@ -652,7 +700,6 @@ def calibrate(calibration_file, studio_path):
     for elem_id, elem_data in calibration['elements'].items():
         click.echo(f"  {elem_id}: ({elem_data['relative']['x']}, {elem_data['relative']['y']})")
     click.echo()
-    click.echo("You can commit this file to your repo so others can use it.")
     click.echo("Different screen sizes/DPI may require re-calibration.")
 
 
