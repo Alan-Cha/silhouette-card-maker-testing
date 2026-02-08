@@ -43,34 +43,48 @@ python tools/generate_studio3.py --list
 
 ---
 
-## Tool 2: GUI Automation (Batch DXF to Studio3)
+## Tool 2: GUI Automation (DXF to Studio3)
 
-If you have many DXF files, use the automation scripts to batch convert them.
+`dxf_to_studio3_advanced.py` automates Silhouette Studio to convert DXF files to .studio3,
+including page orientation, centering, and registration mark settings.
 
-### Python Script (Cross-platform):
+### First-time setup:
 
 ```bash
 # Install requirements
-pip install pyautogui pillow pywinauto
+pip install pyautogui pywinauto pillow click
 
-# Run conversion
-python tools/dxf_to_studio3.py input_folder/ output_folder/
-
-# Dry run (list files without converting)
-python tools/dxf_to_studio3.py input_folder/ --dry-run
+# Calibrate UI element positions (run once per screen size/DPI)
+python tools/dxf_to_studio3_advanced.py calibrate
 ```
 
-### PowerShell Script (Windows):
+The calibrate command starts Silhouette Studio at a fixed window size and prompts you
+to hover over each UI element. Coordinates are saved to `silhouette_ui_coordinates.json`
+(commit this to the repo so others can use it).
 
-```powershell
-.\tools\dxf_to_studio3.ps1 -InputFolder "C:\DXF_Files" -OutputFolder "C:\Studio3_Files"
+### Convert a DXF file:
+
+```bash
+python tools/dxf_to_studio3_advanced.py convert input.dxf output.studio3
+python tools/dxf_to_studio3_advanced.py convert input.dxf output.studio3 --orientation portrait
+python tools/dxf_to_studio3_advanced.py convert input.dxf output.studio3 --registration --reg_length 10 --reg_thickness 0.5 --reg_inset 5
 ```
+
+### Options:
+
+- `--orientation`: portrait or landscape (default: landscape)
+- `--no_center`: Skip centering paths to page
+- `--registration`: Enable registration marks
+- `--reg_length`, `--reg_thickness`, `--reg_inset`: Registration mark dimensions (mm)
+- `--studio_path`: Path to Silhouette Studio executable
+- `--calibration_file`: Path to calibration JSON
 
 ### Important Notes:
 
 - **Do not use the computer during conversion** - the script controls mouse/keyboard
 - Move mouse to top-left corner to abort (failsafe)
 - Press Ctrl+C to cancel
+- Coordinates are window-relative, so the window can be at any position
 
 ---
 
