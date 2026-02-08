@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""
+Batch convert DXF files to .studio3 using Silhouette Studio GUI automation.
+
+Iterates over all DXF files in cutting_templates/dxf/ and converts each
+to a .studio3 file in cutting_templates/ using SilhouetteAutomation from
+dxf_to_studio3_advanced.py.
+
+Opens Silhouette Studio once, converts all files, then closes it.
+Always uses registration marks with thickness=100.
+
+Usage:
+    python tools/batch_convert_studio3.py
+    python tools/batch_convert_studio3.py --dxf_dir cutting_templates/dxf --output_dir cutting_templates
+"""
+
+import json
+from pathlib import Path
+
+import click
+
+from dxf_to_studio3_advanced import (
+    SilhouetteAutomation,
+    RegistrationSettings,
+    Orientation as StudioOrientation,
+    DEFAULT_STUDIO_PATH,
+    ACTION_DELAY,
+)
+
+SCRIPT_DIR = Path(__file__).parent
+PROJECT_DIR = SCRIPT_DIR.parent
+LAYOUTS_FILE = PROJECT_DIR / "assets" / "layouts.json"
+DEFAULT_DXF_DIR = PROJECT_DIR / "cutting_templates" / "dxf"
+DEFAULT_OUTPUT_DIR = PROJECT_DIR / "cutting_templates"
+
+
+def load_layouts() -> dict:
+    with open(LAYOUTS_FILE, "r") as f:
+        return json.load(f)
+
+
+def parse_dxf_filename(filename: str) -> tuple[str, str] | None:
+    """Extract paper_size and card_size from a DXF filename.
+
+    Expected format: {paper_size}_{card_size}.dxf
+    Card sizes may contain underscores (e.g. poker_half, bridge_square).
+    Matches against known sizes in layouts.json.
+    """
+    stem = Path(filename).stem
+    return stem.split("_", 1) if "_" in stem else None
+
+
+def get_orientation_for_dxf(filename: str, layouts: dict) -> StudioOrientation:
+    """Determine the Silhouette Studio orientation for a DXF file.
+
+    Maps the orientation from layouts.json (vertical/horizontal) to
+    the Silhouette Studio orientation (portrait/landscape).
+
+    Paper sizes are landscape-first in layouts.json (width > height),
+    so vertical card orientation maps to landscape page orientation.
+    """
+    parts = parse_dxf_filename(filename)
+    if parts is None:
+        return StudioOrientation.LANDSCAPE
+
+    paper_size, card_size = parts
+
+    layout_orientations = layouts.get("layouts", {})
+    if paper_size in layout_orientations and card_size in layout_orientations[paper_size]:
+        card_orientation = layout_orientations[paper_size][card_size]["orientation"]
+        # Paper sizes in layouts.json are landscape-oriented (width > height),
+        # so Silhouette Studio page orientation is always landscape
+        return StudioOrientation.LANDSCAPE
+
+    return StudioOrientation.LANDSCAPE
+
+
+@click.command()
+@click.option("--dxf_dir", type=click.Path(exists=True), default=str(DEFAULT_DXF_DIR), show_default=True, help="Directory containing DXF files.")
+@click.option("--output_dir", type=click.Path(), default=str(DEFAULT_OUTPUT_DIR), show_default=True, help="Output directory for .studio3 files.")
+@click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
+@click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds).")
+@click.option("--calibration_file", type=click.Path(), default=None, help="Path to calibration JSON.")
+@click.option("--dry_run", is_flag=True, help="List files that would be converted without running Silhouette Studio.")
+def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_run):
+    """Batch convert DXF files to .studio3 with registration marks."""
+    dxf_path = Path(dxf_dir)
+    out_path = Path(output_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    layouts = load_layouts()
+
+    dxf_files = sorted(dxf_path.glob("*.dxf"))
+    if not dxf_files:
+        click.echo(f"No DXF files found in {dxf_path}")
+        return
+
+    click.echo(f"Found {len(dxf_files)} DXF files in {dxf_path}")
+    click.echo()
+
+    # Registration marks: always enabled, thickness=100
+    reg_settings = RegistrationSettings(
+        enabled=True,
+        thickness=100,
+    )
+
+    if dry_run:
+        for dxf_file in dxf_files:
+            output_file = out_path / dxf_file.with_suffix(".studio3").name
+            orientation = get_orientation_for_dxf(dxf_file.name, layouts)
+            click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value})")
+        click.echo()
+        click.echo("Dry run complete. No files were converted.")
+        return
+
+    click.echo("=" * 60)
+    click.echo("Batch DXF to Studio3 Converter")
+    click.echo("=" * 60)
+    click.echo()
+    click.echo("WARNING: Do not use mouse/keyboard during conversion!")
+    click.echo("Move mouse to top-left corner to abort.")
+    click.echo()
+
+    if not click.confirm("Proceed?"):
+        click.echo("Aborted.")
+        return
+
+    cal_path = Path(calibration_file) if calibration_file else None
+    automation = SilhouetteAutomation(studio_path, cal_path, action_delay)
+
+    try:
+        automation.start()
+
+        converted = 0
+        errors = 0
+
+        for dxf_file in dxf_files:
+            output_file = out_path / dxf_file.with_suffix(".studio3").name
+            orientation = get_orientation_for_dxf(dxf_file.name, layouts)
+
+            try:
+                automation.convert(
+                    input_dxf=str(dxf_file),
+                    output_studio3=str(output_file),
+                    orientation=orientation,
+                    center=True,
+                    registration=reg_settings,
+                )
+                converted += 1
+            except Exception as e:
+                click.echo(f"  Error converting {dxf_file.name}: {e}")
+                errors += 1
+
+        click.echo()
+        click.echo(f"Converted {converted} files ({errors} errors)")
+
+    except KeyboardInterrupt:
+        click.echo("\nAborted by user.")
+    except Exception as e:
+        click.echo(f"\nFail-safe triggered: {e}")
+    finally:
+        try:
+            automation.close()
+        except Exception:
+            pass
+
+
+if __name__ == "__main__":
+    cli()

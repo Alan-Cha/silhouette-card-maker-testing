@@ -1,409 +1,144 @@
 {
+    "ppi": 300,
+    "silhouette": {
+        "inset": "10mm",
+        "thickness": "0.5mm",
+        "length": "5mm"
+    },
     "card_sizes": {
         "standard": {
-            "width": 743,
-            "height": 1038
+            "width": "63mm",
+            "height": "88mm",
+            "radius": "2.5mm"
         },
         "standard_double": {
-            "width": 1487,
-            "height": 1038
+            "width": "88mm",
+            "height": "126mm",
+            "radius": "3mm"
         },
         "japanese": {
-            "width": 694,
-            "height": 1015
+            "width": "59mm",
+            "height": "86mm",
+            "radius": "3mm"
         },
         "poker": {
-            "width": 748,
-            "height": 1049
+            "width": "2.5in",
+            "height": "3.5in",
+            "radius": "0.125in"
         },
         "poker_half": {
-            "width": 524,
-            "height": 733
+            "width": "1.75in",
+            "height": "2.5in",
+            "radius": "0.125in"
         },
         "bridge": {
-            "width": 673,
-            "height": 1049
+            "width": "2.25in",
+            "height": "3.5in",
+            "radius": "3.5mm"
         },
         "bridge_square": {
-            "width": 673,
-            "height": 673
+            "width": "2.25in",
+            "height": "2.25in",
+            "radius": "3.5mm"
         },
         "tarot": {
-            "width": 1424,
-            "height": 824
+            "width": "2.75in",
+            "height": "4.75in",
+            "radius": "6mm"
         },
         "domino": {
-            "width": 524,
-            "height": 1049
+            "width": "1.75in",
+            "height": "3.5in",
+            "radius": "0.125in"
         },
         "domino_square": {
-            "width": 524,
-            "height": 524
+            "width": "1.75in",
+            "height": "1.75in",
+            "radius": "0.125in"
         }
     },
-    "paper_layouts": {
+    "paper_sizes": {
         "letter": {
-            "width": 3300,
-            "height": 2550,
-            "card_layouts": {
-                "standard": {
-                    "x_pos": [
-                        140,
-                        899,
-                        1658,
-                        2417
-                    ],
-                    "y_pos": [
-                        231,
-                        1280
-                    ],
-                    "template": "letter_standard_v4"
-                },
-                "standard_double": {
-                    "x_pos": [
-                        155,
-                        1658
-                    ],
-                    "y_pos": [
-                        231,
-                        1280
-                    ],
-                    "template": "letter_standarddouble_v1"
-                },
-                "japanese": {
-                    "x_pos": [
-                        165,
-                        924,
-                        1682,
-                        2441
-                    ],
-                    "y_pos": [
-                        243,
-                        1293
-                    ],
-                    "template": "letter_japanese_v1"
-                },
-                "poker": {
-                    "x_pos": [
-                        132,
-                        895,
-                        1657,
-                        2420
-                    ],
-                    "y_pos": [
-                        220,
-                        1283
-                    ],
-                    "template": "letter_poker_v2"
-                },
-                "poker_half": {
-                    "x_pos": [
-                        265,
-                        827,
-                        1388,
-                        1950,
-                        2512
-                    ],
-                    "y_pos": [
-                        142,
-                        908,
-                        1674
-                    ],
-                    "template": "letter_pokerhalf_v2"
-                },
-                "bridge": {
-                    "x_pos": [
-                        256,
-                        961,
-                        1666,
-                        2371
-                    ],
-                    "y_pos": [
-                        214,
-                        1288
-                    ],
-                    "template": "letter_bridge_v2"
-                },
-                "bridge_square": {
-                    "x_pos": [
-                        242,
-                        956,
-                        1670,
-                        2384
-                    ],
-                    "y_pos": [
-                        221,
-                        938,
-                        1654
-                    ],
-                    "template": "letter_bridgesquare_v1"
-                },
-                "tarot": {
-                    "x_pos": [
-                        210,
-                        1665
-                    ],
-                    "y_pos": [
-                        434,
-                        1292
-                    ],
-                    "template": "letter_tarot_v1"
-                },
-                "domino": {
-                    "x_pos": [
-                        245,
-                        817,
-                        1388,
-                        1959,
-                        2531
-                    ],
-                    "y_pos": [
-                        205,
-                        1296
-                    ],
-                    "template": "letter_domino_v1"
-                },
-                "domino_square": {
-                    "x_pos": [
-                        256,
-                        823,
-                        1388,
-                        1954,
-                        2520
-                    ],
-                    "y_pos": [
-                        167,
-                        731,
-                        1295,
-                        1859
-                    ],
-                    "template": "letter_dominosquare_v1"
-                }
-            }
+            "width": "11in",
+            "height": "8.5in"
         },
         "tabloid": {
-            "width": 3300,
-            "height": 5100,
-            "card_layouts": {
-                "standard": {
-                    "x_pos": [
-                        139,
-                        898,
-                        1657,
-                        2416
-                    ],
-                    "y_pos": [
-                        456,
-                        1506,
-                        2555,
-                        3605
-                    ],
-                    "template": "tabloid_standard_v3"
-                },
-                "poker": {
-                    "x_pos": [
-                        131,
-                        894,
-                        1656,
-                        2419
-                    ],
-                    "y_pos": [
-                        432,
-                        1494,
-                        2557,
-                        3619
-                    ],
-                    "template": "tabloid_poker_v1"
-                },
-                "bridge": {
-                    "x_pos": [
-                        255,
-                        960,
-                        1665,
-                        2370
-                    ],
-                    "y_pos": [
-                        416,
-                        1489,
-                        2562,
-                        3635
-                    ],
-                    "template": "tabloid_bridge_v1"
-                },
-                "tarot": {
-                    "x_pos": [
-                        210,
-                        1665
-                    ],
-                    "y_pos": [
-                        421,
-                        1279,
-                        2138,
-                        2996,
-                        3855
-                    ],
-                    "template": "tabloid_tarot_v1"
-                },
-                "domino_square": {
-                    "x_pos": [
-                        260,
-                        824,
-                        1388,
-                        1952,
-                        2515
-                    ],
-                    "y_pos": [
-                        307,
-                        873,
-                        1439,
-                        2005,
-                        2571,
-                        3137,
-                        3703,
-                        4269
-                    ],
-                    "template": "tabloid_dominosquare_v1"
-                }
-            }
+            "width": "17in",
+            "height": "11in"
         },
         "a4": {
-            "width": 3508,
-            "height": 2480,
-            "card_layouts": {
-                "standard": {
-                    "x_pos": [
-                        244,
-                        1003,
-                        1762,
-                        2521
-                    ],
-                    "y_pos": [
-                        196,
-                        1246
-                    ],
-                    "template": "a4_standard_v3"
-                },
-                    "standard_double": {
-                    "x_pos": [
-                        259,
-                        1762
-                    ],
-                    "y_pos": [
-                        196,
-                        1246
-                    ],
-                    "template": "a4_standarddouble_v1"
-                },
-                "japanese": {
-                    "x_pos": [
-                        269,
-                        1028,
-                        1786,
-                        2545
-                    ],
-                    "y_pos": [
-                        208,
-                        1258
-                    ],
-                    "template": "a4_japanese_v1"
-                },
-                "poker": {
-                    "x_pos": [
-                        236,
-                        999,
-                        1761,
-                        2524
-                    ],
-                    "y_pos": [
-                        185,
-                        1248
-                    ],
-                    "template": "a4_poker_v1"
-                },
-                "poker_half": {
-                    "x_pos": [
-                        368,
-                        930,
-                        1492,
-                        2054,
-                        2616
-                    ],
-                    "y_pos": [
-                        120,
-                        873,
-                        1626
-                    ],
-                    "template": "a4_pokerhalf_v1"
-                },
-                "bridge": {
-                    "x_pos": [
-                        359,
-                        1064,
-                        1769,
-                        2475
-                    ],
-                    "y_pos": [
-                        179,
-                        1252
-                    ],
-                    "template": "a4_bridge_v1"
-                },
-                "tarot": {
-                    "x_pos": [
-                        314,
-                        1769
-                    ],
-                    "y_pos": [
-                        399,
-                        1257
-                    ],
-                    "template": "a4_tarot_v1"
-                }
-            }
+            "width": "297mm",
+            "height": "210mm"
         },
         "a3": {
-            "width": 4960,
-            "height": 3508,
-            "card_layouts": {
-                "standard": {
-                    "x_pos": [
-                        212,
-                        971,
-                        1730,
-                        2489,
-                        3248,
-                        4007
-                    ],
-                    "y_pos": [
-                        185,
-                        1234,
-                        2284
-                    ],
-                    "template": "a3_standard_v2"
-                }
-            }
+            "width": "420mm",
+            "height": "297mm"
         },
         "archb": {
-            "width": 5400,
-            "height": 3600,
-            "card_layouts": {
-                "standard": {
-                    "x_pos": [
-                        300,
-                        1111,
-                        1923,
-                        2734,
-                        3546,
-                        4357
-                    ],
-                    "y_pos": [
-                        162,
-                        1281,
-                        2400
-                    ],
-                    "template": "archb_standard_v2"
-                }
-            }
+            "width": "36in",
+            "height": "24in"
+        }
+    },
+    "layouts": {
+        "letter": {
+            "standard": { "orientation": "vertical" },
+            "standard_double": { "orientation": "horizontal" },
+            "japanese": { "orientation": "horizontal" },
+            "poker": { "orientation": "vertical" },
+            "poker_half": { "orientation": "horizontal" },
+            "bridge": { "orientation": "vertical" },
+            "bridge_square": { "orientation": "vertical" },
+            "tarot": { "orientation": "horizontal" },
+            "domino": { "orientation": "vertical" },
+            "domino_square": { "orientation": "vertical" }
+        },
+        "tabloid": {
+            "standard": { "orientation": "horizontal" },
+            "standard_double": { "orientation": "vertical" },
+            "japanese": { "orientation": "vertical" },
+            "poker": { "orientation": "horizontal" },
+            "poker_half": { "orientation": "vertical" },
+            "bridge": { "orientation": "horizontal" },
+            "bridge_square": { "orientation": "vertical" },
+            "tarot": { "orientation": "vertical" },
+            "domino": { "orientation": "horizontal" },
+            "domino_square": { "orientation": "vertical" }
+        },
+        "a4": {
+            "standard": { "orientation": "horizontal" },
+            "standard_double": { "orientation": "horizontal" },
+            "japanese": { "orientation": "horizontal" },
+            "poker": { "orientation": "vertical" },
+            "poker_half": { "orientation": "horizontal" },
+            "bridge": { "orientation": "horizontal" },
+            "bridge_square": { "orientation": "vertical" },
+            "tarot": { "orientation": "horizontal" },
+            "domino": { "orientation": "vertical" },
+            "domino_square": { "orientation": "vertical" }
+        },
+        "a3": {
+            "standard": { "orientation": "vertical" },
+            "standard_double": { "orientation": "horizontal" },
+            "japanese": { "orientation": "vertical" },
+            "poker": { "orientation": "vertical" },
+            "poker_half": { "orientation": "vertical" },
+            "bridge": { "orientation": "horizontal" },
+            "bridge_square": { "orientation": "vertical" },
+            "tarot": { "orientation": "vertical" },
+            "domino": { "orientation": "horizontal" },
+            "domino_square": { "orientation": "vertical" }
+        },
+        "archb": {
+            "standard": { "orientation": "horizontal" },
+            "standard_double": { "orientation": "horizontal" },
+            "japanese": { "orientation": "vertical" },
+            "poker": { "orientation": "horizontal" },
+            "poker_half": { "orientation": "horizontal" },
+            "bridge": { "orientation": "horizontal" },
+            "bridge_square": { "orientation": "vertical" },
+            "tarot": { "orientation": "horizontal" },
+            "domino": { "orientation": "horizontal" },
+            "domino_square": { "orientation": "vertical" }
         }
     }
 }

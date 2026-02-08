@@ -46,7 +46,7 @@ def add_rounded_rectangle_polyline(msp, x, y, width, height, radius):
 
 
 # Create new DXF document
-def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: List[int], y_pos: List[int], ppi:int, filename:str):
+def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: List[int], y_pos: List[int], ppi:int, filename:str, output_path:str = None):
     doc = ezdxf.new(dxfversion='R2010')
     float_pattern = r"(?:\d+\.\d*|\.\d+|\d+)"  # matches 1.0, .5, or 2
     # Match in or mm (default=mm)
@@ -61,21 +61,22 @@ def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: Lis
         width = size_convert.size_to_mm(card_width)
         height = size_convert.size_to_mm(card_height)
         radius = size_convert.size_to_mm(card_radius)
-    
+
     msp = doc.modelspace()
-    
+
     for x in range(len(x_pos)):
         for y in range(len(y_pos)):
             if doc.units == units.IN:
-                pos_x = x_pos[x] / ppi 
+                pos_x = x_pos[x] / ppi
                 pos_y = y_pos[y] / ppi
             else:
-                pos_x = x_pos[x] * 25.4 / ppi 
+                pos_x = x_pos[x] * 25.4 / ppi
                 pos_y = y_pos[y] * 25.4 / ppi
             add_rounded_rectangle_polyline(msp, pos_x, pos_y, width, height, radius)
-        
+
 
     # Save DXF
-    default_output_path = os.path.join(output_directory, f'{filename}.dxf')
-    doc.saveas(default_output_path)
+    if output_path is None:
+        output_path = os.path.join(output_directory, f'{filename}.dxf')
+    doc.saveas(output_path)
     print("Template DXF file created.")
