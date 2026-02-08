@@ -14,8 +14,8 @@ from natsort import natsorted
 from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 from pydantic import BaseModel
 
-# Approximately 1.25mm of bleed assuming 300 PPI: ceil(1.25mm * 1in/25.4mm * 300ppi)
-MINIMUM_BLEED = 15
+import page_manager
+from enums import CardSize, PaperSize, Registration, Orientation
 
 # Specify directory locations
 asset_directory = 'assets'
@@ -48,28 +48,18 @@ valid_mimetypes = (
     "image/dds"
 )
 
-class CardSize(str, Enum):
-    STANDARD = "standard"
-    STANDARD_DOUBLE = "standard_double"
-    JAPANESE = "japanese"
-    POKER = "poker"
-    POKER_HALF = "poker_half"
-    BRIDGE = "bridge"
-    BRIDGE_SQUARE = "bridge_square"
-    TAROT = "tarot"
-    DOMINO = "domino"
-    DOMINO_SQUARE = "domino_square"
+# Approximately 1.25mm of bleed assuming 300 PPI: ceil(1.25mm * 1in/25.4mm * 300ppi)
+MINIMUM_BLEED = 15
 
-class PaperSize(str, Enum):
-    LETTER = "letter"
-    TABLOID = "tabloid"
-    A4 = "a4"
-    A3 = "a3"
-    ARCHB = "archb"
+class CardSizeDef(BaseModel):
+    width: str
+    height: str
+    radius: str
 
-class Registration(str, Enum):
-    THREE = "3"
-    FOUR = "4"
+class SilhouetteSettings(BaseModel):
+    inset: str
+    thickness: str
+    length: str
 
 class FitMode(str, Enum):
     STRETCH = "stretch"
@@ -79,19 +69,19 @@ class CardLayoutSize(BaseModel):
     width: int
     height: int
 
-class CardLayout(BaseModel):
-    x_pos: List[int]
-    y_pos: List[int]
-    template: str
+class PaperSizeDef(BaseModel):
+    width: str
+    height: str
 
-class PaperLayout(BaseModel):
-    width: int
-    height: int
-    card_layouts: Dict[CardSize, CardLayout]
+class CardLayoutDef(BaseModel):
+    orientation: Orientation
 
-class Layouts(BaseModel):
-    card_sizes: Dict[CardSize, CardLayoutSize]
-    paper_layouts: Dict[PaperSize, PaperLayout]
+class LayoutConfig(BaseModel):
+    ppi: int
+    silhouette: SilhouetteSettings
+    card_sizes: Dict[str, CardSizeDef]
+    paper_sizes: Dict[str, PaperSizeDef]
+    layouts: Dict[str, Dict[str, CardLayoutDef]]
 
 # Known junk files across OSes
 EXTRANEOUS_FILES = {
@@ -569,33 +559,62 @@ def generate_pdf(
     with open(layouts_path, 'r') as layouts_file:
         try:
             layouts_data = json.load(layouts_file)
-            layouts = Layouts(**layouts_data)
+            layout_config = LayoutConfig(**layouts_data)
 
         except ValidationErr as e:
             raise Exception(f'Cannot parse layouts.json: {e}.')
 
-        # paper_layout represents the size of a paper and all possible card layouts
-        if paper_size not in layouts.paper_layouts:
-            raise Exception(f'Unsupported paper size "{paper_size}".')
-        paper_layout = layouts.paper_layouts[paper_size]
+        # Validate card size
+        if card_size not in layout_config.card_sizes:
+            raise Exception(f'Unsupported card size "{card_size}". Try card sizes: {list(layout_config.card_sizes.keys())}.')
+        card_size_def = layout_config.card_sizes[card_size]
 
-        # card_layout_size represents the size of a card
-        if card_size not in layouts.card_sizes:
-            raise Exception(f'Unsupported card size "{card_size}". Try card sizes: {paper_layout.card_layouts.keys()}.')
-        card_layout_size = layouts.card_sizes[card_size]
+        # Validate paper size
+        if paper_size not in layout_config.paper_sizes:
+            raise Exception(f'Unsupported paper size "{paper_size}". Try paper sizes: {list(layout_config.paper_sizes.keys())}.')
+        paper_size_def = layout_config.paper_sizes[paper_size]
 
-        # card_layout represents the position of cards
-        if card_size not in paper_layout.card_layouts:
-            raise Exception(f'Unsupported card size "{card_size}" with paper size "{paper_size}". Try card sizes: {paper_layout.card_layouts.keys()}.')
-        card_layout = paper_layout.card_layouts[card_size]
+        # Look up orientation from the layouts field (per paper+card combination)
+        if paper_size not in layout_config.layouts or card_size not in layout_config.layouts[paper_size]:
+            raise Exception(f'No layout defined for paper "{paper_size}" with card "{card_size}". Add it to layouts.json.')
+        orientation = layout_config.layouts[paper_size][card_size].orientation
+
+        # Compute card positions dynamically
+        silhouette = layout_config.silhouette
+        computed = page_manager.generate_layout(
+            card_size=card_size,
+            paper_size=paper_size,
+            orientation=orientation,
+            card_width=card_size_def.width,
+            card_height=card_size_def.height,
+            card_radius=card_size_def.radius,
+            paper_width=paper_size_def.width,
+            paper_height=paper_size_def.height,
+            inset=silhouette.inset,
+            thickness=silhouette.thickness,
+            length=silhouette.length,
+            ppi=layout_config.ppi,
+        )
+
+        # Extract computed layout data (flat return format)
+        card_width_px = computed["card_width_px"]
+        card_height_px = computed["card_height_px"]
+        page_width_px = computed["paper_width_px"]
+        page_height_px = computed["paper_height_px"]
+        x_pos = computed["x_pos"]
+        y_pos = computed["y_pos"]
+        template = computed["template"]
 
         # Determine the amount of x and y crop
-        crop = parse_crop_string(crop_string, card_layout_size.width, card_layout_size.height)
-        crop_backs = parse_crop_string(crop_backs_string, card_layout_size.width, card_layout_size.height)
+        crop = parse_crop_string(crop_string, card_width_px, card_height_px)
+        crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
 
-        num_rows = len(card_layout.y_pos)
-        num_cols = len(card_layout.x_pos)
+        num_rows = len(y_pos)
+        num_cols = len(x_pos)
         num_cards = num_rows * num_cols
+
+        if num_cards == 0:
+            raise Exception(f'Card size "{card_size}" does not fit on paper size "{paper_size}".')
 
         # Check skip indices
         # You can only skip valid indices (within the max card count per page)
@@ -622,7 +641,7 @@ def generate_pdf(
             # Create the array that will store the filled templates
             pages: List[Image.Image] = []
 
-            max_print_bleed = calculate_max_print_bleed(card_layout.x_pos, card_layout.y_pos, card_layout_size.width, card_layout_size.height, MINIMUM_BLEED)
+            max_print_bleed = calculate_max_print_bleed(x_pos, y_pos, card_width_px, card_height_px, MINIMUM_BLEED)
 
             # Load and cache the single back image for reuse
             # Do this if we expect both front and back pages and if we have a back image
@@ -708,10 +727,10 @@ def generate_pdf(
                     front_page,
                     num_rows,
                     num_cols,
-                    card_layout.x_pos,
-                    card_layout.y_pos,
-                    card_layout_size.width,
-                    card_layout_size.height,
+                    x_pos,
+                    y_pos,
+                    card_width_px,
+                    card_height_px,
                     max_print_bleed,
                     crop,
                     crop_backs,
@@ -728,10 +747,10 @@ def generate_pdf(
                     back_page,
                     num_rows,
                     num_cols,
-                    card_layout.x_pos,
-                    card_layout.y_pos,
-                    card_layout_size.width,
-                    card_layout_size.height,
+                    x_pos,
+                    y_pos,
+                    card_width_px,
+                    card_height_px,
                     max_print_bleed,
                     crop,
                     crop_backs,
@@ -746,10 +765,10 @@ def generate_pdf(
                     front_page,
                     back_page,
                     pages,
-                    paper_layout.width,
-                    paper_layout.height,
+                    page_width_px,
+                    page_height_px,
                     ppi_ratio,
-                    card_layout.template,
+                    template,
                     only_fronts,
                     name
                 )
