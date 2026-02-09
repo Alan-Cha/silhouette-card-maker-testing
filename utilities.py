@@ -75,6 +75,7 @@ class PaperSizeDef(BaseModel):
 
 class CardLayoutDef(BaseModel):
     orientation: Orientation
+    version: int
 
 class LayoutConfig(BaseModel):
     ppi: int

@@ -20,61 +20,59 @@ import click
 import page_manager
 import size_convert
 import dxf_manager
-from enums import CardSize, PaperSize, Orientation
+from enums import CardSize, PaperSize
+from utilities import LayoutConfig
 
 ASSETS_DIR = Path("assets")
 LAYOUTS_FILE = ASSETS_DIR / "layouts.json"
 OUTPUT_DIR = Path("cutting_templates") / "dxf"
 
 
-def load_layout_config() -> dict:
+def load_layout_config() -> LayoutConfig:
     with open(LAYOUTS_FILE, "r") as f:
-        return json.load(f)
+        return LayoutConfig(**json.load(f))
 
 
 def generate_single_dxf(
     card_size: str,
     paper_size: str,
-    config: dict,
+    config: LayoutConfig,
     output_dir: Path,
 ):
     """Generate a single DXF file for a paper/card combination."""
-    card_def = config["card_sizes"][card_size]
-    paper_def = config["paper_sizes"][paper_size]
-    layout_def = config["layouts"][paper_size][card_size]
-    silhouette = config["silhouette"]
-    ppi = config["ppi"]
+    card_def = config.card_sizes[card_size]
+    paper_def = config.paper_sizes[paper_size]
+    layout_def = config.layouts[paper_size][card_size]
+    silhouette = config.silhouette
+    ppi = config.ppi
 
-    orientation = Orientation(layout_def["orientation"])
-    version = layout_def["version"]
+    orientation = layout_def.orientation
+    version = layout_def.version
 
     computed = page_manager.generate_layout(
         card_size=card_size,
         paper_size=paper_size,
         orientation=orientation,
-        card_width=card_def["width"],
-        card_height=card_def["height"],
-        card_radius=card_def["radius"],
-        paper_width=paper_def["width"],
-        paper_height=paper_def["height"],
-        inset=silhouette["inset"],
-        thickness=silhouette["thickness"],
-        length=silhouette["length"],
+        card_width=card_def.width,
+        card_height=card_def.height,
+        card_radius=card_def.radius,
+        paper_width=paper_def.width,
+        paper_height=paper_def.height,
+        inset=silhouette.inset,
+        thickness=silhouette.thickness,
+        length=silhouette.length,
         ppi=ppi,
     )
 
     x_pos = computed.x_pos
     y_pos = computed.y_pos
 
-    dxf_width = card_def["width"]
-    dxf_height = card_def["height"]
-
     output_file = output_dir / f"{paper_size}_{card_size}_v{version}.dxf"
 
     dxf_manager.generate_dxf(
-        dxf_width,
-        dxf_height,
-        card_def["radius"],
+        card_def.width,
+        card_def.height,
+        card_def.radius,
         x_pos,
         y_pos,
         ppi,
@@ -83,8 +81,8 @@ def generate_single_dxf(
     )
 
     num_cards = len(x_pos) * len(y_pos)
-    paper_w_mm = size_convert.size_to_mm(paper_def["width"])
-    paper_h_mm = size_convert.size_to_mm(paper_def["height"])
+    paper_w_mm = size_convert.size_to_mm(paper_def.width)
+    paper_h_mm = size_convert.size_to_mm(paper_def.height)
     print(f"  {paper_size} + {card_size}: {num_cards} cards ({paper_w_mm:.0f}x{paper_h_mm:.0f}mm, {orientation.value}) -> {output_file}")
 
 
@@ -100,17 +98,17 @@ def cli(paper_size, card_size, generate_all, list_sizes, output_dir):
 
     if list_sizes:
         print("Available card sizes:")
-        for cs, cs_def in config["card_sizes"].items():
-            print(f"  {cs}: {cs_def['width']} x {cs_def['height']}")
+        for cs, cs_def in config.card_sizes.items():
+            print(f"  {cs}: {cs_def.width} x {cs_def.height}")
         print()
         print("Available paper sizes:")
-        for ps, ps_def in config["paper_sizes"].items():
-            print(f"  {ps}: {ps_def['width']} x {ps_def['height']}")
+        for ps, ps_def in config.paper_sizes.items():
+            print(f"  {ps}: {ps_def.width} x {ps_def.height}")
         print()
         print("Defined layouts (paper + card -> orientation, version):")
-        for ps, cards in config["layouts"].items():
+        for ps, cards in config.layouts.items():
             for cs, layout in cards.items():
-                print(f"  {ps} + {cs}: {layout['orientation']}, v{layout['version']}")
+                print(f"  {ps} + {cs}: {layout.orientation.value}, v{layout.version}")
         return
 
     out = Path(output_dir)
@@ -122,7 +120,7 @@ def cli(paper_size, card_size, generate_all, list_sizes, output_dir):
         print(f"Generating DXF files to: {out}")
         print()
 
-        for ps, cards in config["layouts"].items():
+        for ps, cards in config.layouts.items():
             for cs in cards:
                 try:
                     generate_single_dxf(cs, ps, config, out)
@@ -138,7 +136,7 @@ def cli(paper_size, card_size, generate_all, list_sizes, output_dir):
     if not paper_size or not card_size:
         raise click.UsageError("Provide --paper_size and --card_size, or use --all.")
 
-    if paper_size not in config["layouts"] or card_size not in config["layouts"].get(paper_size, {}):
+    if paper_size not in config.layouts or card_size not in config.layouts.get(paper_size, {}):
         raise click.UsageError(f"No layout defined for {paper_size} + {card_size}. Check layouts.json or use --list.")
 
     generate_single_dxf(card_size, paper_size, config, out)
