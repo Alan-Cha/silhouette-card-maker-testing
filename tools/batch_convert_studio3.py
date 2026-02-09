@@ -39,39 +39,50 @@ def load_layouts() -> dict:
         return json.load(f)
 
 
-def parse_dxf_filename(filename: str) -> tuple[str, str] | None:
+def parse_dxf_filename(filename: str, layouts: dict) -> tuple[str, str] | None:
     """Extract paper_size and card_size from a DXF filename.
 
     Expected format: {paper_size}_{card_size}.dxf
     Card sizes may contain underscores (e.g. poker_half, bridge_square).
-    Matches against known sizes in layouts.json.
+    Matches against known paper sizes in layouts.json, then checks
+    if the remainder is a known card size.
     """
     stem = Path(filename).stem
-    return stem.split("_", 1) if "_" in stem else None
+    paper_sizes = layouts.get("paper_sizes", {})
+    layout_defs = layouts.get("layouts", {})
+
+    for paper_size in paper_sizes:
+        if stem.startswith(paper_size + "_"):
+            card_size = stem[len(paper_size) + 1:]
+            if paper_size in layout_defs and card_size in layout_defs[paper_size]:
+                return paper_size, card_size
+
+    return None
+
+
+def get_paper_dimensions(filename: str, layouts: dict) -> tuple[str, str]:
+    """Get paper width and height unit strings for a DXF file.
+
+    Parses paper_size from the filename and looks up dimensions
+    in layouts.json. Falls back to letter size.
+    """
+    parts = parse_dxf_filename(filename, layouts)
+    if parts is not None:
+        paper_size, _ = parts
+        paper_def = layouts["paper_sizes"][paper_size]
+        return paper_def["width"], paper_def["height"]
+
+    # Fall back to letter
+    paper_def = layouts["paper_sizes"]["letter"]
+    return paper_def["width"], paper_def["height"]
 
 
 def get_orientation_for_dxf(filename: str, layouts: dict) -> StudioOrientation:
     """Determine the Silhouette Studio orientation for a DXF file.
 
-    Maps the orientation from layouts.json (vertical/horizontal) to
-    the Silhouette Studio orientation (portrait/landscape).
-
-    Paper sizes are landscape-first in layouts.json (width > height),
-    so vertical card orientation maps to landscape page orientation.
+    Paper sizes in layouts.json are landscape-oriented (width > height),
+    so Silhouette Studio page orientation is always landscape.
     """
-    parts = parse_dxf_filename(filename)
-    if parts is None:
-        return StudioOrientation.LANDSCAPE
-
-    paper_size, card_size = parts
-
-    layout_orientations = layouts.get("layouts", {})
-    if paper_size in layout_orientations and card_size in layout_orientations[paper_size]:
-        card_orientation = layout_orientations[paper_size][card_size]["orientation"]
-        # Paper sizes in layouts.json are landscape-oriented (width > height),
-        # so Silhouette Studio page orientation is always landscape
-        return StudioOrientation.LANDSCAPE
-
     return StudioOrientation.LANDSCAPE
 
 
@@ -108,7 +119,8 @@ def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_ru
         for dxf_file in dxf_files:
             output_file = out_path / dxf_file.with_suffix(".studio3").name
             orientation = get_orientation_for_dxf(dxf_file.name, layouts)
-            click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value})")
+            paper_w, paper_h = get_paper_dimensions(dxf_file.name, layouts)
+            click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h})")
         click.echo()
         click.echo("Dry run complete. No files were converted.")
         return
@@ -137,11 +149,14 @@ def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_ru
         for dxf_file in dxf_files:
             output_file = out_path / dxf_file.with_suffix(".studio3").name
             orientation = get_orientation_for_dxf(dxf_file.name, layouts)
+            paper_w, paper_h = get_paper_dimensions(dxf_file.name, layouts)
 
             try:
                 automation.convert(
                     input_dxf=str(dxf_file),
                     output_studio3=str(output_file),
+                    paper_width=paper_w,
+                    paper_height=paper_h,
                     orientation=orientation,
                     center=True,
                     registration=reg_settings,

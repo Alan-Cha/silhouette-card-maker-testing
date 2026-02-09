@@ -3,6 +3,8 @@
 DXF to Studio3 Converter with Full Automation
 
 This script automates Silhouette Studio with mouse interactions for:
+- Cutting mat selection (12x12 or 12x24)
+- Custom paper size entry
 - Page orientation (portrait/landscape)
 - Centering cutting paths
 - Registration mark settings
@@ -11,7 +13,7 @@ Requirements:
     pip install pyautogui pywinauto pillow click
 
 Usage:
-    python dxf_to_studio3_advanced.py convert input.dxf output.studio3 --orientation landscape
+    python dxf_to_studio3_advanced.py convert input.dxf output.studio3 --paper_size letter
     python dxf_to_studio3_advanced.py calibrate
 
 Window Size Strategy:
@@ -31,6 +33,14 @@ from typing import Optional
 from enum import Enum
 
 import click
+
+# Add project root to path for enums and size_convert imports
+SCRIPT_DIR = Path(__file__).parent
+PROJECT_DIR = SCRIPT_DIR.parent
+sys.path.insert(0, str(PROJECT_DIR))
+
+from enums import PaperSize
+import size_convert
 
 try:
     import pyautogui
@@ -61,15 +71,16 @@ WINDOW_Y = 0
 
 # Timing (seconds). These defaults work for most machines.
 # Use --action_delay on the CLI to increase if Silhouette Studio is slow.
-STARTUP_WAIT = 10  # Wait for Silhouette Studio to start
-ACTION_DELAY = 1.0  # Delay between UI actions
-FILE_LOAD_DELAY = 5.0  # Wait for DXF file to fully load
+STARTUP_WAIT = 10       # Wait for Silhouette Studio to start
+ACTION_DELAY = 1.0      # Delay between UI actions (clicking, typing)
+SETTLE_DELAY = 0.2      # Short delay for UI to settle (after select-all, paste, etc.)
+FILE_LOAD_DELAY = 5.0   # Wait for DXF file to fully load
 PANEL_SWITCH_DELAY = 1.5  # Wait after clicking a sidebar panel icon
-SAVE_DELAY = 3.0  # Wait for save dialog / file write
+SAVE_DELAY = 3.0        # Wait for save dialog / file write
 
-# Calibration file location
-SCRIPT_DIR = Path(__file__).parent
-ASSETS_DIR = SCRIPT_DIR.parent / "assets"
+# Calibration and layout file locations
+ASSETS_DIR = PROJECT_DIR / "assets"
+LAYOUTS_FILE = ASSETS_DIR / "layouts.json"
 
 
 def calibration_filename(version: str) -> Path:
@@ -92,6 +103,11 @@ class Orientation(Enum):
     LANDSCAPE = "landscape"
 
 
+class CuttingMat(Enum):
+    MAT_12X12 = "12x12"
+    MAT_12X24 = "12x24"
+
+
 @dataclass
 class RegistrationSettings:
     """Settings for registration marks.
@@ -106,6 +122,30 @@ class RegistrationSettings:
     inset: float = 0  # 0 = minimum allowed by Silhouette Studio
 
 
+def load_layouts() -> dict:
+    """Load layouts.json from the project assets directory."""
+    with open(LAYOUTS_FILE, "r") as f:
+        return json.load(f)
+
+
+def determine_cutting_mat(width_in: float, height_in: float) -> CuttingMat:
+    """Determine which cutting mat fits the page size.
+
+    12x12 mat: both dimensions <= 12 inches.
+    12x24 mat: one dimension <= 12 inches, other <= 24 inches.
+    """
+    max_dim = max(width_in, height_in)
+    min_dim = min(width_in, height_in)
+
+    if max_dim <= 12.0:
+        return CuttingMat.MAT_12X12
+
+    if max_dim > 24.0 or min_dim > 12.0:
+        print(f"  Warning: Page size {width_in:.1f}x{height_in:.1f}in may not fit on a 12x24 mat.")
+
+    return CuttingMat.MAT_12X24
+
+
 # =============================================================================
 # Utility Functions
 # =============================================================================
@@ -118,9 +158,9 @@ def type_in_field(value: str):
     The mouse must already be positioned on the field.
     """
     pyautogui.doubleClick()
-    time.sleep(0.2)
+    time.sleep(SETTLE_DELAY)
     pyautogui.write(str(value))
-    time.sleep(0.1)
+    time.sleep(SETTLE_DELAY)
     pyautogui.press('enter')
     time.sleep(ACTION_DELAY)
 
@@ -133,7 +173,7 @@ def set_clipboard(text: str):
 def paste():
     """Paste from clipboard."""
     pyautogui.hotkey('ctrl', 'v')
-    time.sleep(0.1)
+    time.sleep(SETTLE_DELAY)
 
 
 def load_calibration(filepath: Path = None) -> Optional[dict]:
@@ -175,12 +215,12 @@ def connect_and_resize_studio(studio_path: str = DEFAULT_STUDIO_PATH):
     app = Application(backend="win32").connect(path=studio_path, timeout=30)
     window = app.window(title_re=".*Silhouette Studio.*")
     window.restore()
-    time.sleep(0.5)
+    time.sleep(ACTION_DELAY)
     window.move_window(
         x=WINDOW_X, y=WINDOW_Y,
         width=WINDOW_WIDTH, height=WINDOW_HEIGHT
     )
-    time.sleep(0.5)
+    time.sleep(ACTION_DELAY)
 
     rect = window.rectangle()
     window_rect = {
@@ -266,9 +306,9 @@ class SilhouetteAutomation:
         """Close Silhouette Studio."""
         print("Closing Silhouette Studio...")
         pyautogui.hotkey('alt', 'F4')
-        time.sleep(0.5)
+        time.sleep(self.action_delay)
         pyautogui.press('n')  # Don't save
-        time.sleep(1)
+        time.sleep(self.action_delay)
 
     def _click(self, x: int, y: int):
         """Click at window-relative coordinates.
@@ -312,7 +352,7 @@ class SilhouetteAutomation:
 
         # Type path into the file dialog
         pyautogui.hotkey('ctrl', 'a')
-        time.sleep(0.2)
+        time.sleep(SETTLE_DELAY)
         set_clipboard(filepath)
         paste()
         time.sleep(self.action_delay)
@@ -335,7 +375,7 @@ class SilhouetteAutomation:
 
         # Type path into the save dialog
         pyautogui.hotkey('ctrl', 'a')
-        time.sleep(0.2)
+        time.sleep(SETTLE_DELAY)
         set_clipboard(output_path)
         paste()
         time.sleep(self.action_delay)
@@ -357,6 +397,48 @@ class SilhouetteAutomation:
     # -------------------------------------------------------------------------
     # Page Setup
     # -------------------------------------------------------------------------
+
+    def set_cutting_mat(self, mat: CuttingMat):
+        """Select the cutting mat size in Page Setup.
+
+        Opens the Page Setup panel and selects either the 12x12 or 12x24
+        cutting mat from the dropdown.
+        """
+        print(f"  Setting cutting mat: {mat.value}")
+
+        self._click_element("page_setup")
+        time.sleep(PANEL_SWITCH_DELAY)
+
+        self._click_element("cutting_mat_dropdown")
+
+        if mat == CuttingMat.MAT_12X12:
+            self._click_element("cutting_mat_12x12")
+        else:
+            self._click_element("cutting_mat_12x24")
+
+    def set_paper_size(self, width_in: float, height_in: float):
+        """Set a custom paper size in Page Setup.
+
+        Opens the media size dropdown, selects "Custom", then types
+        the width and height values into the input fields.
+
+        Args:
+            width_in: Page width in inches.
+            height_in: Page height in inches.
+        """
+        print(f"  Setting paper size: {width_in:.2f} x {height_in:.2f} in")
+
+        self._click_element("page_setup")
+        time.sleep(PANEL_SWITCH_DELAY)
+
+        self._click_element("media_size_dropdown")
+        self._click_element("media_size_custom")
+
+        self._click_element("media_width_field")
+        type_in_field(f"{width_in:.2f}")
+
+        self._click_element("media_height_field")
+        type_in_field(f"{height_in:.2f}")
 
     def set_orientation(self, orientation: Orientation):
         """Set page orientation to portrait or landscape."""
@@ -435,6 +517,8 @@ class SilhouetteAutomation:
         self,
         input_dxf: str,
         output_studio3: str,
+        paper_width: str,
+        paper_height: str,
         orientation: Orientation = Orientation.LANDSCAPE,
         center: bool = True,
         registration: Optional[RegistrationSettings] = None
@@ -442,15 +526,38 @@ class SilhouetteAutomation:
         """
         Full conversion workflow:
         1. Open DXF
-        2. Set orientation
-        3. Center paths
-        4. Set registration marks
-        5. Ungroup cutting paths
-        6. Save as .studio3
+        2. Select cutting mat (based on paper size)
+        3. Set custom page size
+        4. Set orientation
+        5. Center paths
+        6. Set registration marks
+        7. Ungroup cutting paths
+        8. Save as .studio3
+        9. New document (reset for next file)
+
+        Args:
+            input_dxf: Path to the input DXF file.
+            output_studio3: Path for the output .studio3 file.
+            paper_width: Paper width as a unit string (e.g. "11in", "297mm").
+            paper_height: Paper height as a unit string (e.g. "8.5in", "210mm").
+            orientation: Page orientation (portrait or landscape).
+            center: Whether to center paths on the page.
+            registration: Registration mark settings, or None to skip.
         """
         print(f"\nConverting: {input_dxf}")
 
         self.open_file(input_dxf)
+
+        # Convert page dimensions to inches for Silhouette Studio
+        width_in = size_convert.size_to_in(paper_width)
+        height_in = size_convert.size_to_in(paper_height)
+
+        # Select cutting mat based on paper size
+        mat = determine_cutting_mat(width_in, height_in)
+        self.set_cutting_mat(mat)
+
+        # Set custom page size
+        self.set_paper_size(width_in, height_in)
 
         if orientation:
             self.set_orientation(orientation)
@@ -485,10 +592,48 @@ CALIBRATION_ELEMENTS = [
         "description": "Click the Page Setup tool icon in the left sidebar"
     },
     {
+        "id": "cutting_mat_dropdown",
+        "name": "Cutting mat dropdown",
+        "description": "The Page Setup panel should now be open. "
+                       "Click the dropdown that selects the cutting mat size."
+    },
+    {
+        "id": "cutting_mat_12x12",
+        "name": "12x12 cutting mat option",
+        "description": "The cutting mat dropdown should be open. "
+                       "Click the 12\" x 12\" option."
+    },
+    {
+        "id": "cutting_mat_12x24",
+        "name": "12x24 cutting mat option",
+        "description": "Open the cutting mat dropdown again and "
+                       "click the 12\" x 24\" option."
+    },
+    {
+        "id": "media_size_dropdown",
+        "name": "Media size dropdown",
+        "description": "Click the dropdown that selects the media/page size."
+    },
+    {
+        "id": "media_size_custom",
+        "name": "Custom media size option",
+        "description": "The media size dropdown should be open. "
+                       "Click the \"Custom\" option."
+    },
+    {
+        "id": "media_width_field",
+        "name": "Media width input field",
+        "description": "The numerical input field for custom media width."
+    },
+    {
+        "id": "media_height_field",
+        "name": "Media height input field",
+        "description": "The numerical input field for custom media height."
+    },
+    {
         "id": "portrait_button",
         "name": "Portrait orientation button",
-        "description": "The Page Setup panel should now be open. "
-                       "Scroll down if needed to find the orientation buttons."
+        "description": "Scroll down if needed to find the orientation buttons."
     },
     {
         "id": "landscape_button",
@@ -550,6 +695,7 @@ def cli():
 @cli.command()
 @click.argument("input_file", type=click.Path(exists=True))
 @click.argument("output_file", type=click.Path())
+@click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), default=PaperSize.LETTER.value, show_default=True, help="Paper size (from layouts.json).")
 @click.option("--orientation", type=click.Choice(["portrait", "landscape"]), default="landscape", show_default=True, help="Page orientation.")
 @click.option("--no_center", is_flag=True, help="Don't center paths to page.")
 @click.option("--registration", is_flag=True, help="Enable registration marks.")
@@ -559,9 +705,9 @@ def cli():
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds). Increase if Silhouette Studio is slow.")
 @click.option("--calibration_file", type=click.Path(), default=None, help="Path to calibration JSON. Default: latest coordinates_*.json in assets/.")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
-def convert(input_file, output_file, orientation, no_center, registration,
+def convert(input_file, output_file, paper_size, orientation, no_center, registration,
             reg_length, reg_thickness, reg_inset, action_delay, calibration_file, studio_path):
-    """Convert a DXF file to .studio3 with page setup and registration marks."""
+    """Convert a DXF file to .studio3 with paper size setup and registration marks."""
     orient = Orientation(orientation)
     reg_settings = None
     if registration:
@@ -572,9 +718,20 @@ def convert(input_file, output_file, orientation, no_center, registration,
             inset=reg_inset
         )
 
+    # Look up page dimensions from layouts.json
+    layouts = load_layouts()
+    if paper_size not in layouts["paper_sizes"]:
+        click.echo(f"Error: Unknown paper size '{paper_size}'. Available: {list(layouts['paper_sizes'].keys())}")
+        return
+    paper_def = layouts["paper_sizes"][paper_size]
+    paper_width = paper_def["width"]
+    paper_height = paper_def["height"]
+
     click.echo("=" * 60)
     click.echo("DXF to Studio3 Converter")
     click.echo("=" * 60)
+    click.echo()
+    click.echo(f"Paper size: {paper_size} ({paper_width} x {paper_height})")
     click.echo()
     click.echo("WARNING: Do not use mouse/keyboard during conversion!")
     click.echo("Move mouse to top-left corner to abort.")
@@ -592,6 +749,8 @@ def convert(input_file, output_file, orientation, no_center, registration,
         automation.convert(
             input_file,
             output_file,
+            paper_width=paper_width,
+            paper_height=paper_height,
             orientation=orient,
             center=not no_center,
             registration=reg_settings
@@ -604,7 +763,7 @@ def convert(input_file, output_file, orientation, no_center, registration,
     finally:
         try:
             automation.close()
-        except:
+        except Exception:
             pass
 
 
