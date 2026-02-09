@@ -12,9 +12,10 @@ from xml.dom import ValidationErr
 
 from natsort import natsorted
 from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 import page_manager
+import size_convert
 from enums import CardSize, PaperSize, Registration, Orientation
 
 # Specify directory locations
@@ -72,6 +73,14 @@ class CardLayoutSize(BaseModel):
 class PaperSizeDef(BaseModel):
     width: str
     height: str
+
+    @model_validator(mode='after')
+    def width_gte_height(self) -> 'PaperSizeDef':
+        w = size_convert.size_to_mm(self.width)
+        h = size_convert.size_to_mm(self.height)
+        if w < h:
+            raise ValueError(f'Paper width ({self.width}) must be >= height ({self.height}). Paper sizes are stored as landscape.')
+        return self
 
 class CardLayoutDef(BaseModel):
     orientation: Orientation
