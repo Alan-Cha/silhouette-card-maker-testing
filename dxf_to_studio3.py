@@ -13,8 +13,8 @@ Requirements:
     pip install pyautogui pywinauto pillow click
 
 Usage:
-    python dxf_to_studio3_advanced.py convert input.dxf output.studio3 --paper_size letter
-    python dxf_to_studio3_advanced.py calibrate
+    python dxf_to_studio3.py convert input.dxf output.studio3 --paper_size letter
+    python dxf_to_studio3.py calibrate
 
 Window Size Strategy:
     The script forces Silhouette Studio to a fixed window size (1920x1080)
@@ -33,11 +33,6 @@ from typing import Optional
 from enum import Enum
 
 import click
-
-# Add project root to path for enums and size_convert imports
-SCRIPT_DIR = Path(__file__).parent
-PROJECT_DIR = SCRIPT_DIR.parent
-sys.path.insert(0, str(PROJECT_DIR))
 
 from enums import PaperSize, Orientation
 import size_convert
@@ -79,7 +74,7 @@ PANEL_SWITCH_DELAY = 1.5  # Wait after clicking a sidebar panel icon
 SAVE_DELAY = 3.0        # Wait for save dialog / file write
 
 # Calibration and layout file locations
-ASSETS_DIR = PROJECT_DIR / "assets"
+ASSETS_DIR = Path(__file__).parent / "assets"
 LAYOUTS_FILE = ASSETS_DIR / "layouts.json"
 
 

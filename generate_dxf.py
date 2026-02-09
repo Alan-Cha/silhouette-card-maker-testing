@@ -46,6 +46,7 @@ def generate_single_dxf(
     ppi = config["ppi"]
 
     orientation = Orientation(layout_def["orientation"])
+    version = layout_def["version"]
 
     computed = page_manager.generate_layout(
         card_size=card_size,
@@ -68,7 +69,7 @@ def generate_single_dxf(
     dxf_width = card_def["width"]
     dxf_height = card_def["height"]
 
-    output_file = output_dir / f"{paper_size}_{card_size}.dxf"
+    output_file = output_dir / f"{paper_size}_{card_size}_v{version}.dxf"
 
     dxf_manager.generate_dxf(
         dxf_width,
@@ -106,10 +107,10 @@ def cli(paper_size, card_size, generate_all, list_sizes, output_dir):
         for ps, ps_def in config["paper_sizes"].items():
             print(f"  {ps}: {ps_def['width']} x {ps_def['height']}")
         print()
-        print("Defined layouts (paper + card -> orientation):")
+        print("Defined layouts (paper + card -> orientation, version):")
         for ps, cards in config["layouts"].items():
             for cs, layout in cards.items():
-                print(f"  {ps} + {cs}: {layout['orientation']}")
+                print(f"  {ps} + {cs}: {layout['orientation']}, v{layout['version']}")
         return
 
     out = Path(output_dir)
