@@ -33,12 +33,13 @@ def generate_layout(
     Args:
         card_size: Card size identifier (for the template name).
         paper_size: Paper size identifier (for the template name).
-        orientation: Whether to rotate cards 90 degrees (HORIZONTAL) or not (VERTICAL).
+        orientation: Paper orientation. PORTRAIT swaps paper width/height
+            (paper sizes in layouts.json are stored as landscape).
         card_width: Card width as a unit string.
         card_height: Card height as a unit string.
         card_radius: Card corner radius as a unit string.
-        paper_width: Paper width as a unit string.
-        paper_height: Paper height as a unit string.
+        paper_width: Paper width as a unit string (landscape value from layouts.json).
+        paper_height: Paper height as a unit string (landscape value from layouts.json).
         inset: Silhouette registration mark inset as a unit string.
         thickness: Silhouette registration mark thickness as a unit string.
         length: Silhouette registration mark length as a unit string.
@@ -54,15 +55,22 @@ def generate_layout(
             y_pos (List[int]): Y pixel positions for each row of cards.
             template (str): Template identifier string.
     """
-    is_horizontal = orientation == Orientation.HORIZONTAL
+    # Paper sizes in layouts.json are stored as landscape (width > height).
+    # For portrait orientation, swap paper dimensions.
+    if orientation == Orientation.PORTRAIT:
+        effective_paper_width = paper_height
+        effective_paper_height = paper_width
+    else:
+        effective_paper_width = paper_width
+        effective_paper_height = paper_height
 
     return _compute_layout(
         card_width=card_width,
         card_height=card_height,
         card_radius=card_radius,
-        page_width=paper_width,
-        page_height=paper_height,
-        orientation=is_horizontal,
+        page_width=effective_paper_width,
+        page_height=effective_paper_height,
+        orientation=orientation,
         ppi=ppi,
         card_size=card_size,
         paper_size=paper_size,
@@ -164,7 +172,7 @@ def _compute_layout(
     card_radius: str,
     page_width: str,
     page_height: str,
-    orientation: bool,  # True = horizontal (rotated 90 degrees)
+    orientation: Orientation,
     ppi: int,
     card_size: str,
     paper_size: str,
@@ -187,12 +195,12 @@ def _compute_layout(
     6. Center the card grid within the available area.
 
     Args:
-        card_width: Card width as a unit string (before orientation swap).
-        card_height: Card height as a unit string (before orientation swap).
+        card_width: Card width as a unit string.
+        card_height: Card height as a unit string.
         card_radius: Card corner radius as a unit string (unused in layout, kept for template name).
-        page_width: Paper width as a unit string.
-        page_height: Paper height as a unit string.
-        orientation: If True, swap card width/height (horizontal/landscape orientation).
+        page_width: Paper width as a unit string (already adjusted for orientation).
+        page_height: Paper height as a unit string (already adjusted for orientation).
+        orientation: Paper orientation (used only for the template name).
         ppi: Pixels per inch for all conversions.
         card_size: Card size identifier string (for template name).
         paper_size: Paper size identifier string (for template name).
@@ -223,13 +231,9 @@ def _compute_layout(
                 + round(size_convert.size_to_pixel(thickness, ppi) / 2))
     margin_y = margin_x
 
-    # Apply orientation: swap card dimensions if horizontal
-    if orientation:
-        card_width_px = size_convert.size_to_pixel(card_height, ppi)
-        card_height_px = size_convert.size_to_pixel(card_width, ppi)
-    else:
-        card_width_px = size_convert.size_to_pixel(card_width, ppi)
-        card_height_px = size_convert.size_to_pixel(card_height, ppi)
+    # Convert card dimensions to pixels (card dimensions are never swapped)
+    card_width_px = size_convert.size_to_pixel(card_width, ppi)
+    card_height_px = size_convert.size_to_pixel(card_height, ppi)
 
     # Calculate available area within standard margins
     available_width = page_width_px - (2 * margin_x)
@@ -329,7 +333,7 @@ def _compute_layout(
     if card_size == "custom":
         custom_card_size = f'({card_width}x{card_height}R{card_radius})'
 
-    orientation_text = "horizontal" if orientation else "vertical"
+    orientation_text = orientation.value
     template = f"{paper_size}{custom_paper_size}_{card_size}{custom_card_size}_{orientation_text}_{len(x_pos)}x{len(y_pos)}"
 
     return {

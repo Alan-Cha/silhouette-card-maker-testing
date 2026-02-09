@@ -39,7 +39,7 @@ SCRIPT_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
-from enums import PaperSize
+from enums import PaperSize, Orientation
 import size_convert
 
 try:
@@ -96,11 +96,6 @@ def find_latest_calibration() -> Optional[Path]:
     """Find the most recently modified coordinates_*.json in assets/."""
     files = sorted(ASSETS_DIR.glob("coordinates_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
     return files[0] if files else None
-
-
-class Orientation(Enum):
-    PORTRAIT = "portrait"
-    LANDSCAPE = "landscape"
 
 
 class CuttingMat(Enum):
@@ -696,7 +691,7 @@ def cli():
 @click.argument("input_file", type=click.Path(exists=True))
 @click.argument("output_file", type=click.Path())
 @click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), default=PaperSize.LETTER.value, show_default=True, help="Paper size (from layouts.json).")
-@click.option("--orientation", type=click.Choice(["portrait", "landscape"]), default="landscape", show_default=True, help="Page orientation.")
+@click.option("--orientation", type=click.Choice([o.value for o in Orientation], case_sensitive=False), default=Orientation.LANDSCAPE.value, show_default=True, help="Paper orientation.")
 @click.option("--no_center", is_flag=True, help="Don't center paths to page.")
 @click.option("--registration", is_flag=True, help="Enable registration marks.")
 @click.option("--reg_length", type=float, default=0, show_default=True, help="Registration mark length. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")

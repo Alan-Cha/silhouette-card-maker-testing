@@ -81,64 +81,164 @@
     },
     "layouts": {
         "letter": {
-            "standard": { "orientation": "vertical" },
-            "standard_double": { "orientation": "horizontal" },
-            "japanese": { "orientation": "horizontal" },
-            "poker": { "orientation": "vertical" },
-            "poker_half": { "orientation": "horizontal" },
-            "bridge": { "orientation": "vertical" },
-            "bridge_square": { "orientation": "vertical" },
-            "tarot": { "orientation": "horizontal" },
-            "domino": { "orientation": "vertical" },
-            "domino_square": { "orientation": "vertical" }
+            "standard": {
+                "orientation": "landscape"
+            },
+            "standard_double": {
+                "orientation": "portrait"
+            },
+            "japanese": {
+                "orientation": "portrait"
+            },
+            "poker": {
+                "orientation": "landscape"
+            },
+            "poker_half": {
+                "orientation": "portrait"
+            },
+            "bridge": {
+                "orientation": "landscape"
+            },
+            "bridge_square": {
+                "orientation": "portrait"
+            },
+            "tarot": {
+                "orientation": "portrait"
+            },
+            "domino": {
+                "orientation": "landscape"
+            },
+            "domino_square": {
+                "orientation": "portrait"
+            }
         },
         "tabloid": {
-            "standard": { "orientation": "horizontal" },
-            "standard_double": { "orientation": "vertical" },
-            "japanese": { "orientation": "vertical" },
-            "poker": { "orientation": "horizontal" },
-            "poker_half": { "orientation": "vertical" },
-            "bridge": { "orientation": "horizontal" },
-            "bridge_square": { "orientation": "vertical" },
-            "tarot": { "orientation": "vertical" },
-            "domino": { "orientation": "horizontal" },
-            "domino_square": { "orientation": "vertical" }
+            "standard": {
+                "orientation": "portrait"
+            },
+            "standard_double": {
+                "orientation": "landscape"
+            },
+            "japanese": {
+                "orientation": "landscape"
+            },
+            "poker": {
+                "orientation": "portrait"
+            },
+            "poker_half": {
+                "orientation": "landscape"
+            },
+            "bridge": {
+                "orientation": "portrait"
+            },
+            "bridge_square": {
+                "orientation": "portrait"
+            },
+            "tarot": {
+                "orientation": "landscape"
+            },
+            "domino": {
+                "orientation": "portrait"
+            },
+            "domino_square": {
+                "orientation": "portrait"
+            }
         },
         "a4": {
-            "standard": { "orientation": "horizontal" },
-            "standard_double": { "orientation": "horizontal" },
-            "japanese": { "orientation": "horizontal" },
-            "poker": { "orientation": "vertical" },
-            "poker_half": { "orientation": "horizontal" },
-            "bridge": { "orientation": "horizontal" },
-            "bridge_square": { "orientation": "vertical" },
-            "tarot": { "orientation": "horizontal" },
-            "domino": { "orientation": "vertical" },
-            "domino_square": { "orientation": "vertical" }
+            "standard": {
+                "orientation": "portrait"
+            },
+            "standard_double": {
+                "orientation": "portrait"
+            },
+            "japanese": {
+                "orientation": "portrait"
+            },
+            "poker": {
+                "orientation": "landscape"
+            },
+            "poker_half": {
+                "orientation": "portrait"
+            },
+            "bridge": {
+                "orientation": "portrait"
+            },
+            "bridge_square": {
+                "orientation": "portrait"
+            },
+            "tarot": {
+                "orientation": "portrait"
+            },
+            "domino": {
+                "orientation": "portrait"
+            },
+            "domino_square": {
+                "orientation": "portrait"
+            }
         },
         "a3": {
-            "standard": { "orientation": "vertical" },
-            "standard_double": { "orientation": "horizontal" },
-            "japanese": { "orientation": "vertical" },
-            "poker": { "orientation": "vertical" },
-            "poker_half": { "orientation": "vertical" },
-            "bridge": { "orientation": "horizontal" },
-            "bridge_square": { "orientation": "vertical" },
-            "tarot": { "orientation": "vertical" },
-            "domino": { "orientation": "horizontal" },
-            "domino_square": { "orientation": "vertical" }
+            "standard": {
+                "orientation": "landscape"
+            },
+            "standard_double": {
+                "orientation": "portrait"
+            },
+            "japanese": {
+                "orientation": "landscape"
+            },
+            "poker": {
+                "orientation": "landscape"
+            },
+            "poker_half": {
+                "orientation": "portrait"
+            },
+            "bridge": {
+                "orientation": "portrait"
+            },
+            "bridge_square": {
+                "orientation": "portrait"
+            },
+            "tarot": {
+                "orientation": "landscape"
+            },
+            "domino": {
+                "orientation": "portrait"
+            },
+            "domino_square": {
+                "orientation": "portrait"
+            }
         },
         "archb": {
-            "standard": { "orientation": "horizontal" },
-            "standard_double": { "orientation": "horizontal" },
-            "japanese": { "orientation": "vertical" },
-            "poker": { "orientation": "horizontal" },
-            "poker_half": { "orientation": "horizontal" },
-            "bridge": { "orientation": "horizontal" },
-            "bridge_square": { "orientation": "vertical" },
-            "tarot": { "orientation": "horizontal" },
-            "domino": { "orientation": "horizontal" },
-            "domino_square": { "orientation": "vertical" }
+            "standard": {
+                "orientation": "portrait"
+            },
+            "standard_double": {
+                "orientation": "portrait"
+            },
+            "japanese": {
+                "orientation": "portrait"
+            },
+            "poker": {
+                "orientation": "portrait"
+            },
+            "poker_half": {
+                "orientation": "portrait"
+            },
+            "bridge": {
+                "orientation": "portrait"
+            },
+            "bridge_square": {
+                "orientation": "portrait"
+            },
+            "tarot": {
+                "orientation": "portrait"
+            },
+            "domino": {
+                "orientation": "portrait"
+            },
+            "domino_square": {
+                "orientation": "portrait"
+            }
         }
     }
 }
