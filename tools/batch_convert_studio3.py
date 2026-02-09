@@ -15,20 +15,23 @@ Usage:
 """
 
 import json
+import sys
 from pathlib import Path
 
 import click
 
+SCRIPT_DIR = Path(__file__).parent
+PROJECT_DIR = SCRIPT_DIR.parent
+sys.path.insert(0, str(PROJECT_DIR))
+
+from enums import Orientation
 from dxf_to_studio3_advanced import (
     SilhouetteAutomation,
     RegistrationSettings,
-    Orientation as StudioOrientation,
     DEFAULT_STUDIO_PATH,
     ACTION_DELAY,
 )
 
-SCRIPT_DIR = Path(__file__).parent
-PROJECT_DIR = SCRIPT_DIR.parent
 LAYOUTS_FILE = PROJECT_DIR / "assets" / "layouts.json"
 DEFAULT_DXF_DIR = PROJECT_DIR / "cutting_templates" / "dxf"
 DEFAULT_OUTPUT_DIR = PROJECT_DIR / "cutting_templates"
@@ -77,13 +80,18 @@ def get_paper_dimensions(filename: str, layouts: dict) -> tuple[str, str]:
     return paper_def["width"], paper_def["height"]
 
 
-def get_orientation_for_dxf(filename: str, layouts: dict) -> StudioOrientation:
-    """Determine the Silhouette Studio orientation for a DXF file.
+def get_orientation_for_dxf(filename: str, layouts: dict) -> Orientation:
+    """Look up the paper orientation for a DXF file from layouts.json.
 
-    Paper sizes in layouts.json are landscape-oriented (width > height),
-    so Silhouette Studio page orientation is always landscape.
+    Falls back to landscape if the filename can't be parsed.
     """
-    return StudioOrientation.LANDSCAPE
+    parts = parse_dxf_filename(filename, layouts)
+    if parts is not None:
+        paper_size, card_size = parts
+        orientation_str = layouts["layouts"][paper_size][card_size]["orientation"]
+        return Orientation(orientation_str)
+
+    return Orientation.LANDSCAPE
 
 
 @click.command()
