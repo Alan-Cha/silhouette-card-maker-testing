@@ -7,7 +7,7 @@ import os
 import re
 from glob import glob
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 from xml.dom import ValidationErr
 
 from natsort import natsorted
@@ -85,6 +85,8 @@ class PaperSizeDef(BaseModel):
 class CardLayoutDef(BaseModel):
     orientation: Orientation
     version: int
+    num_rows: Optional[int] = None
+    num_cols: Optional[int] = None
 
 class LayoutConfig(BaseModel):
     ppi: int
@@ -98,6 +100,11 @@ def load_layout_config() -> LayoutConfig:
     """Load and validate layouts.json from the assets directory."""
     with open(layouts_path, 'r') as f:
         return LayoutConfig(**json.load(f))
+
+
+def template_name(paper_size: str, card_size: str, version: int) -> str:
+    """Compose the standard template name: {paper_size}_{card_size}_v{version}."""
+    return f"{paper_size}_{card_size}_v{version}"
 
 
 # Known junk files across OSes
@@ -585,10 +592,12 @@ def generate_pdf(
         raise Exception(f'Unsupported paper size "{paper_size}". Try paper sizes: {list(layout_config.paper_sizes.keys())}.')
     paper_size_def = layout_config.paper_sizes[paper_size]
 
-    # Look up orientation from the layouts field (per paper+card combination)
+    # Look up orientation and version from the layouts field (per paper+card combination)
     if paper_size not in layout_config.layouts or card_size not in layout_config.layouts[paper_size]:
         raise Exception(f'No layout defined for paper "{paper_size}" with card "{card_size}". Add it to layouts.json.')
-    orientation = layout_config.layouts[paper_size][card_size].orientation
+    layout_def = layout_config.layouts[paper_size][card_size]
+    orientation = layout_def.orientation
+    version = layout_def.version
 
     # Compute card positions dynamically
     silhouette = layout_config.silhouette
@@ -613,7 +622,7 @@ def generate_pdf(
     page_height_px = computed.paper_height_px
     x_pos = computed.x_pos
     y_pos = computed.y_pos
-    template = computed.template
+    template = template_name(paper_size, card_size, version)
 
     # Determine the amount of x and y crop
     crop = parse_crop_string(crop_string, card_width_px, card_height_px)

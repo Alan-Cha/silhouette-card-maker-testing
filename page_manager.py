@@ -121,7 +121,7 @@ def generate_layout(
     length: str,
     ppi: int,
 ) -> CardLayout:
-    """Compute card positions on a page, accounting for margins, bleed, and registration marks.
+    """Compute card positions on a page, accounting for margins and bleed.
 
     All dimension parameters are unit strings (e.g. "63mm", "2.5in").
     The caller is responsible for looking up values from layouts.json.
@@ -130,17 +130,29 @@ def generate_layout(
     For portrait orientation, this function swaps paper_width and paper_height
     so the paper is taller than wide. Card dimensions are never swapped.
 
-    The algorithm works as follows:
-    1. Convert all dimensions from unit strings to pixels at the given PPI.
-    2. Calculate the printable area by subtracting margins required for
-       Silhouette registration marks (inset + mark length + half thickness).
-    3. Determine how many card rows and columns fit within the printable area.
-    4. Check if additional rows/columns could fit by relaxing to the minimum
-       margin (just the inset). If so, expand in the direction that has the
-       most spare room, to maximize bleed space on the other axis.
-    5. Calculate bleed (gap between cards) and space to registration marks,
-       reducing bleed first if cards don't fit, then reducing reg mark space.
-    6. Center the card grid within the available area.
+    The available area is plus-shaped. The base margin from the paper edge
+    is just the inset. Registration marks create corner zones of size
+    (length + thickness/2) at each corner inside the inset boundary.
+    Cards can extend into the corner zone on one axis (horizontally or
+    vertically) but not both simultaneously.
+
+        ┌──────────────────────────┐
+        │   ┌──┐          ┌──┐    │  corner zones (blocked)
+        │   │//│          │//│    │
+        │   └──┘          └──┘    │
+        │      ← cards OK here →  │  edge zones (available)
+        │   ┌──┐          ┌──┐    │
+        │   │//│          │//│    │
+        │   └──┘          └──┘    │
+        └──────────────────────────┘
+
+    Within the available area, cards are arranged with uniform bleed
+    gaps around and between them:
+
+        | bleed | card | bleed | card | bleed |
+
+        n cards need: n * card + (n + 1) * bleed
+        so: n <= (available - bleed) / (card + bleed)
 
     Args:
         card_size: Card size identifier (for the template name).
@@ -148,7 +160,7 @@ def generate_layout(
         orientation: Paper orientation. PORTRAIT swaps paper width/height.
         card_width: Card width as a unit string.
         card_height: Card height as a unit string.
-        card_radius: Card corner radius as a unit string (unused in layout, kept for template name).
+        card_radius: Card corner radius as a unit string (unused in layout).
         paper_width: Paper width as a unit string (landscape value from layouts.json).
         paper_height: Paper height as a unit string (landscape value from layouts.json).
         inset: Silhouette registration mark inset distance.
@@ -159,6 +171,10 @@ def generate_layout(
     Returns:
         CardLayout named tuple.
     """
+    # Hardcoded layout parameters
+    BLEED = "1.25mm"
+    MARGIN = "0.25mm"
+
     # Paper sizes in layouts.json are stored as landscape (width > height).
     # For portrait orientation, swap paper dimensions.
     if orientation == Orientation.PORTRAIT:
@@ -168,119 +184,73 @@ def generate_layout(
         page_width = paper_width
         page_height = paper_height
 
-    # Maximum bleed of 1.5mm between cards and 2mm space to registration marks
-    bleed_x_px = size_convert.size_to_pixel("1.5mm", ppi)
-    bleed_y_px = bleed_x_px
-    space_x_px = size_convert.size_to_pixel("2mm", ppi)
-    space_y_px = space_x_px
-
-    # Convert page size to pixels
+    # Convert dimensions to pixels
     page_width_px = size_convert.size_to_pixel(page_width, ppi)
     page_height_px = size_convert.size_to_pixel(page_height, ppi)
-
-    # Calculate margins for registration marks:
-    # min_margin = just the inset (closest cards can get to paper edge)
-    # margin = inset + mark length + half thickness (standard safe area)
-    min_margin = size_convert.size_to_pixel(inset, ppi)
-    margin_x = (size_convert.size_to_pixel(inset, ppi)
-                + size_convert.size_to_pixel(length, ppi)
-                + round(size_convert.size_to_pixel(thickness, ppi) / 2))
-    margin_y = margin_x
-
-    # Convert card dimensions to pixels (card dimensions are never swapped)
     card_width_px = size_convert.size_to_pixel(card_width, ppi)
     card_height_px = size_convert.size_to_pixel(card_height, ppi)
+    bleed_px = size_convert.size_to_pixel(BLEED, ppi)
 
-    # Calculate available area within standard margins
-    available_width = page_width_px - (2 * margin_x)
-    available_height = page_height_px - (2 * margin_y)
+    # Base margin from paper edge (just the inset + extra buffer)
+    inset_px = size_convert.size_to_pixel(inset, ppi)
+    extra_px = size_convert.size_to_pixel(MARGIN, ppi)
+    margin_x = inset_px + extra_px
+    margin_y = inset_px + extra_px
 
-    # Calculate available area within minimum margins (inset only)
-    min_available_width = page_width_px - (2 * min_margin)
-    min_available_height = page_height_px - (2 * min_margin)
+    # Registration mark corner zone size (extends into the available area
+    # from each corner of the inset boundary)
+    corner_px = (size_convert.size_to_pixel(length, ppi)
+                 + round(size_convert.size_to_pixel(thickness, ppi) / 2))
 
-    # Determine how many rows/columns fit within standard margins
-    num_rows = math.floor(available_height / card_height_px)
-    num_cols = math.floor(available_width / card_width_px)
+    # Available area inside base margins
+    available_width = page_width_px - 2 * margin_x
+    available_height = page_height_px - 2 * margin_y
 
-    # Check how many rows/columns could fit within minimum margins.
-    # Include target bleed between cards so we don't expand into a layout
-    # that has zero bleed (cards touching with no gap for clean cuts).
-    max_num_rows = math.floor((min_available_height - bleed_y_px) / (card_height_px + bleed_y_px))
-    max_num_cols = math.floor((min_available_width - bleed_x_px) / (card_width_px + bleed_x_px))
+    # Max cards: n * card + (n + 1) * bleed <= available
+    # => n <= (available - bleed) / (card + bleed)
+    num_cols = max(0, math.floor((available_width - bleed_px) / (card_width_px + bleed_px)))
+    num_rows = max(0, math.floor((available_height - bleed_px) / (card_height_px + bleed_px)))
 
-    # If we can fit more cards by relaxing one axis to minimum margin,
-    # expand the axis with the most spare room (to preserve bleed on the other)
-    if num_rows < max_num_rows and num_cols < max_num_cols:
-        # Both axes could gain cards; expand the one with bigger spare room
-        filled_height = card_height_px * num_rows + (2 * space_y_px) + (bleed_y_px * (num_rows - 1))
-        filled_width = card_width_px * num_cols + (2 * space_x_px) + (bleed_x_px * (num_cols - 1))
-        if (filled_height - available_height) > (filled_width - available_width):
-            num_rows = max_num_rows
-            margin_y = min_margin
-            space_y_px = 0
-            available_height = min_available_height
+    # Check for corner registration mark overlap.
+    # Cards can extend into the corner zone on one axis but not both.
+    # Use centering to find the first card's position and check if it
+    # overlaps a corner zone on both axes simultaneously.
+    filled_width = num_cols * card_width_px + (num_cols + 1) * bleed_px
+    filled_height = num_rows * card_height_px + (num_rows + 1) * bleed_px
+    first_x = margin_x + (available_width - filled_width) / 2 + bleed_px
+    first_y = margin_y + (available_height - filled_height) / 2 + bleed_px
+
+    if first_x < margin_x + corner_px and first_y < margin_y + corner_px:
+        # Card overlaps a corner zone on both axes.
+        # Widen the margin on whichever axis preserves more cards.
+        wide_margin = inset_px + corner_px + extra_px
+
+        # Option A: widen horizontal margin
+        avail_w_a = page_width_px - 2 * wide_margin
+        cols_a = max(0, math.floor((avail_w_a - bleed_px) / (card_width_px + bleed_px)))
+
+        # Option B: widen vertical margin
+        avail_h_b = page_height_px - 2 * wide_margin
+        rows_b = max(0, math.floor((avail_h_b - bleed_px) / (card_height_px + bleed_px)))
+
+        if cols_a * num_rows >= num_cols * rows_b:
+            num_cols = cols_a
+            margin_x = wide_margin
+            available_width = avail_w_a
         else:
-            num_cols = max_num_cols
-            margin_x = min_margin
-            space_x_px = 0
-            available_width = min_available_width
-    elif num_rows < max_num_rows and num_cols == max_num_cols:
-        # Only rows can gain; expand vertically
-        num_rows = max_num_rows
-        margin_y = min_margin
-        space_y_px = 0
-        available_height = min_available_height
-    elif num_rows == max_num_rows and num_cols < max_num_cols:
-        # Only columns can gain; expand horizontally
-        num_cols = max_num_cols
-        margin_x = min_margin
-        space_x_px = 0
-        available_width = min_available_width
-    else:
-        # No additional cards from relaxing margins; check if we can still
-        # relax margins to increase bleed space
-        filled_height = card_height_px * num_rows + (2 * space_y_px) + (bleed_y_px * (num_rows - 1))
-        filled_width = card_width_px * num_cols + (2 * space_x_px) + (bleed_x_px * (num_cols - 1))
-        if 2 * bleed_x_px < available_width - filled_width:
-            margin_y = min_margin
-            available_height = min_available_height
-        if 2 * bleed_y_px < available_height - filled_height:
-            available_width = min_available_width
-            margin_x = min_margin
+            num_rows = rows_b
+            margin_y = wide_margin
+            available_height = avail_h_b
 
-    # Reduce bleed and registration mark space until cards fit
-    # Priority: reduce bleed first, then registration mark space
-    filled_height = card_height_px * num_rows + (2 * space_y_px) + (bleed_y_px * (num_rows - 1))
-    filled_width = card_width_px * num_cols + (2 * space_x_px) + (bleed_x_px * (num_cols - 1))
+    # Final grid size and centered positions
+    filled_width = num_cols * card_width_px + (num_cols + 1) * bleed_px
+    filled_height = num_rows * card_height_px + (num_rows + 1) * bleed_px
+    start_x = round(margin_x + (available_width - filled_width) / 2 + bleed_px)
+    start_y = round(margin_y + (available_height - filled_height) / 2 + bleed_px)
 
-    while available_height < filled_height:
-        if bleed_y_px == 0:
-            space_y_px = space_y_px - 1
-        else:
-            bleed_y_px = bleed_y_px - 1
-        filled_height = card_height_px * num_rows + (2 * space_y_px) + (bleed_y_px * (num_rows - 1))
-
-    while available_width < filled_width:
-        if bleed_x_px == 0:
-            space_x_px = space_x_px - 1
-        else:
-            bleed_x_px = bleed_x_px - 1
-        filled_width = card_width_px * num_cols + (2 * space_x_px) + (bleed_x_px * (num_cols - 1))
-
-    # Center the card grid within the available area
-    start_x = round(margin_x + space_x_px + ((available_width - filled_width) / 2))
-    start_y = round(margin_y + space_y_px + ((available_height - filled_height) / 2))
-
-    # Build position arrays for each column and row
-    x_pos = [start_x]
-    y_pos = [start_y]
-
-    for x in range(1, num_cols):
-        x_pos.append(start_x + (x * (card_width_px + bleed_x_px)))
-
-    for y in range(1, num_rows):
-        y_pos.append(start_y + (y * (card_height_px + bleed_y_px)))
+    # Build position arrays
+    x_pos = [start_x + i * (card_width_px + bleed_px) for i in range(num_cols)]
+    y_pos = [start_y + j * (card_height_px + bleed_px) for j in range(num_rows)]
 
     # Build template identifier string
     custom_paper_size = ""

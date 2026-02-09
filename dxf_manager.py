@@ -74,4 +74,3 @@ def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: Lis
 
     # Save DXF
     doc.saveas(output_path)
-    print("Template DXF file created.")
