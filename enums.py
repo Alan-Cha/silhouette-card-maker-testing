@@ -27,6 +27,7 @@ class Registration(str, Enum):
     FOUR = "4"
 
 
+# Paper orientation: portrait keeps cards upright, landscape rotates them 90 degrees.
 class Orientation(str, Enum):
-    VERTICAL = "vertical"
-    HORIZONTAL = "horizontal"
+    PORTRAIT = "portrait"
+    LANDSCAPE = "landscape"

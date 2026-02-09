@@ -65,13 +65,8 @@ def generate_single_dxf(
     x_pos = computed["x_pos"]
     y_pos = computed["y_pos"]
 
-    # Determine card dimensions for DXF (swap if horizontal)
-    if orientation == Orientation.HORIZONTAL:
-        dxf_width = card_def["height"]
-        dxf_height = card_def["width"]
-    else:
-        dxf_width = card_def["width"]
-        dxf_height = card_def["height"]
+    dxf_width = card_def["width"]
+    dxf_height = card_def["height"]
 
     output_file = output_dir / f"{paper_size}_{card_size}.dxf"
 
