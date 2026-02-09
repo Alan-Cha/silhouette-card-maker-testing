@@ -168,8 +168,8 @@ def generate_layout(
         page_width = paper_width
         page_height = paper_height
 
-    # Maximum bleed of 1mm between cards and 2mm space to registration marks
-    bleed_x_px = size_convert.size_to_pixel("1mm", ppi)
+    # Maximum bleed of 1.5mm between cards and 2mm space to registration marks
+    bleed_x_px = size_convert.size_to_pixel("1.5mm", ppi)
     bleed_y_px = bleed_x_px
     space_x_px = size_convert.size_to_pixel("2mm", ppi)
     space_y_px = space_x_px
@@ -203,9 +203,11 @@ def generate_layout(
     num_rows = math.floor(available_height / card_height_px)
     num_cols = math.floor(available_width / card_width_px)
 
-    # Check how many rows/columns could fit within minimum margins
-    max_num_rows = math.floor(min_available_height / card_height_px)
-    max_num_cols = math.floor(min_available_width / card_width_px)
+    # Check how many rows/columns could fit within minimum margins.
+    # Include target bleed between cards so we don't expand into a layout
+    # that has zero bleed (cards touching with no gap for clean cuts).
+    max_num_rows = math.floor((min_available_height - bleed_y_px) / (card_height_px + bleed_y_px))
+    max_num_cols = math.floor((min_available_width - bleed_x_px) / (card_width_px + bleed_x_px))
 
     # If we can fit more cards by relaxing one axis to minimum margin,
     # expand the axis with the most spare room (to preserve bleed on the other)
