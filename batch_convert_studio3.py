@@ -4,37 +4,33 @@ Batch convert DXF files to .studio3 using Silhouette Studio GUI automation.
 
 Iterates over all DXF files in cutting_templates/dxf/ and converts each
 to a .studio3 file in cutting_templates/ using SilhouetteAutomation from
-dxf_to_studio3_advanced.py.
+dxf_to_studio3.py.
 
 Opens Silhouette Studio once, converts all files, then closes it.
 Always uses registration marks with thickness=100.
 
 Usage:
-    python tools/batch_convert_studio3.py
-    python tools/batch_convert_studio3.py --dxf_dir cutting_templates/dxf --output_dir cutting_templates
+    python batch_convert_studio3.py
+    python batch_convert_studio3.py --dxf_dir cutting_templates/dxf --output_dir cutting_templates
 """
 
 import json
-import sys
+import re
 from pathlib import Path
 
 import click
 
-SCRIPT_DIR = Path(__file__).parent
-PROJECT_DIR = SCRIPT_DIR.parent
-sys.path.insert(0, str(PROJECT_DIR))
-
 from enums import Orientation
-from dxf_to_studio3_advanced import (
+from dxf_to_studio3 import (
     SilhouetteAutomation,
     RegistrationSettings,
     DEFAULT_STUDIO_PATH,
     ACTION_DELAY,
 )
 
-LAYOUTS_FILE = PROJECT_DIR / "assets" / "layouts.json"
-DEFAULT_DXF_DIR = PROJECT_DIR / "cutting_templates" / "dxf"
-DEFAULT_OUTPUT_DIR = PROJECT_DIR / "cutting_templates"
+LAYOUTS_FILE = Path(__file__).parent / "assets" / "layouts.json"
+DEFAULT_DXF_DIR = Path(__file__).parent / "cutting_templates" / "dxf"
+DEFAULT_OUTPUT_DIR = Path(__file__).parent / "cutting_templates"
 
 
 def load_layouts() -> dict:
@@ -45,10 +41,10 @@ def load_layouts() -> dict:
 def parse_dxf_filename(filename: str, layouts: dict) -> tuple[str, str] | None:
     """Extract paper_size and card_size from a DXF filename.
 
-    Expected format: {paper_size}_{card_size}.dxf
+    Expected format: {paper_size}_{card_size}_v{N}.dxf
     Card sizes may contain underscores (e.g. poker_half, bridge_square).
-    Matches against known paper sizes in layouts.json, then checks
-    if the remainder is a known card size.
+    Matches against known paper sizes in layouts.json, then strips
+    the version suffix and checks if the remainder is a known card size.
     """
     stem = Path(filename).stem
     paper_sizes = layouts.get("paper_sizes", {})
@@ -56,7 +52,9 @@ def parse_dxf_filename(filename: str, layouts: dict) -> tuple[str, str] | None:
 
     for paper_size in paper_sizes:
         if stem.startswith(paper_size + "_"):
-            card_size = stem[len(paper_size) + 1:]
+            remainder = stem[len(paper_size) + 1:]
+            # Strip version suffix (_v1, _v2, etc.)
+            card_size = re.sub(r"_v\d+$", "", remainder)
             if paper_size in layout_defs and card_size in layout_defs[paper_size]:
                 return paper_size, card_size
 

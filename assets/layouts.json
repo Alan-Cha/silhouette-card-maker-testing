@@ -82,162 +82,212 @@
     "layouts": {
         "letter": {
             "standard": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 5
             },
             "standard_double": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "japanese": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "poker": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 3
             },
             "poker_half": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 3
             },
             "bridge": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 3
             },
             "bridge_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "tarot": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "domino": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 2
             },
             "domino_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             }
         },
         "tabloid": {
             "standard": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 4
             },
             "standard_double": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 1
             },
             "japanese": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 1
             },
             "poker": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "poker_half": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 1
             },
             "bridge": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "bridge_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "tarot": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 2
             },
             "domino": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "domino_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             }
         },
         "a4": {
             "standard": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 4
             },
             "standard_double": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "japanese": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "poker": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 2
             },
             "poker_half": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "bridge": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "bridge_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "tarot": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 2
             },
             "domino": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "domino_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             }
         },
         "a3": {
             "standard": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 3
             },
             "standard_double": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "japanese": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 1
             },
             "poker": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 1
             },
             "poker_half": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "bridge": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "bridge_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "tarot": {
-                "orientation": "landscape"
+                "orientation": "landscape",
+                "version": 1
             },
             "domino": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "domino_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             }
         },
         "archb": {
             "standard": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 3
             },
             "standard_double": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "japanese": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "poker": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "poker_half": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "bridge": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "bridge_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "tarot": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "domino": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             },
             "domino_square": {
-                "orientation": "portrait"
+                "orientation": "portrait",
+                "version": 1
             }
         }
     }
