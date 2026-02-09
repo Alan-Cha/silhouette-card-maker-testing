@@ -68,7 +68,6 @@ def generate_single_dxf(
         x_pos,
         y_pos,
         ppi,
-        f"{paper_size}_{card_size}",
         output_path=str(output_file),
     )
 

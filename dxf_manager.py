@@ -1,12 +1,9 @@
 import ezdxf
 import re
-import os
 import size_convert
 from ezdxf import units
 from typing import List
 import math
-
-output_directory = os.path.join('game', 'output')
 
 def add_rounded_rectangle(msp, x, y, width, height, radius):
     y=-y-height #corner alignment
@@ -46,7 +43,7 @@ def add_rounded_rectangle_polyline(msp, x, y, width, height, radius):
 
 
 # Create new DXF document
-def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: List[int], y_pos: List[int], ppi:int, filename:str, output_path:str = None):
+def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: List[int], y_pos: List[int], ppi:int, output_path:str):
     doc = ezdxf.new(dxfversion='R2010')
     float_pattern = r"(?:\d+\.\d*|\.\d+|\d+)"  # matches 1.0, .5, or 2
     # Match in or mm (default=mm)
@@ -76,7 +73,5 @@ def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: Lis
 
 
     # Save DXF
-    if output_path is None:
-        output_path = os.path.join(output_directory, f'{filename}.dxf')
     doc.saveas(output_path)
     print("Template DXF file created.")
