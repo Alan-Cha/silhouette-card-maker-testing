@@ -596,14 +596,13 @@ def generate_pdf(
             ppi=layout_config.ppi,
         )
 
-        # Extract computed layout data (flat return format)
-        card_width_px = computed["card_width_px"]
-        card_height_px = computed["card_height_px"]
-        page_width_px = computed["paper_width_px"]
-        page_height_px = computed["paper_height_px"]
-        x_pos = computed["x_pos"]
-        y_pos = computed["y_pos"]
-        template = computed["template"]
+        card_width_px = computed.card_width_px
+        card_height_px = computed.card_height_px
+        page_width_px = computed.paper_width_px
+        page_height_px = computed.paper_height_px
+        x_pos = computed.x_pos
+        y_pos = computed.y_pos
+        template = computed.template
 
         # Determine the amount of x and y crop
         crop = parse_crop_string(crop_string, card_width_px, card_height_px)

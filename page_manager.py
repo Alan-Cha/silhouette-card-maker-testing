@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Any
+from typing import List, NamedTuple
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
@@ -8,76 +8,17 @@ from PIL import Image
 import io
 
 import size_convert
-from enums import Orientation, CardSize, PaperSize
+from enums import Orientation
 
 
-def generate_layout(
-    card_size: CardSize,
-    paper_size: PaperSize,
-    orientation: Orientation,
-    card_width: str,
-    card_height: str,
-    card_radius: str,
-    paper_width: str,
-    paper_height: str,
-    inset: str,
-    thickness: str,
-    length: str,
-    ppi: int,
-) -> Dict[str, Any]:
-    """Compute the card layout for a given card size on a given paper size.
-
-    All dimension parameters are unit strings (e.g. "63mm", "2.5in").
-    The caller is responsible for looking up values from layouts.json.
-
-    Args:
-        card_size: Card size identifier (for the template name).
-        paper_size: Paper size identifier (for the template name).
-        orientation: Paper orientation. PORTRAIT swaps paper width/height
-            (paper sizes in layouts.json are stored as landscape).
-        card_width: Card width as a unit string.
-        card_height: Card height as a unit string.
-        card_radius: Card corner radius as a unit string.
-        paper_width: Paper width as a unit string (landscape value from layouts.json).
-        paper_height: Paper height as a unit string (landscape value from layouts.json).
-        inset: Silhouette registration mark inset as a unit string.
-        thickness: Silhouette registration mark thickness as a unit string.
-        length: Silhouette registration mark length as a unit string.
-        ppi: Pixels per inch for pixel conversion.
-
-    Returns:
-        Dict with keys:
-            card_width_px (int): Card width in pixels.
-            card_height_px (int): Card height in pixels.
-            paper_width_px (int): Paper width in pixels.
-            paper_height_px (int): Paper height in pixels.
-            x_pos (List[int]): X pixel positions for each column of cards.
-            y_pos (List[int]): Y pixel positions for each row of cards.
-            template (str): Template identifier string.
-    """
-    # Paper sizes in layouts.json are stored as landscape (width > height).
-    # For portrait orientation, swap paper dimensions.
-    if orientation == Orientation.PORTRAIT:
-        effective_paper_width = paper_height
-        effective_paper_height = paper_width
-    else:
-        effective_paper_width = paper_width
-        effective_paper_height = paper_height
-
-    return _compute_layout(
-        card_width=card_width,
-        card_height=card_height,
-        card_radius=card_radius,
-        page_width=effective_paper_width,
-        page_height=effective_paper_height,
-        orientation=orientation,
-        ppi=ppi,
-        card_size=card_size,
-        paper_size=paper_size,
-        inset=inset,
-        thickness=thickness,
-        length=length,
-    )
+class CardLayout(NamedTuple):
+    card_width_px: int
+    card_height_px: int
+    paper_width_px: int
+    paper_height_px: int
+    x_pos: List[int]
+    y_pos: List[int]
+    template: str
 
 
 def generate_reg_mark(
@@ -166,21 +107,28 @@ def generate_reg_mark(
     return Image.open(img_buf)
 
 
-def _compute_layout(
+def generate_layout(
+    card_size: str,
+    paper_size: str,
+    orientation: Orientation,
     card_width: str,
     card_height: str,
     card_radius: str,
-    page_width: str,
-    page_height: str,
-    orientation: Orientation,
-    ppi: int,
-    card_size: str,
-    paper_size: str,
+    paper_width: str,
+    paper_height: str,
     inset: str,
     thickness: str,
     length: str,
-) -> Dict[str, Any]:
+    ppi: int,
+) -> CardLayout:
     """Compute card positions on a page, accounting for margins, bleed, and registration marks.
+
+    All dimension parameters are unit strings (e.g. "63mm", "2.5in").
+    The caller is responsible for looking up values from layouts.json.
+
+    Paper sizes in layouts.json are stored as landscape (width > height).
+    For portrait orientation, this function swaps paper_width and paper_height
+    so the paper is taller than wide. Card dimensions are never swapped.
 
     The algorithm works as follows:
     1. Convert all dimensions from unit strings to pixels at the given PPI.
@@ -195,23 +143,31 @@ def _compute_layout(
     6. Center the card grid within the available area.
 
     Args:
+        card_size: Card size identifier (for the template name).
+        paper_size: Paper size identifier (for the template name).
+        orientation: Paper orientation. PORTRAIT swaps paper width/height.
         card_width: Card width as a unit string.
         card_height: Card height as a unit string.
         card_radius: Card corner radius as a unit string (unused in layout, kept for template name).
-        page_width: Paper width as a unit string (already adjusted for orientation).
-        page_height: Paper height as a unit string (already adjusted for orientation).
-        orientation: Paper orientation (used only for the template name).
-        ppi: Pixels per inch for all conversions.
-        card_size: Card size identifier string (for template name).
-        paper_size: Paper size identifier string (for template name).
+        paper_width: Paper width as a unit string (landscape value from layouts.json).
+        paper_height: Paper height as a unit string (landscape value from layouts.json).
         inset: Silhouette registration mark inset distance.
         thickness: Silhouette registration mark line thickness.
         length: Silhouette registration mark line length.
+        ppi: Pixels per inch for all conversions.
 
     Returns:
-        Dict with: card_width_px, card_height_px, paper_width_px, paper_height_px,
-                   x_pos, y_pos, template.
+        CardLayout named tuple.
     """
+    # Paper sizes in layouts.json are stored as landscape (width > height).
+    # For portrait orientation, swap paper dimensions.
+    if orientation == Orientation.PORTRAIT:
+        page_width = paper_height
+        page_height = paper_width
+    else:
+        page_width = paper_width
+        page_height = paper_height
+
     # Maximum bleed of 1mm between cards and 2mm space to registration marks
     bleed_x_px = size_convert.size_to_pixel("1mm", ppi)
     bleed_y_px = bleed_x_px
@@ -336,12 +292,12 @@ def _compute_layout(
     orientation_text = orientation.value
     template = f"{paper_size}{custom_paper_size}_{card_size}{custom_card_size}_{orientation_text}_{len(x_pos)}x{len(y_pos)}"
 
-    return {
-        "card_width_px": card_width_px,
-        "card_height_px": card_height_px,
-        "paper_width_px": page_width_px,
-        "paper_height_px": page_height_px,
-        "x_pos": x_pos,
-        "y_pos": y_pos,
-        "template": template,
-    }
+    return CardLayout(
+        card_width_px=card_width_px,
+        card_height_px=card_height_px,
+        paper_width_px=page_width_px,
+        paper_height_px=page_height_px,
+        x_pos=x_pos,
+        y_pos=y_pos,
+        template=template,
+    )

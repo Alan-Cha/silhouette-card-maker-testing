@@ -62,8 +62,8 @@ def generate_single_dxf(
         ppi=ppi,
     )
 
-    x_pos = computed["x_pos"]
-    y_pos = computed["y_pos"]
+    x_pos = computed.x_pos
+    y_pos = computed.y_pos
 
     dxf_width = card_def["width"]
     dxf_height = card_def["height"]
