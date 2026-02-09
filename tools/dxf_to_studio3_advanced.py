@@ -285,7 +285,7 @@ class SilhouetteAutomation:
         return 0, 0
 
     def start(self):
-        """Start Silhouette Studio with fixed window size."""
+        """Start Silhouette Studio with fixed window size and configure DXF import."""
         print("Starting Silhouette Studio...")
 
         if not os.path.exists(self.studio_path):
@@ -296,6 +296,8 @@ class SilhouetteAutomation:
         time.sleep(STARTUP_WAIT)
 
         self.window, _ = connect_and_resize_studio(self.studio_path)
+
+        self.set_dxf_import_asis()
 
     def close(self):
         """Close Silhouette Studio."""
@@ -332,6 +334,34 @@ class SilhouetteAutomation:
         else:
             print(f"Warning: Element '{element_id}' not calibrated. Run 'calibrate' first.")
             return False
+
+    # -------------------------------------------------------------------------
+    # Preferences
+    # -------------------------------------------------------------------------
+
+    def set_dxf_import_asis(self):
+        """Set DXF import mode to 'As-is' in Silhouette Studio preferences.
+
+        Opens Edit > Preferences (Ctrl+K), navigates to the Import tab,
+        changes the DXF Open setting to 'As-is', and closes the dialog.
+        This preserves original DXF dimensions on import.
+        """
+        print("Setting DXF import to As-is...")
+
+        pyautogui.hotkey('ctrl', 'k')
+        time.sleep(self.action_delay)
+
+        self._click_element("pref_import_tab")
+        time.sleep(self.action_delay)
+
+        self._click_element("pref_dxf_open_dropdown")
+        time.sleep(self.action_delay)
+
+        self._click_element("pref_dxf_asis")
+        time.sleep(self.action_delay)
+
+        self._click_element("pref_ok")
+        time.sleep(self.action_delay)
 
     # -------------------------------------------------------------------------
     # File Operations
@@ -580,6 +610,30 @@ class SilhouetteAutomation:
 # The user is guided through each panel in sequence so they only
 # need to open each sidebar tool once.
 CALIBRATION_ELEMENTS = [
+    # --- Preferences (Ctrl+K) ---
+    {
+        "id": "pref_import_tab",
+        "name": "Import tab in Preferences",
+        "description": "Press Ctrl+K to open Preferences. "
+                       "Click the 'Import' tab/button."
+    },
+    {
+        "id": "pref_dxf_open_dropdown",
+        "name": "DXF Open dropdown",
+        "description": "In the Import tab, find the 'Open' dropdown for DXF files. "
+                       "Click the dropdown to expand it."
+    },
+    {
+        "id": "pref_dxf_asis",
+        "name": "As-is option for DXF Open",
+        "description": "The DXF Open dropdown should be expanded. "
+                       "Click the 'As-is' option."
+    },
+    {
+        "id": "pref_ok",
+        "name": "OK button in Preferences",
+        "description": "Click the OK button to close the Preferences dialog."
+    },
     # --- Page Setup ---
     {
         "id": "page_setup",
