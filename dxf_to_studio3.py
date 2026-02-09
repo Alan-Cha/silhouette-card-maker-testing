@@ -401,6 +401,10 @@ class SilhouetteAutomation:
         pyautogui.press('y')
         time.sleep(SAVE_DELAY)
 
+        # Close the file to avoid accumulating open tabs
+        pyautogui.hotkey('ctrl', 'w')
+        time.sleep(self.action_delay)
+
     def new_document(self):
         """Create new document (discard current)."""
         pyautogui.hotkey('ctrl', 'n')
@@ -412,59 +416,50 @@ class SilhouetteAutomation:
     # Page Setup
     # -------------------------------------------------------------------------
 
-    def set_cutting_mat(self, mat: CuttingMat):
-        """Select the cutting mat size in Page Setup.
+    def setup_page(self, mat: CuttingMat, width_in: float, height_in: float, orientation: Orientation):
+        """Configure page setup: cutting mat, media size, orientation, and dimensions.
 
-        Opens the Page Setup panel and selects either the 12x12 or 12x24
-        cutting mat from the dropdown.
+        Opens the Page Setup panel once and performs all configuration
+        in sequence to avoid toggling the panel open/closed.
+
+        Args:
+            mat: Cutting mat size (12x12 or 12x24).
+            width_in: Page width in inches.
+            height_in: Page height in inches.
+            orientation: Page orientation (portrait or landscape).
         """
-        print(f"  Setting cutting mat: {mat.value}")
+        print(f"  Setting up page: {mat.value} mat, {width_in:.2f}x{height_in:.2f}in, {orientation.value}")
 
+        # Open the Page Setup panel once
         self._click_element("page_setup")
         time.sleep(PANEL_SWITCH_DELAY)
 
+        # Select cutting mat
         self._click_element("cutting_mat_dropdown")
-
         if mat == CuttingMat.MAT_12X12:
             self._click_element("cutting_mat_12x12")
         else:
             self._click_element("cutting_mat_12x24")
 
-    def set_paper_size(self, width_in: float, height_in: float):
-        """Set a custom paper size in Page Setup.
-
-        Opens the media size dropdown, selects "Custom", then types
-        the width and height values into the input fields.
-
-        Args:
-            width_in: Page width in inches.
-            height_in: Page height in inches.
-        """
-        print(f"  Setting paper size: {width_in:.2f} x {height_in:.2f} in")
-
-        self._click_element("page_setup")
-        time.sleep(PANEL_SWITCH_DELAY)
-
+        # Select matching media size
         self._click_element("media_size_dropdown")
-        self._click_element("media_size_custom")
+        if mat == CuttingMat.MAT_12X12:
+            self._click_element("media_size_12x12")
+        else:
+            self._click_element("media_size_12x24")
 
+        # Set orientation
+        if orientation == Orientation.PORTRAIT:
+            self._click_element("portrait_button")
+        else:
+            self._click_element("landscape_button")
+
+        # Set custom dimensions
         self._click_element("media_width_field")
         type_in_field(f"{width_in:.2f}")
 
         self._click_element("media_height_field")
         type_in_field(f"{height_in:.2f}")
-
-    def set_orientation(self, orientation: Orientation):
-        """Set page orientation to portrait or landscape."""
-        print(f"  Setting orientation: {orientation.value}")
-
-        self._click_element("page_setup")
-        time.sleep(PANEL_SWITCH_DELAY)
-
-        if orientation == Orientation.PORTRAIT:
-            self._click_element("portrait_button")
-        else:
-            self._click_element("landscape_button")
 
     # -------------------------------------------------------------------------
     # Transform / Centering
@@ -540,14 +535,11 @@ class SilhouetteAutomation:
         """
         Full conversion workflow:
         1. Open DXF
-        2. Select cutting mat (based on paper size)
-        3. Set custom page size
-        4. Set orientation
-        5. Center paths
-        6. Set registration marks
-        7. Ungroup cutting paths
-        8. Save as .studio3
-        9. New document (reset for next file)
+        2. Page setup (cutting mat, media size, orientation, dimensions)
+        3. Center paths
+        4. Set registration marks
+        5. Ungroup cutting paths
+        6. Save as .studio3
 
         Args:
             input_dxf: Path to the input DXF file.
@@ -562,19 +554,17 @@ class SilhouetteAutomation:
 
         self.open_file(input_dxf)
 
-        # Convert page dimensions to inches for Silhouette Studio
+        # Convert page dimensions to inches for Silhouette Studio.
+        # layouts.json stores paper sizes as landscape (width > height).
+        # For portrait, swap so width < height matches Silhouette Studio's expectation.
         width_in = size_convert.size_to_in(paper_width)
         height_in = size_convert.size_to_in(paper_height)
+        if orientation == Orientation.PORTRAIT:
+            width_in, height_in = height_in, width_in
 
-        # Select cutting mat based on paper size
+        # Configure page setup (mat, media size, orientation, dimensions) in one pass
         mat = determine_cutting_mat(width_in, height_in)
-        self.set_cutting_mat(mat)
-
-        # Set custom page size
-        self.set_paper_size(width_in, height_in)
-
-        if orientation:
-            self.set_orientation(orientation)
+        self.setup_page(mat, width_in, height_in, orientation)
 
         if center:
             self.center_to_page()
@@ -586,7 +576,6 @@ class SilhouetteAutomation:
         self.ungroup_all()
 
         self.save_as(output_studio3)
-        self.new_document()
 
         print("  Done!")
 
@@ -653,10 +642,16 @@ CALIBRATION_ELEMENTS = [
         "description": "Click the dropdown that selects the media/page size."
     },
     {
-        "id": "media_size_custom",
-        "name": "Custom media size option",
+        "id": "media_size_12x12",
+        "name": "12x12 media size option",
         "description": "The media size dropdown should be open. "
-                       "Click the \"Custom\" option."
+                       "Click the 12\" x 12\" option."
+    },
+    {
+        "id": "media_size_12x24",
+        "name": "12x24 media size option",
+        "description": "Open the media size dropdown again and "
+                       "click the 12\" x 24\" option."
     },
     {
         "id": "media_width_field",
