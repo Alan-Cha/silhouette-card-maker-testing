@@ -84,6 +84,13 @@ class LayoutConfig(BaseModel):
     paper_sizes: Dict[str, PaperSizeDef]
     layouts: Dict[str, Dict[str, CardLayoutDef]]
 
+
+def load_layout_config() -> LayoutConfig:
+    """Load and validate layouts.json from the assets directory."""
+    with open(layouts_path, 'r') as f:
+        return LayoutConfig(**json.load(f))
+
+
 # Known junk files across OSes
 EXTRANEOUS_FILES = {
     ".DS_Store",
@@ -557,246 +564,278 @@ def generate_pdf(
         if len(ds_set) > 0:
             raise Exception(f'Cannot use "--only_fronts" with double-sided cards. Remove cards from double-side image directory "{ds_dir_path}".')
 
-    with open(layouts_path, 'r') as layouts_file:
-        try:
-            layouts_data = json.load(layouts_file)
-            layout_config = LayoutConfig(**layouts_data)
+    layout_config = load_layout_config()
 
-        except ValidationErr as e:
-            raise Exception(f'Cannot parse layouts.json: {e}.')
+    # Validate card size
+    if card_size not in layout_config.card_sizes:
+        raise Exception(f'Unsupported card size "{card_size}". Try card sizes: {list(layout_config.card_sizes.keys())}.')
+    card_size_def = layout_config.card_sizes[card_size]
 
-        # Validate card size
-        if card_size not in layout_config.card_sizes:
-            raise Exception(f'Unsupported card size "{card_size}". Try card sizes: {list(layout_config.card_sizes.keys())}.')
-        card_size_def = layout_config.card_sizes[card_size]
+    # Validate paper size
+    if paper_size not in layout_config.paper_sizes:
+        raise Exception(f'Unsupported paper size "{paper_size}". Try paper sizes: {list(layout_config.paper_sizes.keys())}.')
+    paper_size_def = layout_config.paper_sizes[paper_size]
 
-        # Validate paper size
-        if paper_size not in layout_config.paper_sizes:
-            raise Exception(f'Unsupported paper size "{paper_size}". Try paper sizes: {list(layout_config.paper_sizes.keys())}.')
-        paper_size_def = layout_config.paper_sizes[paper_size]
+    # Look up orientation from the layouts field (per paper+card combination)
+    if paper_size not in layout_config.layouts or card_size not in layout_config.layouts[paper_size]:
+        raise Exception(f'No layout defined for paper "{paper_size}" with card "{card_size}". Add it to layouts.json.')
+    orientation = layout_config.layouts[paper_size][card_size].orientation
 
-        # Look up orientation from the layouts field (per paper+card combination)
-        if paper_size not in layout_config.layouts or card_size not in layout_config.layouts[paper_size]:
-            raise Exception(f'No layout defined for paper "{paper_size}" with card "{card_size}". Add it to layouts.json.')
-        orientation = layout_config.layouts[paper_size][card_size].orientation
+    # Compute card positions dynamically
+    silhouette = layout_config.silhouette
+    computed = page_manager.generate_layout(
+        card_size=card_size,
+        paper_size=paper_size,
+        orientation=orientation,
+        card_width=card_size_def.width,
+        card_height=card_size_def.height,
+        card_radius=card_size_def.radius,
+        paper_width=paper_size_def.width,
+        paper_height=paper_size_def.height,
+        inset=silhouette.inset,
+        thickness=silhouette.thickness,
+        length=silhouette.length,
+        ppi=layout_config.ppi,
+    )
 
-        # Compute card positions dynamically
-        silhouette = layout_config.silhouette
-        computed = page_manager.generate_layout(
-            card_size=card_size,
-            paper_size=paper_size,
-            orientation=orientation,
-            card_width=card_size_def.width,
-            card_height=card_size_def.height,
-            card_radius=card_size_def.radius,
-            paper_width=paper_size_def.width,
-            paper_height=paper_size_def.height,
-            inset=silhouette.inset,
-            thickness=silhouette.thickness,
-            length=silhouette.length,
-            ppi=layout_config.ppi,
-        )
+    card_width_px = computed.card_width_px
+    card_height_px = computed.card_height_px
+    page_width_px = computed.paper_width_px
+    page_height_px = computed.paper_height_px
+    x_pos = computed.x_pos
+    y_pos = computed.y_pos
+    template = computed.template
 
-        card_width_px = computed.card_width_px
-        card_height_px = computed.card_height_px
-        page_width_px = computed.paper_width_px
-        page_height_px = computed.paper_height_px
-        x_pos = computed.x_pos
-        y_pos = computed.y_pos
-        template = computed.template
+    # Determine the amount of x and y crop
+    crop = parse_crop_string(crop_string, card_width_px, card_height_px)
+    crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
 
-        # Determine the amount of x and y crop
-        crop = parse_crop_string(crop_string, card_width_px, card_height_px)
-        crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
+    num_rows = len(y_pos)
+    num_cols = len(x_pos)
+    num_cards = num_rows * num_cols
 
-        num_rows = len(y_pos)
-        num_cols = len(x_pos)
-        num_cards = num_rows * num_cols
+    if num_cards == 0:
+        raise Exception(f'Card size "{card_size}" does not fit on paper size "{paper_size}".')
 
-        if num_cards == 0:
-            raise Exception(f'Card size "{card_size}" does not fit on paper size "{paper_size}".')
+    # Check skip indices
+    # You can only skip valid indices (within the max card count per page)
+    clean_skip_indices = [n for n in skip_indices if n < num_cards]
+    ignore_skip_indices = [n for n in skip_indices if n >= num_cards]
 
-        # Check skip indices
-        # You can only skip valid indices (within the max card count per page)
-        clean_skip_indices = [n for n in skip_indices if n < num_cards]
-        ignore_skip_indices = [n for n in skip_indices if n >= num_cards]
+    if len(ignore_skip_indices) > 0:
+        print(f'Ignoring skip indices that are outside range 0-{num_cards - 1}: {ignore_skip_indices}')
 
-        if len(ignore_skip_indices) > 0:
-            print(f'Ignoring skip indices that are outside range 0-{num_cards - 1}: {ignore_skip_indices}')
+    # If all possible cards are skipped, this may result in an infinite loop
+    if len(clean_skip_indices) == num_cards:
+        raise Exception(f'You cannot skip all cards per page')
 
-        # If all possible cards are skipped, this may result in an infinite loop
-        if len(clean_skip_indices) == num_cards:
-            raise Exception(f'You cannot skip all cards per page')
+    registration_filename =  f'{paper_size}_registration_{registration}.jpg'
+    registration_path = os.path.join(asset_directory, registration_filename)
 
-        registration_filename =  f'{paper_size}_registration_{registration}.jpg'
-        registration_path = os.path.join(asset_directory, registration_filename)
+    # The baseline PPI is 300
+    ppi_ratio = ppi / 300
 
-        # The baseline PPI is 300
-        ppi_ratio = ppi / 300
+    # Load an image with the registration marks
+    with Image.open(registration_path) as reg_im:
+        reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
 
-        # Load an image with the registration marks
-        with Image.open(registration_path) as reg_im:
-            reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
+        # Create the array that will store the filled templates
+        pages: List[Image.Image] = []
 
-            # Create the array that will store the filled templates
-            pages: List[Image.Image] = []
+        max_print_bleed = calculate_max_print_bleed(x_pos, y_pos, card_width_px, card_height_px, MINIMUM_BLEED)
 
-            max_print_bleed = calculate_max_print_bleed(x_pos, y_pos, card_width_px, card_height_px, MINIMUM_BLEED)
+        # Load and cache the single back image for reuse
+        # Do this if we expect both front and back pages and if we have a back image
+        # use_default_back_page indicates no back image was found
+        single_back_image = None
+        if not only_fronts and not use_default_back_page:
+            try:
+                # We know the exact image path so we do not need resolve_image_with_any_extension()
+                single_back_image = Image.open(back_card_image_path)
+                single_back_image = ImageOps.exif_transpose(single_back_image)
+            except FileNotFoundError:
+                print(f'Cannot get back image "{back_card_image_path}". Using default instead.')
+                single_back_image = None
+            except OSError as e:
+                raise OSError(f'Failed to load back image "{back_card_image_path}": {e}') from e
 
-            # Load and cache the single back image for reuse
-            # Do this if we expect both front and back pages and if we have a back image
-            # use_default_back_page indicates no back image was found
-            single_back_image = None
-            if not only_fronts and not use_default_back_page:
+        # Create card layout
+        num_image = 1
+        # First iterate on single-sided cards, then iterate on double-sided cards
+        it = iter(natsorted(list(check_paths_subset(front_set, ds_set))) + natsorted(list(ds_set)))
+        while True:
+            file_group = list(itertools.islice(it, num_cards - len(clean_skip_indices)))
+            if not file_group:
+                break
+
+            # Fetch card art in batches
+            # Batch size is based on cards per page
+            front_card_images = []
+            back_card_images = []
+            file_group_iterator = iter(file_group)
+            for i in range(num_cards):
+                if i in clean_skip_indices:
+                    front_card_images.append(None)
+                    back_card_images.append(None)
+                    continue
+
                 try:
-                    # We know the exact image path so we do not need resolve_image_with_any_extension()
-                    single_back_image = Image.open(back_card_image_path)
-                    single_back_image = ImageOps.exif_transpose(single_back_image)
-                except FileNotFoundError:
-                    print(f'Cannot get back image "{back_card_image_path}". Using default instead.')
-                    single_back_image = None
-                except OSError as e:
-                    raise OSError(f'Failed to load back image "{back_card_image_path}": {e}') from e
-
-            # Create card layout
-            num_image = 1
-            # First iterate on single-sided cards, then iterate on double-sided cards
-            it = iter(natsorted(list(check_paths_subset(front_set, ds_set))) + natsorted(list(ds_set)))
-            while True:
-                file_group = list(itertools.islice(it, num_cards - len(clean_skip_indices)))
-                if not file_group:
+                    file = next(file_group_iterator)
+                except StopIteration:
                     break
 
-                # Fetch card art in batches
-                # Batch size is based on cards per page
-                front_card_images = []
-                back_card_images = []
-                file_group_iterator = iter(file_group)
-                for i in range(num_cards):
-                    if i in clean_skip_indices:
-                        front_card_images.append(None)
-                        back_card_images.append(None)
-                        continue
+                print(f'Image {num_image}: {file}')
+                num_image += 1
 
-                    try:
-                        file = next(file_group_iterator)
-                    except StopIteration:
-                        break
+                front_card_image_path = os.path.join(front_dir_path, file)
+                # Allow differing extensions for double-sided images
+                # Iteration is a combination of front and double-sided image paths
+                front_card_image_path = resolve_image_with_any_extension(front_card_image_path)
+                try:
+                    front_card_image = Image.open(front_card_image_path)
+                    front_card_image = ImageOps.exif_transpose(front_card_image)
+                except OSError as e:
+                    raise OSError(f'Failed to load front image "{front_card_image_path}": {e}') from e
+                front_card_images.append(front_card_image)
 
-                    print(f'Image {num_image}: {file}')
-                    num_image += 1
+                if only_fronts:
+                    back_card_images.append(None)
+                    continue
 
-                    front_card_image_path = os.path.join(front_dir_path, file)
+                # Add double-sided back image
+                if file in ds_set:
+                    ds_card_image_path = os.path.join(ds_dir_path, file)
                     # Allow differing extensions for double-sided images
                     # Iteration is a combination of front and double-sided image paths
-                    front_card_image_path = resolve_image_with_any_extension(front_card_image_path)
+                    ds_card_image_path = resolve_image_with_any_extension(ds_card_image_path)
                     try:
-                        front_card_image = Image.open(front_card_image_path)
-                        front_card_image = ImageOps.exif_transpose(front_card_image)
+                        ds_card_image = Image.open(ds_card_image_path)
+                        ds_card_image = ImageOps.exif_transpose(ds_card_image)
                     except OSError as e:
-                        raise OSError(f'Failed to load front image "{front_card_image_path}": {e}') from e
-                    front_card_images.append(front_card_image)
+                        raise OSError(f'Failed to load double-sided image "{ds_card_image_path}": {e}') from e
+                    back_card_images.append(ds_card_image)
+                    continue
 
-                    if only_fronts:
-                        back_card_images.append(None)
-                        continue
+                back_card_images.append(single_back_image)
 
-                    # Add double-sided back image
-                    if file in ds_set:
-                        ds_card_image_path = os.path.join(ds_dir_path, file)
-                        # Allow differing extensions for double-sided images
-                        # Iteration is a combination of front and double-sided image paths
-                        ds_card_image_path = resolve_image_with_any_extension(ds_card_image_path)
-                        try:
-                            ds_card_image = Image.open(ds_card_image_path)
-                            ds_card_image = ImageOps.exif_transpose(ds_card_image)
-                        except OSError as e:
-                            raise OSError(f'Failed to load double-sided image "{ds_card_image_path}": {e}') from e
-                        back_card_images.append(ds_card_image)
-                        continue
+            front_page = reg_im.copy()
+            back_page = reg_im.copy()
 
-                    back_card_images.append(single_back_image)
+            # Create front layout
+            draw_card_layout(
+                front_card_images,
+                single_back_image,
+                front_page,
+                num_rows,
+                num_cols,
+                x_pos,
+                y_pos,
+                card_width_px,
+                card_height_px,
+                max_print_bleed,
+                crop,
+                crop_backs,
+                ppi_ratio,
+                extend_corners,
+                flip=False
+            )
 
-                front_page = reg_im.copy()
-                back_page = reg_im.copy()
+            # Create back layout
+            draw_card_layout(
+                back_card_images,
+                single_back_image,
+                back_page,
+                num_rows,
+                num_cols,
+                x_pos,
+                y_pos,
+                card_width_px,
+                card_height_px,
+                max_print_bleed,
+                crop,
+                crop_backs,
+                ppi_ratio,
+                extend_corners,
+                flip=True # Flip the back sides
+            )
 
-                # Create front layout
-                draw_card_layout(
-                    front_card_images,
-                    single_back_image,
-                    front_page,
-                    num_rows,
-                    num_cols,
-                    x_pos,
-                    y_pos,
-                    card_width_px,
-                    card_height_px,
-                    max_print_bleed,
-                    crop,
-                    crop_backs,
-                    ppi_ratio,
-                    extend_corners,
-                    flip=False,
-                    fit=fit
-                )
+            # Create front layout
+            draw_card_layout(
+                front_card_images,
+                single_back_image,
+                front_page,
+                num_rows,
+                num_cols,
+                x_pos,
+                y_pos,
+                card_width_px,
+                card_height_px,
+                max_print_bleed,
+                crop,
+                crop_backs,
+                ppi_ratio,
+                extend_corners,
+                flip=False,
+                fit=fit
+            )
 
-                # Create back layout
-                draw_card_layout(
-                    back_card_images,
-                    single_back_image,
-                    back_page,
-                    num_rows,
-                    num_cols,
-                    x_pos,
-                    y_pos,
-                    card_width_px,
-                    card_height_px,
-                    max_print_bleed,
-                    crop,
-                    crop_backs,
-                    ppi_ratio,
-                    extend_corners,
-                    flip=True, # Flip the back sides
-                    fit=fit
-                )
+            # Create back layout
+            draw_card_layout(
+                back_card_images,
+                single_back_image,
+                back_page,
+                num_rows,
+                num_cols,
+                x_pos,
+                y_pos,
+                card_width_px,
+                card_height_px,
+                max_print_bleed,
+                crop,
+                crop_backs,
+                ppi_ratio,
+                extend_corners,
+                flip=True, # Flip the back sides
+                fit=fit
+            )
 
-                # Add the front and back layouts
-                add_front_back_pages(
-                    front_page,
-                    back_page,
-                    pages,
-                    page_width_px,
-                    page_height_px,
-                    ppi_ratio,
-                    template,
-                    only_fronts,
-                    name
-                )
+            # Add the front and back layouts
+            add_front_back_pages(
+                front_page,
+                back_page,
+                pages,
+                page_width_px,
+                page_height_px,
+                ppi_ratio,
+                template,
+                only_fronts,
+                name
+            )
 
-            if len(pages) == 0:
-                print('No pages were generated')
-                return
+        if len(pages) == 0:
+            print('No pages were generated')
+            return
 
-            # Load saved offset if available
-            if load_offset:
-                saved_offset = load_saved_offset()
+        # Load saved offset if available
+        if load_offset:
+            saved_offset = load_saved_offset()
 
-                if saved_offset is None:
-                    print('Offset cannot be applied')
-                else:
-                    print(f'Loaded x offset: {saved_offset.x_offset}, y offset: {saved_offset.y_offset}, angle offset: {saved_offset.angle_offset}')
-                    pages = offset_images(pages, saved_offset.x_offset, saved_offset.y_offset, ppi, saved_offset.angle_offset)
-
-            # Save the pages array as a PDF
-            if output_images:
-                for index, page in enumerate(pages):
-                    page.save(os.path.join(output_path, f'page{index + 1}.png'), resolution=math.floor(300 * ppi_ratio), speed=0, subsampling=0, quality=quality)
-
-                print(f'Generated images: {output_path}')
-
+            if saved_offset is None:
+                print('Offset cannot be applied')
             else:
-                pages[0].save(output_path, format='PDF', save_all=True, append_images=pages[1:], resolution=math.floor(300 * ppi_ratio), speed=0, subsampling=0, quality=quality)
-                print(f'Generated PDF: {output_path}')
+                print(f'Loaded x offset: {saved_offset.x_offset}, y offset: {saved_offset.y_offset}, angle offset: {saved_offset.angle_offset}')
+                pages = offset_images(pages, saved_offset.x_offset, saved_offset.y_offset, ppi, saved_offset.angle_offset)
+
+        # Save the pages array as a PDF
+        if output_images:
+            for index, page in enumerate(pages):
+                page.save(os.path.join(output_path, f'page{index + 1}.png'), resolution=math.floor(300 * ppi_ratio), speed=0, subsampling=0, quality=quality)
+
+            print(f'Generated images: {output_path}')
+
+        else:
+            pages[0].save(output_path, format='PDF', save_all=True, append_images=pages[1:], resolution=math.floor(300 * ppi_ratio), speed=0, subsampling=0, quality=quality)
+            print(f'Generated PDF: {output_path}')
 
 class OffsetData(BaseModel):
     x_offset: int
