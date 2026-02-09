@@ -14,13 +14,13 @@ Usage:
     python batch_convert_studio3.py --dxf_dir cutting_templates/dxf --output_dir cutting_templates
 """
 
-import json
 import re
 from pathlib import Path
 
 import click
 
 from enums import Orientation
+from utilities import LayoutConfig, load_layout_config
 from dxf_to_studio3 import (
     SilhouetteAutomation,
     RegistrationSettings,
@@ -28,17 +28,11 @@ from dxf_to_studio3 import (
     ACTION_DELAY,
 )
 
-LAYOUTS_FILE = Path(__file__).parent / "assets" / "layouts.json"
 DEFAULT_DXF_DIR = Path(__file__).parent / "cutting_templates" / "dxf"
 DEFAULT_OUTPUT_DIR = Path(__file__).parent / "cutting_templates"
 
 
-def load_layouts() -> dict:
-    with open(LAYOUTS_FILE, "r") as f:
-        return json.load(f)
-
-
-def parse_dxf_filename(filename: str, layouts: dict) -> tuple[str, str] | None:
+def parse_dxf_filename(filename: str, config: LayoutConfig) -> tuple[str, str] | None:
     """Extract paper_size and card_size from a DXF filename.
 
     Expected format: {paper_size}_{card_size}_v{N}.dxf
@@ -47,47 +41,44 @@ def parse_dxf_filename(filename: str, layouts: dict) -> tuple[str, str] | None:
     the version suffix and checks if the remainder is a known card size.
     """
     stem = Path(filename).stem
-    paper_sizes = layouts.get("paper_sizes", {})
-    layout_defs = layouts.get("layouts", {})
 
-    for paper_size in paper_sizes:
+    for paper_size in config.paper_sizes:
         if stem.startswith(paper_size + "_"):
             remainder = stem[len(paper_size) + 1:]
             # Strip version suffix (_v1, _v2, etc.)
             card_size = re.sub(r"_v\d+$", "", remainder)
-            if paper_size in layout_defs and card_size in layout_defs[paper_size]:
+            if paper_size in config.layouts and card_size in config.layouts[paper_size]:
                 return paper_size, card_size
 
     return None
 
 
-def get_paper_dimensions(filename: str, layouts: dict) -> tuple[str, str]:
+def get_paper_dimensions(filename: str, config: LayoutConfig) -> tuple[str, str]:
     """Get paper width and height unit strings for a DXF file.
 
     Parses paper_size from the filename and looks up dimensions
     in layouts.json. Falls back to letter size.
     """
-    parts = parse_dxf_filename(filename, layouts)
+    parts = parse_dxf_filename(filename, config)
     if parts is not None:
         paper_size, _ = parts
-        paper_def = layouts["paper_sizes"][paper_size]
-        return paper_def["width"], paper_def["height"]
+        paper_def = config.paper_sizes[paper_size]
+        return paper_def.width, paper_def.height
 
     # Fall back to letter
-    paper_def = layouts["paper_sizes"]["letter"]
-    return paper_def["width"], paper_def["height"]
+    paper_def = config.paper_sizes["letter"]
+    return paper_def.width, paper_def.height
 
 
-def get_orientation_for_dxf(filename: str, layouts: dict) -> Orientation:
+def get_orientation_for_dxf(filename: str, config: LayoutConfig) -> Orientation:
     """Look up the paper orientation for a DXF file from layouts.json.
 
     Falls back to landscape if the filename can't be parsed.
     """
-    parts = parse_dxf_filename(filename, layouts)
+    parts = parse_dxf_filename(filename, config)
     if parts is not None:
         paper_size, card_size = parts
-        orientation_str = layouts["layouts"][paper_size][card_size]["orientation"]
-        return Orientation(orientation_str)
+        return config.layouts[paper_size][card_size].orientation
 
     return Orientation.LANDSCAPE
 
@@ -105,7 +96,7 @@ def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_ru
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
-    layouts = load_layouts()
+    config = load_layout_config()
 
     dxf_files = sorted(dxf_path.glob("*.dxf"))
     if not dxf_files:
@@ -124,8 +115,8 @@ def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_ru
     if dry_run:
         for dxf_file in dxf_files:
             output_file = out_path / dxf_file.with_suffix(".studio3").name
-            orientation = get_orientation_for_dxf(dxf_file.name, layouts)
-            paper_w, paper_h = get_paper_dimensions(dxf_file.name, layouts)
+            orientation = get_orientation_for_dxf(dxf_file.name, config)
+            paper_w, paper_h = get_paper_dimensions(dxf_file.name, config)
             click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h})")
         click.echo()
         click.echo("Dry run complete. No files were converted.")
@@ -154,8 +145,8 @@ def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_ru
 
         for dxf_file in dxf_files:
             output_file = out_path / dxf_file.with_suffix(".studio3").name
-            orientation = get_orientation_for_dxf(dxf_file.name, layouts)
-            paper_w, paper_h = get_paper_dimensions(dxf_file.name, layouts)
+            orientation = get_orientation_for_dxf(dxf_file.name, config)
+            paper_w, paper_h = get_paper_dimensions(dxf_file.name, config)
 
             try:
                 automation.convert(

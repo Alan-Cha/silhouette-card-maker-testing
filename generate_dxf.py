@@ -12,7 +12,6 @@ Usage:
     python generate_dxf.py --list
 """
 
-import json
 from pathlib import Path
 
 import click
@@ -21,16 +20,9 @@ import page_manager
 import size_convert
 import dxf_manager
 from enums import CardSize, PaperSize
-from utilities import LayoutConfig
+from utilities import LayoutConfig, load_layout_config
 
-ASSETS_DIR = Path("assets")
-LAYOUTS_FILE = ASSETS_DIR / "layouts.json"
 OUTPUT_DIR = Path("cutting_templates") / "dxf"
-
-
-def load_layout_config() -> LayoutConfig:
-    with open(LAYOUTS_FILE, "r") as f:
-        return LayoutConfig(**json.load(f))
 
 
 def generate_single_dxf(

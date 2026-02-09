@@ -35,6 +35,7 @@ from enum import Enum
 import click
 
 from enums import PaperSize, Orientation
+from utilities import load_layout_config
 import size_convert
 
 try:
@@ -73,9 +74,8 @@ FILE_LOAD_DELAY = 5.0   # Wait for DXF file to fully load
 PANEL_SWITCH_DELAY = 1.5  # Wait after clicking a sidebar panel icon
 SAVE_DELAY = 3.0        # Wait for save dialog / file write
 
-# Calibration and layout file locations
+# Calibration file location
 ASSETS_DIR = Path(__file__).parent / "assets"
-LAYOUTS_FILE = ASSETS_DIR / "layouts.json"
 
 
 def calibration_filename(version: str) -> Path:
@@ -110,12 +110,6 @@ class RegistrationSettings:
     length: float = 0  # 0 = minimum allowed by Silhouette Studio
     thickness: float = 0  # 0 = minimum allowed by Silhouette Studio
     inset: float = 0  # 0 = minimum allowed by Silhouette Studio
-
-
-def load_layouts() -> dict:
-    """Load layouts.json from the project assets directory."""
-    with open(LAYOUTS_FILE, "r") as f:
-        return json.load(f)
 
 
 def determine_cutting_mat(width_in: float, height_in: float) -> CuttingMat:
@@ -763,13 +757,13 @@ def convert(input_file, output_file, paper_size, orientation, no_center, registr
         )
 
     # Look up page dimensions from layouts.json
-    layouts = load_layouts()
-    if paper_size not in layouts["paper_sizes"]:
-        click.echo(f"Error: Unknown paper size '{paper_size}'. Available: {list(layouts['paper_sizes'].keys())}")
+    config = load_layout_config()
+    if paper_size not in config.paper_sizes:
+        click.echo(f"Error: Unknown paper size '{paper_size}'. Available: {list(config.paper_sizes.keys())}")
         return
-    paper_def = layouts["paper_sizes"][paper_size]
-    paper_width = paper_def["width"]
-    paper_height = paper_def["height"]
+    paper_def = config.paper_sizes[paper_size]
+    paper_width = paper_def.width
+    paper_height = paper_def.height
 
     click.echo("=" * 60)
     click.echo("DXF to Studio3 Converter")
