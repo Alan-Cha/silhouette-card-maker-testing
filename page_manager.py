@@ -1,5 +1,5 @@
 import math
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Tuple
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
@@ -107,8 +107,222 @@ def generate_reg_mark(
     return Image.open(img_buf)
 
 
+"""
+Card layout computation with strict registration-mark corner exclusion.
+
+This module computes card positions on a page while respecting:
+- paper orientation
+- bleed spacing between cards
+- Silhouette registration mark inset
+- square corner exclusion zones where NOTHING may appear
+  (neither cards nor bleed)
+
+If no valid layout fits without intruding into corner zones,
+layout generation FAILS explicitly.
+
+────────────────────────────────────────────────────────────────────────────
+TERMINOLOGY
+
+paper edge
+┌─────────────────────────────────────┐
+│ inset                               │
+│   ┌──────────────┐                  │
+│   │ corner zone  │ ← corner_len     │
+│   └──────────────┘                  │
+│                                     │
+│        usable area                  │
+│   ┌─────────────────────────────┐   │
+│   │   bleed | card | bleed      │   │
+│   │   bleed | card | bleed      │   │
+│   └─────────────────────────────┘   │
+└─────────────────────────────────────┘
+
+Definitions:
+- inset: distance from paper edge to registration marks
+- corner_len: how far registration marks extend inward
+- corner zone: square (corner_len × corner_len) at each corner
+- usable area: page minus margins
+- grid: cards PLUS surrounding bleed (entire grid must avoid corner zones)
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. Normalize page size for orientation
+# ─────────────────────────────────────────────────────────────────────────────
+
+def normalize_page_size(
+    orientation,
+    paper_width_px: int,
+    paper_height_px: int,
+) -> Tuple[int, int]:
+    """
+    layouts.json stores paper sizes as landscape (width > height).
+    Portrait swaps width and height; card dimensions are never swapped.
+    """
+    if orientation == Orientation.PORTRAIT:
+        return paper_height_px, paper_width_px
+    return paper_width_px, paper_height_px
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. Compute how many cards fit along one axis
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_grid_fit(
+    usable: int,
+    card: int,
+    bleed: int,
+) -> int:
+    """
+    Compute how many cards fit along a single dimension.
+
+    | bleed | card | bleed | card | bleed |
+      ^---------------------------------^ usable
+    
+    But bleed can extend beyond the usable area. Only cards must be in the usable area.
+
+    n cards require:
+        n * card + (n - 1) * bleed
+
+    so:
+        n <= (usable + bleed) / (card + bleed)
+    """
+    if usable <= 0:
+        return 0
+    return max(0, math.floor((usable + bleed) / (card + bleed)))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. Select margins that avoid corner exclusion zones
+# ─────────────────────────────────────────────────────────────────────────────
+
+def select_best_margins(
+    page_width: int,
+    page_height: int,
+    card_width: int,
+    card_height: int,
+    bleed: int,
+    inset: int,
+    corner_len: int,
+) -> Tuple[int, int, int, int, int, int]:
+    """
+    Try margin strategies and select the one that:
+    - keeps the ENTIRE grid (cards + bleed) out of corner zones
+    - fits the maximum number of cards
+
+    Returns:
+        (cols, rows, margin_x, margin_y, usable_width, usable_height)
+
+    Failure:
+        Raises ValueError if no valid layout exists.
+
+    Corner rule:
+    A layout overlaps a corner zone if the grid intrudes within corner_len
+    of the inset boundary on BOTH axes simultaneously.
+    """
+
+    strategies = [
+        (inset, inset),                    # minimal margins
+        (inset + corner_len, inset),       # clear corners horizontally
+        (inset, inset + corner_len),       # clear corners vertically
+    ]
+
+    best = None
+    best_count = 0
+
+    for margin_x, margin_y in strategies:
+        usable_width = page_width - 2 * margin_x
+        usable_height = page_height - 2 * margin_y
+
+        cols = compute_grid_fit(usable_width, card_width, bleed)
+        rows = compute_grid_fit(usable_height, card_height, bleed)
+
+        if cols == 0 or rows == 0:
+            continue
+
+        # Size of the grid INCLUDING bleed
+        grid_width = cols * card_width + (cols + 1) * bleed
+        grid_height = rows * card_height + (rows + 1) * bleed
+
+        # Measure clearance between the inset boundary and the LEFT edge
+        # of the card grid (INCLUDING bleed).
+        #
+        # Because the grid is centered, left and right clearances
+        # are identical; checking the left side is sufficient.
+        #
+        # The corner exclusion zone must contain NOTHING — neither
+        # cards nor bleed are allowed inside it.
+        #
+        # Diagram (X axis shown; Y is identical):
+        #
+        # paper edge
+        # │
+        # │<── inset ──>│ inset boundary
+        # │             │
+        # │<── margin_x ────────────────┐
+        # │                             │
+        # │   gap_x                     │
+        # │<───────────>┌──────────────┐│
+        # │             │ grid (bleed) ││
+        # │             │  bleed card  ││
+        # │             └──────────────┘│
+
+        gap_x = margin_x + (usable_width - grid_width) / 2 - inset
+        gap_y = margin_y + (usable_height - grid_height) / 2 - inset
+
+        overlaps_corner = gap_x < corner_len and gap_y < corner_len
+        if overlaps_corner:
+            continue
+
+        count = cols * rows
+        if count > best_count:
+            best_count = count
+            best = (cols, rows, margin_x, margin_y, usable_width, usable_height)
+
+    if best is None:
+        raise ValueError(
+            "No valid layout fits without intruding into corner exclusion zones."
+        )
+
+    return best
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. Compute centered card positions
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_card_positions(
+    cols: int,
+    rows: int,
+    card_width: int,
+    card_height: int,
+    bleed: int,
+    margin_x: int,
+    margin_y: int,
+    usable_width: int,
+    usable_height: int,
+) -> Tuple[List[int], List[int], int, int]:
+    """
+    Center the card grid within the usable area and return positions.
+    """
+
+    grid_width = cols * card_width + (cols + 1) * bleed
+    grid_height = rows * card_height + (rows + 1) * bleed
+
+    start_x = round(margin_x + (usable_width - grid_width) / 2 + bleed)
+    start_y = round(margin_y + (usable_height - grid_height) / 2 + bleed)
+
+    x_pos = [start_x + i * (card_width + bleed) for i in range(cols)]
+    y_pos = [start_y + j * (card_height + bleed) for j in range(rows)]
+
+    return x_pos, y_pos, start_x, start_y
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main entry point
+# ─────────────────────────────────────────────────────────────────────────────
+
 def generate_layout(
-    orientation: Orientation,
+    orientation,
     card_width: str,
     card_height: str,
     paper_width: str,
@@ -116,148 +330,60 @@ def generate_layout(
     inset: str,
     length: str,
     ppi: int,
-) -> CardLayout:
-    """Compute card positions on a page, accounting for margins and bleed.
-
-    All dimension parameters are unit strings (e.g. "63mm", "2.5in").
-    The caller is responsible for looking up values from layouts.json.
-
-    Paper sizes in layouts.json are stored as landscape (width > height).
-    For portrait orientation, this function swaps paper_width and paper_height
-    so the paper is taller than wide. Card dimensions are never swapped.
-
-    The base margin from the paper edge is just the inset. Registration
-    marks also create square exclusion zones at each corner, extending
-    (inset + length) from the paper edge on both axes. Cards can overlap
-    the corner zone on one axis but not both simultaneously.
-
-        paper edge
-        ┌──────────────────────────┐
-        │ ┌───┐            ┌───┐  │
-        │ │///│            │///│  │  corner squares (blocked)
-        │ └───┘            └───┘  │
-        │     ← cards OK here →   │
-        │ ┌───┐            ┌───┐  │
-        │ │///│            │///│  │
-        │ └───┘            └───┘  │
-        └──────────────────────────┘
-
-    Within the available area, cards are arranged with uniform bleed
-    gaps around and between them:
-
-        | bleed | card | bleed | card | bleed |
-
-        n cards need: n * card + (n + 1) * bleed
-        so: n <= (available - bleed) / (card + bleed)
-
-    Args:
-        orientation: Paper orientation. PORTRAIT swaps paper width/height.
-        card_width: Card width as a unit string.
-        card_height: Card height as a unit string.
-        paper_width: Paper width as a unit string (landscape value from layouts.json).
-        paper_height: Paper height as a unit string (landscape value from layouts.json).
-        inset: Silhouette registration mark inset from paper edge.
-        length: Silhouette registration mark line length.
-        ppi: Pixels per inch for all conversions.
-
-    Returns:
-        CardLayout named tuple.
+):
     """
-    # Hardcoded layout parameters
+    Compute card positions on a page, accounting for margins, bleed,
+    orientation, and strict registration mark corner exclusion zones.
+
+    Raises:
+        ValueError if no valid layout exists.
+    """
+
     BLEED = "1.25mm"
 
-    # Paper sizes in layouts.json are stored as landscape (width > height).
-    # For portrait orientation, swap paper dimensions.
-    if orientation == Orientation.PORTRAIT:
-        page_width = paper_height
-        page_height = paper_width
-    else:
-        page_width = paper_width
-        page_height = paper_height
-
-    # Convert dimensions to pixels
-    page_width_px = size_convert.size_to_pixel(page_width, ppi)
-    page_height_px = size_convert.size_to_pixel(page_height, ppi)
+    # Convert all dimensions to pixels
+    page_width_px = size_convert.size_to_pixel(paper_width, ppi)
+    page_height_px = size_convert.size_to_pixel(paper_height, ppi)
     card_width_px = size_convert.size_to_pixel(card_width, ppi)
     card_height_px = size_convert.size_to_pixel(card_height, ppi)
     bleed_px = size_convert.size_to_pixel(BLEED, ppi)
-
-    # Base margin from paper edge (just the inset).
-    # Cards and bleed can go right up to the inset along edges.
     inset_px = size_convert.size_to_pixel(inset, ppi)
-    margin_x = inset_px
-    margin_y = inset_px
-
-    # Corner exclusion zones: each corner has a square exclusion area
-    # extending (inset + length) from the paper edge on both axes.
-    # Thickness doesn't affect corner zone size. A card overlaps the
-    # corner if it's within length of the inset boundary on BOTH axes.
-    #
-    #   paper edge ──►┌─────────────────────┐
-    #                 │      inset          │
-    #                 │   ┌────────┐        │
-    #                 │   │ corner │        │
-    #                 │   │ zone   │← length│
-    #                 │   └────────┘        │
-    #                 │     length          │
-    #                 └─────────────────────┘
     length_px = size_convert.size_to_pixel(length, ppi)
 
-    # Default layout using minimum margins (just inset, ignoring corners).
-    # Used if no strategy below avoids corner overlap.
-    available_width = page_width_px - 2 * margin_x
-    available_height = page_height_px - 2 * margin_y
-    num_cols = max(0, math.floor((available_width - bleed_px) / (card_width_px + bleed_px)))
-    num_rows = max(0, math.floor((available_height - bleed_px) / (card_height_px + bleed_px)))
+    # Normalize orientation
+    page_width_px, page_height_px = normalize_page_size(
+        orientation, page_width_px, page_height_px
+    )
 
-    # Cards placed with minimum margins might overlap corner squares.
-    # Increasing the margin on one axis pushes cards past the corners.
-    # Try three strategies and pick the one with the most cards that
-    # avoids corner overlap.
-    margin_strategies = [
-        (inset_px, inset_px),              # minimum margins
-        (inset_px + length_px, inset_px),  # extra x-margin clears corners
-        (inset_px, inset_px + length_px),  # extra y-margin clears corners
-    ]
+    # Select margins and grid size (strict — no fallback)
+    cols, rows, margin_x, margin_y, usable_w, usable_h = select_best_margins(
+        page_width_px,
+        page_height_px,
+        card_width_px,
+        card_height_px,
+        bleed_px,
+        inset_px,
+        length_px,
+    )
 
-    best_card_count = 0
-    for x_margin, y_margin in margin_strategies:
-        trial_width = page_width_px - 2 * x_margin
-        trial_height = page_height_px - 2 * y_margin
-        if trial_width <= 0 or trial_height <= 0:
-            continue
+    # Compute card positions
+    x_pos, y_pos, start_x, start_y = compute_card_positions(
+        cols,
+        rows,
+        card_width_px,
+        card_height_px,
+        bleed_px,
+        margin_x,
+        margin_y,
+        usable_w,
+        usable_h,
+    )
 
-        trial_cols = max(0, math.floor((trial_width - bleed_px) / (card_width_px + bleed_px)))
-        trial_rows = max(0, math.floor((trial_height - bleed_px) / (card_height_px + bleed_px)))
-        if trial_cols <= 0 or trial_rows <= 0:
-            continue
-
-        # Distance from inset boundary to the nearest card edge
-        grid_width = trial_cols * card_width_px + (trial_cols + 1) * bleed_px
-        grid_height = trial_rows * card_height_px + (trial_rows + 1) * bleed_px
-        gap_x = x_margin + (trial_width - grid_width) / 2 + bleed_px - inset_px
-        gap_y = y_margin + (trial_height - grid_height) / 2 + bleed_px - inset_px
-        overlaps_corner = gap_x < length_px and gap_y < length_px
-
-        if not overlaps_corner and trial_cols * trial_rows > best_card_count:
-            best_card_count = trial_cols * trial_rows
-            num_cols, num_rows = trial_cols, trial_rows
-            margin_x, margin_y = x_margin, y_margin
-            available_width, available_height = trial_width, trial_height
-
-    # Final grid size and centered positions
-    filled_width = num_cols * card_width_px + (num_cols + 1) * bleed_px
-    filled_height = num_rows * card_height_px + (num_rows + 1) * bleed_px
-    start_x = round(margin_x + (available_width - filled_width) / 2 + bleed_px)
-    start_y = round(margin_y + (available_height - filled_height) / 2 + bleed_px)
-
-    # Build position arrays
-    x_pos = [start_x + i * (card_width_px + bleed_px) for i in range(num_cols)]
-    y_pos = [start_y + j * (card_height_px + bleed_px) for j in range(num_rows)]
-
-    # Maximum registration mark length that fits without overlapping
-    # card positions, with 2*BLEED buffer.
-    max_length_px = max(0, max(start_x - inset_px, start_y - inset_px) - 2 * bleed_px)
+    # Maximum registration mark length that fits with a bleed safety buffer
+    max_length_px = max(
+        0,
+        max(start_x - inset_px, start_y - inset_px) - bleed_px
+    )
     max_length_mm = round(max_length_px * 25.4 / ppi, 2)
 
     return CardLayout(
@@ -269,3 +395,4 @@ def generate_layout(
         y_pos=y_pos,
         max_length_mm=max_length_mm,
     )
+
