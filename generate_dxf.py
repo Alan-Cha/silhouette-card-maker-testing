@@ -31,11 +31,11 @@ def generate_single_dxf(
     paper_size: str,
     config: LayoutConfig,
     output_dir: Path,
-) -> tuple[int, int]:
+) -> tuple[int, int, float]:
     """Generate a single DXF file for a paper/card combination.
 
     Returns:
-        (num_cols, num_rows) tuple.
+        (num_cols, num_rows, max_length_mm) tuple.
     """
     card_def = config.card_sizes[card_size]
     paper_def = config.paper_sizes[paper_size]
@@ -47,16 +47,12 @@ def generate_single_dxf(
     version = layout_def.version
 
     computed = page_manager.generate_layout(
-        card_size=card_size,
-        paper_size=paper_size,
         orientation=orientation,
         card_width=card_def.width,
         card_height=card_def.height,
-        card_radius=card_def.radius,
         paper_width=paper_def.width,
         paper_height=paper_def.height,
         inset=silhouette.inset,
-        thickness=silhouette.thickness,
         length=silhouette.length,
         ppi=ppi,
     )
@@ -80,8 +76,8 @@ def generate_single_dxf(
     )
 
     num_cards = num_cols * num_rows
-    print(f"  {paper_size} + {card_size}: {num_cols}x{num_rows} ({num_cards} cards) -> {output_file}")
-    return num_cols, num_rows
+    print(f"  {paper_size} + {card_size}: {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_file}")
+    return num_cols, num_rows, computed.max_length_mm
 
 
 @click.command()
@@ -132,9 +128,10 @@ def cli(paper_size, card_size, generate_all, optimize_all, list_sizes, output_di
         for ps, cards in config.layouts.items():
             for cs in cards:
                 try:
-                    num_cols, num_rows = generate_single_dxf(cs, ps, config, out)
+                    num_cols, num_rows, ml_mm = generate_single_dxf(cs, ps, config, out)
                     raw_config["layouts"][ps][cs]["num_rows"] = num_rows
                     raw_config["layouts"][ps][cs]["num_cols"] = num_cols
+                    raw_config["layouts"][ps][cs]["max_length_mm"] = ml_mm
                     generated += 1
                 except Exception as e:
                     print(f"  Error: {ps} + {cs}: {e}")
@@ -191,12 +188,14 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
 
                 for orient in Orientation:
                     computed = page_manager.generate_layout(
-                        card_size=cs, paper_size=ps, orientation=orient,
-                        card_width=card_def.width, card_height=card_def.height,
-                        card_radius=card_def.radius,
-                        paper_width=paper_def.width, paper_height=paper_def.height,
-                        inset=silhouette.inset, thickness=silhouette.thickness,
-                        length=silhouette.length, ppi=ppi,
+                        orientation=orient,
+                        card_width=card_def.width,
+                        card_height=card_def.height,
+                        paper_width=paper_def.width,
+                        paper_height=paper_def.height,
+                        inset=silhouette.inset,
+                        length=silhouette.length,
+                        ppi=ppi,
                     )
                     count = len(computed.x_pos) * len(computed.y_pos)
                     if count > best_count or (count == best_count and orient == layout_def.orientation):
@@ -217,6 +216,7 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
                 num_rows = len(best_computed.y_pos)
                 raw_config["layouts"][ps][cs]["num_rows"] = num_rows
                 raw_config["layouts"][ps][cs]["num_cols"] = num_cols
+                raw_config["layouts"][ps][cs]["max_length_mm"] = best_computed.max_length_mm
 
                 name = template_name(ps, cs, version)
                 output_file = out / f"{name}.dxf"
@@ -230,7 +230,7 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
                 change_note = ""
                 if orientation_changed:
                     change_note = f" (was {layout_def.orientation.value})"
-                print(f"  {ps} + {cs}: {num_cols}x{num_rows} ({best_count} cards) -> {output_file}{change_note}")
+                print(f"  {ps} + {cs}: {num_cols}x{num_rows} ({best_count} cards), max_length={best_computed.max_length_mm}mm -> {output_file}{change_note}")
                 generated += 1
 
             except Exception as e:
