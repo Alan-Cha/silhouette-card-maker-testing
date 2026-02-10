@@ -87,6 +87,7 @@ class CardLayoutDef(BaseModel):
     version: int
     num_rows: Optional[int] = None
     num_cols: Optional[int] = None
+    max_length_mm: Optional[float] = None
 
 class LayoutConfig(BaseModel):
     ppi: int
@@ -602,16 +603,12 @@ def generate_pdf(
     # Compute card positions dynamically
     silhouette = layout_config.silhouette
     computed = page_manager.generate_layout(
-        card_size=card_size,
-        paper_size=paper_size,
         orientation=orientation,
         card_width=card_size_def.width,
         card_height=card_size_def.height,
-        card_radius=card_size_def.radius,
         paper_width=paper_size_def.width,
         paper_height=paper_size_def.height,
         inset=silhouette.inset,
-        thickness=silhouette.thickness,
         length=silhouette.length,
         ppi=layout_config.ppi,
     )

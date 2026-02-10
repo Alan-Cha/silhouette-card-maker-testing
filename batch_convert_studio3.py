@@ -83,14 +83,39 @@ def get_orientation_for_dxf(filename: str, config: LayoutConfig) -> Orientation:
     return Orientation.LANDSCAPE
 
 
+def get_max_length_for_dxf(filename: str, config: LayoutConfig, unit: str) -> float | None:
+    """Look up the max registration mark length for a DXF file.
+
+    Args:
+        filename: DXF filename.
+        config: Loaded layout config.
+        unit: "mm" or "in".
+
+    Returns:
+        Max length in the requested unit, or None if not available.
+    """
+    parts = parse_dxf_filename(filename, config)
+    if parts is not None:
+        paper_size, card_size = parts
+        mm = config.layouts[paper_size][card_size].max_length_mm
+        if mm is None:
+            return None
+        if unit == "in":
+            return round(mm / 25.4, 4)
+        return mm
+
+    return None
+
+
 @click.command()
 @click.option("--dxf_dir", type=click.Path(exists=True), default=str(DEFAULT_DXF_DIR), show_default=True, help="Directory containing DXF files.")
 @click.option("--output_dir", type=click.Path(), default=str(DEFAULT_OUTPUT_DIR), show_default=True, help="Output directory for .studio3 files.")
+@click.option("--unit", type=click.Choice(["mm", "in"], case_sensitive=False), required=True, help="Unit for registration mark values (must match Silhouette Studio's setting).")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds).")
 @click.option("--calibration_file", type=click.Path(), default=None, help="Path to calibration JSON.")
 @click.option("--dry_run", is_flag=True, help="List files that would be converted without running Silhouette Studio.")
-def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_run):
+def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, dry_run):
     """Batch convert DXF files to .studio3 with registration marks."""
     dxf_path = Path(dxf_dir)
     out_path = Path(output_dir)
@@ -104,20 +129,17 @@ def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_ru
         return
 
     click.echo(f"Found {len(dxf_files)} DXF files in {dxf_path}")
+    click.echo(f"Registration mark unit: {unit}")
     click.echo()
-
-    # Registration marks: always enabled, thickness=100
-    reg_settings = RegistrationSettings(
-        enabled=True,
-        thickness=100,
-    )
 
     if dry_run:
         for dxf_file in dxf_files:
             output_file = out_path / dxf_file.with_suffix(".studio3").name
             orientation = get_orientation_for_dxf(dxf_file.name, config)
             paper_w, paper_h = get_paper_dimensions(dxf_file.name, config)
-            click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h})")
+            max_len = get_max_length_for_dxf(dxf_file.name, config, unit)
+            len_str = f", max_length={max_len}{unit}" if max_len is not None else ""
+            click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h}{len_str})")
         click.echo()
         click.echo("Dry run complete. No files were converted.")
         return
@@ -147,6 +169,15 @@ def cli(dxf_dir, output_dir, studio_path, action_delay, calibration_file, dry_ru
             output_file = out_path / dxf_file.with_suffix(".studio3").name
             orientation = get_orientation_for_dxf(dxf_file.name, config)
             paper_w, paper_h = get_paper_dimensions(dxf_file.name, config)
+            max_len = get_max_length_for_dxf(dxf_file.name, config, unit)
+
+            # Registration marks: always enabled, thickness=100,
+            # length set to the computed max for this layout.
+            reg_settings = RegistrationSettings(
+                enabled=True,
+                length=max_len if max_len is not None else 0,
+                thickness=100,
+            )
 
             try:
                 automation.convert(
