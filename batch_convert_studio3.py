@@ -20,7 +20,7 @@ from pathlib import Path
 import click
 
 from enums import Orientation
-from utilities import LayoutConfig, load_layout_config
+from utilities import LayoutConfig, load_layout_config, template_name
 from dxf_to_studio3 import (
     SilhouetteAutomation,
     RegistrationSettings,
@@ -114,8 +114,9 @@ def get_max_length_for_dxf(filename: str, config: LayoutConfig, unit: str) -> fl
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds).")
 @click.option("--calibration_file", type=click.Path(), default=None, help="Path to calibration JSON.")
+@click.option("--missing", is_flag=True, help="Only convert layouts whose .studio3 file is missing (based on layouts.json versions).")
 @click.option("--dry_run", is_flag=True, help="List files that would be converted without running Silhouette Studio.")
-def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, dry_run):
+def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, missing, dry_run):
     """Batch convert DXF files to .studio3 with registration marks."""
     dxf_path = Path(dxf_dir)
     out_path = Path(output_dir)
@@ -123,12 +124,31 @@ def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, 
 
     config = load_layout_config()
 
-    dxf_files = sorted(dxf_path.glob("*.dxf"))
+    if missing:
+        # Derive expected DXF/studio3 filenames from layouts.json
+        dxf_files = []
+        for ps, cards in config.layouts.items():
+            for cs, layout_def in cards.items():
+                name = template_name(ps, cs, layout_def.version)
+                studio3_file = out_path / f"{name}.studio3"
+                if not studio3_file.exists():
+                    dxf_file = dxf_path / f"{name}.dxf"
+                    if dxf_file.exists():
+                        dxf_files.append(dxf_file)
+                    else:
+                        click.echo(f"  Warning: missing DXF {dxf_file.name} for {ps} + {cs}")
+        dxf_files.sort()
+    else:
+        dxf_files = sorted(dxf_path.glob("*.dxf"))
+
     if not dxf_files:
-        click.echo(f"No DXF files found in {dxf_path}")
+        if missing:
+            click.echo("All .studio3 files are up to date.")
+        else:
+            click.echo(f"No DXF files found in {dxf_path}")
         return
 
-    click.echo(f"Found {len(dxf_files)} DXF files in {dxf_path}")
+    click.echo(f"Found {len(dxf_files)} DXF files to convert")
     click.echo(f"Registration mark unit: {unit}")
     click.echo()
 
