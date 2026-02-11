@@ -9,6 +9,7 @@ numpy==2.4.2
 pillow==12.1.1
 pyautogui==0.9.54
 pydantic==2.12.5
+pywinauto==0.6.9
 pypdfium2==4.30.0
 pywinauto==0.6.8
 requests==2.32.4
