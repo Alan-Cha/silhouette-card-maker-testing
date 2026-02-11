@@ -2,16 +2,24 @@ from enum import Enum
 
 
 class CardSize(str, Enum):
-    STANDARD = "standard"
-    STANDARD_DOUBLE = "standard_double"
-    JAPANESE = "japanese"
-    POKER = "poker"
-    POKER_HALF = "poker_half"
     BRIDGE = "bridge"
     BRIDGE_SQUARE = "bridge_square"
-    TAROT = "tarot"
+    BUSINESS = "business"
+    CREDIT = "credit"
     DOMINO = "domino"
     DOMINO_SQUARE = "domino_square"
+    EURO_BUSINESS = "euro_business"
+    EURO_MINI = "euro_mini"
+    EURO_POKER = "euro_poker"
+    JAPANESE = "japanese"
+    JUMBO = "jumbo"
+    MICRO = "micro"
+    MINI = "mini"
+    PHOTO = "photo"
+    POKER = "poker"
+    STANDARD = "standard"
+    STANDARD_DOUBLE = "standard_double"
+    TAROT = "tarot"
 
 
 class PaperSize(str, Enum):
