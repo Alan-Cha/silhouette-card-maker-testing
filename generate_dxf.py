@@ -84,10 +84,11 @@ def generate_single_dxf(
 @click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), help="Paper size.")
 @click.option("--card_size", type=click.Choice([c.value for c in CardSize], case_sensitive=False), help="Card size.")
 @click.option("--all", "generate_all", is_flag=True, help="Generate DXF files for all paper/card combinations defined in layouts.json.")
+@click.option("--new", "generate_new", is_flag=True, help="Generate DXF files only for combinations whose versioned file doesn't exist yet.")
 @click.option("--all_optimize", "optimize_all", is_flag=True, help="Generate DXF files for all combinations, optimizing orientation for maximum cards. Updates layouts.json if a better orientation is found.")
 @click.option("--list", "list_sizes", is_flag=True, help="List available paper/card size combinations and exit.")
 @click.option("--output_dir", type=click.Path(), default=str(OUTPUT_DIR), show_default=True, help="Output directory for DXF files.")
-def cli(paper_size, card_size, generate_all, optimize_all, list_sizes, output_dir):
+def cli(paper_size, card_size, generate_all, generate_new, optimize_all, list_sizes, output_dir):
     """Generate DXF cutting templates from layouts.json."""
     config = load_layout_config()
 
@@ -116,17 +117,26 @@ def cli(paper_size, card_size, generate_all, optimize_all, list_sizes, output_di
         _generate_all_optimized(config, out)
         return
 
-    if generate_all:
+    if generate_all or generate_new:
         with open(LAYOUTS_PATH, 'r') as f:
             raw_config = json.load(f)
 
         generated = 0
+        skipped = 0
         errors = 0
         print(f"Generating DXF files to: {out}")
         print()
 
         for ps, cards in config.layouts.items():
             for cs in cards:
+                layout_def = config.layouts[ps][cs]
+                name = template_name(ps, cs, layout_def.version)
+                output_file = out / f"{name}.dxf"
+
+                if generate_new and output_file.exists():
+                    skipped += 1
+                    continue
+
                 try:
                     num_cols, num_rows, ml_mm = generate_single_dxf(cs, ps, config, out)
                     raw_config["layouts"][ps][cs]["num_rows"] = num_rows
@@ -142,7 +152,10 @@ def cli(paper_size, card_size, generate_all, optimize_all, list_sizes, output_di
             f.write('\n')
 
         print()
-        print(f"Generated {generated} DXF files ({errors} errors)")
+        summary = f"Generated {generated} DXF files ({errors} errors)"
+        if generate_new:
+            summary += f", skipped {skipped} existing"
+        print(summary)
         return
 
     if not paper_size or not card_size:
