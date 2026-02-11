@@ -169,64 +169,90 @@ def cli(paper_size, card_size, generate_all, generate_new, optimize_all, list_si
 
 
 def _generate_all_optimized(config: LayoutConfig, out: Path):
-    """Generate DXF files for all combinations, optimizing orientation.
+    """Generate DXF files for all paper/card combinations, optimizing orientation.
 
-    Tries both landscape and portrait for each paper/card combo and picks
-    the orientation that maximizes card count. If the optimal orientation
-    differs from layouts.json, updates the file with the new orientation
-    and a bumped version number.
+    Iterates over every paper_size × card_size combination from layouts.json.
+    For existing layouts, re-optimizes orientation and bumps the version if
+    it changes.  For missing combinations, creates a new layout entry at v1.
     """
     with open(LAYOUTS_PATH, 'r') as f:
         raw_config = json.load(f)
 
     generated = 0
+    added = 0
     errors = 0
     updated = 0
     print(f"Optimizing orientations and generating DXF files to: {out}")
     print()
 
-    for ps in list(config.layouts.keys()):
-        for cs in list(config.layouts[ps].keys()):
+    for ps, paper_def in config.paper_sizes.items():
+        for cs, card_def in config.card_sizes.items():
             try:
-                card_def = config.card_sizes[cs]
-                paper_def = config.paper_sizes[ps]
                 silhouette = config.silhouette
                 ppi = config.ppi
-                layout_def = config.layouts[ps][cs]
+
+                # Check if a layout already exists for this combination
+                existing = (
+                    ps in config.layouts
+                    and cs in config.layouts[ps]
+                )
+                if existing:
+                    layout_def = config.layouts[ps][cs]
+                    existing_orientation = layout_def.orientation
+                    version = layout_def.version
+                else:
+                    existing_orientation = Orientation.LANDSCAPE
+                    version = 1
 
                 # Try both orientations, prefer the existing one on ties
                 best_count = 0
-                best_orientation = layout_def.orientation
+                best_orientation = existing_orientation
                 best_computed = None
 
                 for orient in Orientation:
-                    computed = page_manager.generate_layout(
-                        orientation=orient,
-                        card_width=card_def.width,
-                        card_height=card_def.height,
-                        paper_width=paper_def.width,
-                        paper_height=paper_def.height,
-                        inset=silhouette.inset,
-                        length=silhouette.length,
-                        ppi=ppi,
-                    )
+                    try:
+                        computed = page_manager.generate_layout(
+                            orientation=orient,
+                            card_width=card_def.width,
+                            card_height=card_def.height,
+                            paper_width=paper_def.width,
+                            paper_height=paper_def.height,
+                            inset=silhouette.inset,
+                            length=silhouette.length,
+                            ppi=ppi,
+                        )
+                    except ValueError:
+                        continue
                     count = len(computed.x_pos) * len(computed.y_pos)
-                    if count > best_count or (count == best_count and orient == layout_def.orientation):
+                    if count > best_count or (count == best_count and orient == existing_orientation):
                         best_count = count
                         best_orientation = orient
                         best_computed = computed
 
-                version = layout_def.version
-                orientation_changed = best_orientation != layout_def.orientation
-
-                if orientation_changed:
-                    version += 1
-                    raw_config["layouts"][ps][cs]["orientation"] = best_orientation.value
-                    raw_config["layouts"][ps][cs]["version"] = version
-                    updated += 1
+                if best_computed is None:
+                    print(f"  {ps} + {cs}: no valid layout in either orientation, skipping")
+                    continue
 
                 num_cols = len(best_computed.x_pos)
                 num_rows = len(best_computed.y_pos)
+
+                if existing:
+                    orientation_changed = best_orientation != existing_orientation
+                    if orientation_changed:
+                        version += 1
+                        updated += 1
+                    raw_config["layouts"][ps][cs]["orientation"] = best_orientation.value
+                    raw_config["layouts"][ps][cs]["version"] = version
+                else:
+                    # Add new layout entry
+                    if ps not in raw_config["layouts"]:
+                        raw_config["layouts"][ps] = {}
+                    raw_config["layouts"][ps][cs] = {
+                        "orientation": best_orientation.value,
+                        "version": version,
+                    }
+                    added += 1
+
                 raw_config["layouts"][ps][cs]["num_rows"] = num_rows
                 raw_config["layouts"][ps][cs]["num_cols"] = num_cols
                 raw_config["layouts"][ps][cs]["max_length_mm"] = best_computed.max_length_mm
@@ -241,8 +267,10 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
                 )
 
                 change_note = ""
-                if orientation_changed:
-                    change_note = f" (was {layout_def.orientation.value})"
+                if existing and best_orientation != existing_orientation:
+                    change_note = f" (was {existing_orientation.value})"
+                elif not existing:
+                    change_note = " (new)"
                 print(f"  {ps} + {cs}: {num_cols}x{num_rows} ({best_count} cards), max_length={best_computed.max_length_mm}mm -> {output_file}{change_note}")
                 generated += 1
 
@@ -256,8 +284,10 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
 
     print()
     summary = f"Generated {generated} DXF files ({errors} errors)"
+    if added > 0:
+        summary += f", added {added} new layouts"
     if updated > 0:
-        summary += f", updated {updated} orientations in layouts.json"
+        summary += f", updated {updated} orientations"
     print(summary)
 
 
