@@ -114,9 +114,9 @@ def get_max_length_for_dxf(filename: str, config: LayoutConfig, unit: str) -> fl
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds).")
 @click.option("--calibration_file", type=click.Path(), default=None, help="Path to calibration JSON.")
-@click.option("--missing", is_flag=True, help="Only convert layouts whose .studio3 file is missing (based on layouts.json versions).")
+@click.option("--new", "generate_new", is_flag=True, help="Only convert layouts whose .studio3 file is missing (based on layouts.json versions).")
 @click.option("--dry_run", is_flag=True, help="List files that would be converted without running Silhouette Studio.")
-def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, missing, dry_run):
+def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, generate_new, dry_run):
     """Batch convert DXF files to .studio3 with registration marks."""
     dxf_path = Path(dxf_dir)
     out_path = Path(output_dir)
@@ -124,7 +124,7 @@ def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, 
 
     config = load_layout_config()
 
-    if missing:
+    if generate_new:
         # Derive expected DXF/studio3 filenames from layouts.json
         dxf_files = []
         for ps, cards in config.layouts.items():
@@ -142,7 +142,7 @@ def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, 
         dxf_files = sorted(dxf_path.glob("*.dxf"))
 
     if not dxf_files:
-        if missing:
+        if generate_new:
             click.echo("All .studio3 files are up to date.")
         else:
             click.echo(f"No DXF files found in {dxf_path}")
