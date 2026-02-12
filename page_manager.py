@@ -317,10 +317,6 @@ def compute_card_positions(
     return x_pos, y_pos, start_x, start_y
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Main entry point
-# ─────────────────────────────────────────────────────────────────────────────
-
 def generate_layout(
     orientation,
     card_width: str,
