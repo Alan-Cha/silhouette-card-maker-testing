@@ -5,6 +5,7 @@ from time import sleep
 
 LIMITLESS_TCG_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/{set_id}/{set_id}_{card_no}_R_EN_LG.png'
 LIMITLESS_POCKET_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/pocket/{set_id}/{set_id}_{card_no}_EN_SM.webp'
+POKEMONTCG_API_URL = 'https://api.pokemontcg.io/v2/cards'
 
 def request_limitless(query: str) -> Response:
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
@@ -15,6 +16,32 @@ def request_limitless(query: str) -> Response:
     sleep(0.075)
 
     return r
+
+def request_pokemontcg(url: str, params: dict = None) -> Response:
+    r = get(url, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+
+    # Check for 2XX response code
+    r.raise_for_status()
+
+    sleep(0.075)
+
+    return r
+
+def fetch_card_from_pokemontcg(card_name: str, card_number: int) -> bytes:
+    search_query = f'name:"{card_name}" number:{card_number}'
+    response = request_pokemontcg(POKEMONTCG_API_URL, params={'q': search_query})
+    data = response.json()
+
+    cards = data.get('data', [])
+    if not cards:
+        raise Exception(f'No results found on pokemontcg.io for "{card_name}" number {card_number}')
+
+    card = cards[0]
+    image_url = card.get('images', {}).get('large')
+    if not image_url:
+        raise Exception(f'No large image available on pokemontcg.io for "{card_name}" number {card_number}')
+
+    return request_pokemontcg(image_url).content
 
 def fetch_card(
     index: int,
@@ -38,8 +65,13 @@ def fetch_card(
             url = LIMITLESS_POCKET_URL_TEMPLATE.format(set_id=set_id, card_no=str(card_number).zfill(3))
             card_art = request_limitless(url).content
             file_ext = 'webp'
-        except HTTPError as e:
-            raise Exception(f'Failed to fetch card "{card_name}" (set: {set_id}, number: {card_number}): {e}')
+        except HTTPError:
+            # Fall back to pokemontcg.io
+            try:
+                card_art = fetch_card_from_pokemontcg(card_name, card_number)
+                file_ext = 'png'
+            except Exception as e:
+                raise Exception(f'Failed to fetch card "{card_name}" (set: {set_id}, number: {card_number}): {e}')
 
     for counter in range(quantity):
         image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}.{file_ext}')
