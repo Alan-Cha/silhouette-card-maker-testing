@@ -3,7 +3,7 @@
     "silhouette": {
         "inset": "10mm",
         "thickness": "1mm",
-        "length": "7mm"
+        "length": "6.5mm"
     },
     "card_sizes": {
         "bridge": {
@@ -378,11 +378,11 @@
         },
         "a4": {
             "bridge": {
-                "orientation": "landscape",
-                "version": 2,
-                "num_rows": 2,
-                "num_cols": 4,
-                "max_length_mm": 21.08
+                "orientation": "portrait",
+                "version": 3,
+                "num_rows": 3,
+                "num_cols": 3,
+                "max_length_mm": 6.69
             },
             "bridge_square": {
                 "orientation": "portrait",
@@ -441,11 +441,11 @@
                 "max_length_mm": 9.4
             },
             "japanese": {
-                "orientation": "landscape",
-                "version": 2,
-                "num_rows": 2,
-                "num_cols": 4,
-                "max_length_mm": 17.36
+                "orientation": "portrait",
+                "version": 3,
+                "num_rows": 3,
+                "num_cols": 3,
+                "max_length_mm": 6.94
             },
             "jumbo": {
                 "orientation": "landscape",
@@ -562,11 +562,11 @@
                 "max_length_mm": 18.2
             },
             "euro_poker": {
-                "orientation": "portrait",
-                "version": 1,
-                "num_rows": 4,
-                "num_cols": 4,
-                "max_length_mm": 20.91
+                "orientation": "landscape",
+                "version": 2,
+                "num_rows": 3,
+                "num_cols": 6,
+                "max_length_mm": 6.6
             },
             "japanese": {
                 "orientation": "landscape",
@@ -611,11 +611,11 @@
                 "max_length_mm": 19.05
             },
             "standard": {
-                "orientation": "portrait",
-                "version": 3,
-                "num_rows": 4,
-                "num_cols": 4,
-                "max_length_mm": 20.91
+                "orientation": "landscape",
+                "version": 4,
+                "num_rows": 3,
+                "num_cols": 6,
+                "max_length_mm": 6.6
             },
             "standard_double": {
                 "orientation": "portrait",
@@ -704,11 +704,11 @@
                 "max_length_mm": 10.84
             },
             "jumbo": {
-                "orientation": "landscape",
-                "version": 1,
-                "num_rows": 2,
-                "num_cols": 4,
-                "max_length_mm": 37.68
+                "orientation": "portrait",
+                "version": 2,
+                "num_rows": 3,
+                "num_cols": 3,
+                "max_length_mm": 6.52
             },
             "micro": {
                 "orientation": "landscape",

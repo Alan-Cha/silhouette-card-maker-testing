@@ -5,6 +5,9 @@ from ezdxf import units
 from typing import List
 import math
 
+# Write fixed timestamps and GUIDs so regenerated files are deterministic.
+ezdxf.options.write_fixed_meta_data_for_testing = True
+
 def add_rounded_rectangle(msp, x, y, width, height, radius):
     y=-y-height #corner alignment
     # Define corner centers
@@ -71,6 +74,16 @@ def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: Lis
                 pos_y = y_pos[y] * 25.4 / ppi
             add_rounded_rectangle_polyline(msp, pos_x, pos_y, width, height, radius)
 
+
+    # Strip non-deterministic metadata so regenerated files don't produce
+    # spurious diffs when the geometry hasn't changed.
+    for var in (
+        "$TDCREATE", "$TDUCREATE",
+        "$TDUPDATE", "$TDUUPDATE",
+        "$FINGERPRINTGUID", "$VERSIONGUID",
+    ):
+        if var in doc.header:
+            del doc.header[var]
 
     # Save DXF
     doc.saveas(output_path)
