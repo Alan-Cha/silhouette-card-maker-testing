@@ -7,6 +7,9 @@ LIMITLESS_TCG_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.c
 LIMITLESS_POCKET_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/pocket/{set_id}/{set_id}_{card_no}_EN_SM.webp'
 POKEMONTCG_API_URL = 'https://api.pokemontcg.io/v2/cards'
 
+_failed_tcg_sets = set()
+_failed_pocket_sets = set()
+
 def request_limitless(query: str) -> Response:
     r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
@@ -55,23 +58,30 @@ def fetch_card(
     file_ext = 'png'
 
     # Try Pokemon TCG format first
-    try:
-        url = LIMITLESS_TCG_URL_TEMPLATE.format(set_id=set_id, card_no=str(card_number).zfill(3))
-        card_art = request_limitless(url).content
-        file_ext = 'png'
-    except HTTPError:
-        # Fall back to Pokemon Pocket format
+    if set_id not in _failed_tcg_sets:
+        try:
+            url = LIMITLESS_TCG_URL_TEMPLATE.format(set_id=set_id, card_no=str(card_number).zfill(3))
+            card_art = request_limitless(url).content
+            file_ext = 'png'
+        except HTTPError:
+            _failed_tcg_sets.add(set_id)
+
+    # Fall back to Pokemon Pocket format
+    if card_art is None and set_id not in _failed_pocket_sets:
         try:
             url = LIMITLESS_POCKET_URL_TEMPLATE.format(set_id=set_id, card_no=str(card_number).zfill(3))
             card_art = request_limitless(url).content
             file_ext = 'webp'
         except HTTPError:
-            # Fall back to pokemontcg.io
-            try:
-                card_art = fetch_card_from_pokemontcg(card_name, card_number)
-                file_ext = 'png'
-            except Exception as e:
-                raise Exception(f'Failed to fetch card "{card_name}" (set: {set_id}, number: {card_number}): {e}')
+            _failed_pocket_sets.add(set_id)
+
+    # Fall back to pokemontcg.io
+    if card_art is None:
+        try:
+            card_art = fetch_card_from_pokemontcg(card_name, card_number)
+            file_ext = 'png'
+        except Exception as e:
+            raise Exception(f'Failed to fetch card "{card_name}" (set: {set_id}, number: {card_number}): {e}')
 
     for counter in range(quantity):
         image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}.{file_ext}')
