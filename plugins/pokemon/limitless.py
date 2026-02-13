@@ -30,7 +30,7 @@ def request_pokemontcg(url: str, params: dict = None) -> Response:
 
     return r
 
-def fetch_card_from_pokemontcg(card_name: str, card_number: int) -> bytes:
+def fetch_card_from_pokemontcg(card_name: str, card_number: str) -> bytes:
     search_query = f'name:"{card_name}" number:{card_number}'
     response = request_pokemontcg(POKEMONTCG_API_URL, params={'q': search_query})
     data = response.json()
@@ -51,7 +51,7 @@ def fetch_card(
     quantity: int,
     card_name: str,
     set_id: str,
-    card_number: int,
+    card_number: str,
     front_img_dir: str,
 ):
     card_art = None
@@ -92,7 +92,7 @@ def fetch_card(
 def get_handle_card(
     front_img_dir: str,
 ):
-    def configured_fetch_card(index: int, card_name: str, set_id: str, card_number: int, quantity: int = 1):
+    def configured_fetch_card(index: int, card_name: str, set_id: str, card_number: str, quantity: int = 1):
         fetch_card(
             index,
             quantity,

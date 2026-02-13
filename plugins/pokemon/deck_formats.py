@@ -2,7 +2,7 @@ from re import compile
 from enum import Enum
 from typing import Callable, Tuple
 
-card_data_tuple = Tuple[str, int, str, int] # Name, Quantity, Set ID, Card Number
+card_data_tuple = Tuple[str, int, str, str] # Name, Quantity, Set ID, Card Number
 
 def parse_deck_helper(deck_text: str, handle_card: Callable, is_card_line: Callable[[str], bool], extract_card_data: Callable[[str], card_data_tuple]) -> None:
     error_lines = []
@@ -32,7 +32,7 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, is_card_line: Calla
         print(f'Errors: {error_lines}')
 
 def parse_limitless(deck_text: str, handle_card: Callable) -> None:
-    pattern = compile(r'^(\d+)\s(.+)\s(.+)\s(\d+)$') # '{Quantity} {Name} {Set} {Number}'
+    pattern = compile(r'^(\d+)\s(.+)\s(\S+)\s(\S+)$') # '{Quantity} {Name} {Set} {Number}'
 
     def is_limitless_line(line) -> bool:
         return bool(pattern.match(line))
@@ -43,7 +43,7 @@ def parse_limitless(deck_text: str, handle_card: Callable) -> None:
             card_name = match.group(2).strip()
             quantity = int(match.group(1).strip())
             set_id = match.group(3).strip()
-            card_number = int(match.group(4).strip())
+            card_number = match.group(4).strip()
 
             return (card_name, quantity, set_id, card_number)
 
