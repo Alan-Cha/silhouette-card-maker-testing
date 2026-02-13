@@ -5,8 +5,12 @@ from enum import Enum
 from typing import Callable, Tuple
 from xml.etree import ElementTree as ET
 
+from pyparsing import line
+
 from patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
-from scryfall import remove_nonalphanumeric
+
+import cloudscraper
+import mtg_parser
 
 card_data_tuple = Tuple[str, str, int, int]
 
@@ -258,22 +262,36 @@ def parse_mpcfill_xml(deck_text, handle_card: Callable) -> None:
 
 # URL Auto-Import
 #   Supported sites:
-#     Moxfield
-#     Archidekt
+#     Aetherhub, Archidekt, Deckstats, Moxfield, MTG Goldfish,
+#     MTGJSON, Scryfall, Tapped Out, TCGPlayer
 def parse_url(deck_url, handle_card: Callable) -> None:
-    import cloudscraper
-    import mtg_parser
     scraper = cloudscraper.create_scraper()
     cards = mtg_parser.parse_deck(deck_url, scraper)
     if not cards:
         print(f"Failed to parse deck from URL: {deck_url}")
         return
 
-    # def extract_card_data(card: mtg_parser.Card) -> card_data_tuple:
-    #     return (card.name, card.extension, card.number, card.quantity)
+    error_lines = []
 
     for index, card in enumerate(cards, start=1):
-        handle_card(index, card.name, card.extension, card.number, card.quantity)
+        name = card.name
+        set_code = card.extension
+        collector_number = card.number
+        quantity = card.quantity
+
+        parts = [f'Index: {index}', f'quantity: {quantity}']
+        if set_code: parts.append(f'set code: {set_code}')
+        if collector_number: parts.append(f'collector number: {collector_number}')
+        if name: parts.append(f'name: {name}')
+        print(', '.join(parts))
+        try:
+            handle_card(index, name, set_code, collector_number, quantity)
+        except Exception as e:
+            print(f'Error: {e}')
+            error_lines.append((line, e))
+
+    if len(error_lines) > 0:
+        print(f'Errors: {error_lines}')
 
 class DeckFormat(str, Enum):
     ARCHIDEKT = "archidekt"

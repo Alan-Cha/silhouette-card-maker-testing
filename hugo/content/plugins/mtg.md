@@ -5,7 +5,7 @@ weight: 1
 
 This plugin reads a decklist and automatically fetches the card art and puts them in the proper `game/` directories.
 
-This plugin supports many decklist formats such as `simple`, `mtga`, `mtgo`, `archidekt`, `deckstats`, `moxfield`, `scryfall_json`, and `mpcfill_xml`. To learn more, see [here](#formats).
+This plugin supports many decklist formats such as `simple`, `mtga`, `mtgo`, `archidekt`, `deckstats`, `moxfield`, `scryfall_json`, `mpcfill_xml`, and `url`. To learn more, see [here](#formats).
 
 ## Basic Instructions
 
@@ -28,7 +28,7 @@ Now you can create the PDF using [`create_pdf.py`]({{% ref "../docs/create" %}})
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH {archidekt|deckstats|moxfield|mpcfill_xml|mtga|mtgo|scryfall_json|simple}
+Usage: fetch.py [OPTIONS] DECK_PATH {archidekt|deckstats|moxfield|mpcfill_xml|mtga|mtgo|scryfall_json|simple|url}
 
 Options:
   -i, --ignore_set_and_collector_number
@@ -268,4 +268,28 @@ Arid Mesa
 Battlefield Forge
 Blazemire Verge
 Blightstep Pathway
+```
+
+### `url`
+
+Instead of providing a decklist file, you can pass a deck URL directly. This format uses the [`mtg_parser`](https://pypi.org/project/mtg-parser/) library to fetch and parse the deck.
+
+Supported sites and URL formats:
+
+| Site | URL Format |
+|------|------------|
+| [Aetherhub](https://aetherhub.com) | `https://aetherhub.com/Deck/<deck_name>` |
+| [Archidekt](https://archidekt.com) | `https://www.archidekt.com/decks/<deck_id>/` |
+| [Deckstats](https://deckstats.net) | `https://deckstats.net/decks/<user_id>/<deck_id>` |
+| [Moxfield](https://moxfield.com) | `https://www.moxfield.com/decks/<deck_id>` |
+| [MTG Goldfish](https://www.mtggoldfish.com) | `https://www.mtggoldfish.com/deck/<deck_id>` |
+| [MTGJSON](https://mtgjson.com) | `https://mtgjson.com/api/v5/decks/<deck_name>.json` |
+| [Scryfall](https://scryfall.com) | `https://scryfall.com/<user_id>/decks/<deck_id>/` |
+| [Tapped Out](https://tappedout.net) | `https://tappedout.net/mtg-decks/<deck_id>/` |
+| [TCGPlayer](https://www.tcgplayer.com) | `https://www.tcgplayer.com/content/magic-the-gathering/deck/<deck_name>/<deck_id>` |
+
+Example:
+
+```sh
+python plugins/mtg/fetch.py https://www.moxfield.com/decks/example-deck-id url
 ```
