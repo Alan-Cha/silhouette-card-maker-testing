@@ -644,14 +644,11 @@ def generate_pdf(
     if len(clean_skip_indices) == num_cards:
         raise Exception(f'You cannot skip all cards per page')
 
-    registration_filename =  f'{paper_size}_registration_{registration}.jpg'
-    registration_path = os.path.join(asset_directory, registration_filename)
-
     # The baseline PPI is 300
     ppi_ratio = ppi / 300
 
     # Load an image with the registration marks
-    with Image.open(registration_path) as reg_im:
+    with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, silhouette.inset, silhouette.thickness, f"{layout_def.max_length_mm}mm", ppi) as reg_im:
         reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
 
         # Create the array that will store the filled templates
