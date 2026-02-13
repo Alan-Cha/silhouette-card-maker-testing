@@ -412,7 +412,24 @@ def draw_card_layout(
         else:
             active_crop_x, active_crop_y = crop_percent_x, crop_percent_y
 
-        # Apply cropping and scaling if required
+        # Step 1: Apply fit mode for aspect ratio correction (if fit == CROP)
+        if fit == FitMode.CROP:
+            card_width, card_height = card_image.size
+            target_aspect = scaled_width / scaled_height
+            current_aspect = card_width / card_height
+
+            if current_aspect > target_aspect:
+                # Image is wider than target, crop left and right
+                new_width = int(card_height * target_aspect)
+                crop_x = (card_width - new_width) // 2
+                card_image = card_image.crop((crop_x, 0, crop_x + new_width, card_height))
+            elif current_aspect < target_aspect:
+                # Image is taller than target, crop top and bottom
+                new_height = int(card_width / target_aspect)
+                crop_y = (card_height - new_height) // 2
+                card_image = card_image.crop((0, crop_y, card_width, crop_y + new_height))
+
+        # Step 2: Apply percentage cropping and scaling
         if active_crop_x > 0 or active_crop_y > 0:
             # Returns: (image, x_offset, y_offset, synthetic_bleed_to_generate)
             card_image, bleed_offset_x, bleed_offset_y, synthetic_bleed = crop_and_scale_image(
@@ -425,8 +442,8 @@ def draw_card_layout(
                 scaled_bleed_height
             )
         else:
-            # Use the fit mode to resize the image
-            card_image = fit_image_to_size(card_image, scaled_width, scaled_height, fit)
+            # No percentage crop, just scale to target size
+            card_image = card_image.resize((scaled_width, scaled_height))
 
         # Extend the corners if required
         card_image = card_image.crop((
