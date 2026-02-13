@@ -483,11 +483,11 @@ class SilhouetteAutomation:
         self._click_element("center_to_page")
 
     def ungroup_all(self):
-        """Select all and ungroup (Ctrl+A, Ctrl+Alt+G)."""
+        """Select all and ungroup (Ctrl+A, Ctrl+Shift+G)."""
         print("  Ungrouping...")
         pyautogui.hotkey('ctrl', 'a')
         time.sleep(self.action_delay)
-        pyautogui.hotkey('ctrl', 'alt', 'g')
+        pyautogui.hotkey('ctrl', 'shift', 'g')
         time.sleep(self.action_delay)
 
     # -------------------------------------------------------------------------
