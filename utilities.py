@@ -14,6 +14,9 @@ from natsort import natsorted
 from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 from pydantic import BaseModel
 
+# Approximately 1.25mm of bleed assuming 300 PPI: ceil(1.25mm * 1in/25.4mm * 300ppi)
+MINIMUM_BLEED = 15
+
 # Specify directory locations
 asset_directory = 'assets'
 
@@ -567,7 +570,7 @@ def generate_pdf(
             # Create the array that will store the filled templates
             pages: List[Image.Image] = []
 
-            max_print_bleed = calculate_max_print_bleed(card_layout.x_pos, card_layout.y_pos, card_layout_size.width, card_layout_size.height)
+            max_print_bleed = calculate_max_print_bleed(card_layout.x_pos, card_layout.y_pos, card_layout_size.width, card_layout_size.height, math.ceil(MINIMUM_BLEED * ppi_ratio))
 
             # Load and cache the single back image for reuse
             # Do this if we expect both front and back pages and if we have a back image
@@ -771,11 +774,11 @@ def offset_images(images: List[Image.Image], x_offset: int, y_offset: int, ppi: 
 
     return result_images
 
-def calculate_max_print_bleed(x_pos: List[int], y_pos: List[int], width: int, height: int) -> tuple[int, int]:
-    if len(x_pos) == 1 & len(y_pos) == 1:
-        return (0, 0)
+def calculate_max_print_bleed(x_pos: List[int], y_pos: List[int], width: int, height: int, min_bleed: int = 0) -> tuple[int, int]:
+    if len(x_pos) == 1 and len(y_pos) == 1:
+        return (min_bleed, min_bleed)
 
-    x_border_max = 100000
+    x_border_max = min_bleed
     if len(x_pos) >= 2:
         x_pos.sort()
 
@@ -784,10 +787,10 @@ def calculate_max_print_bleed(x_pos: List[int], y_pos: List[int], width: int, he
 
         x_border_max = math.ceil((x_pos_1 - x_pos_0 - width) / 2)
 
-        if x_border_max < 0:
-            x_border_max = 100000
+        if x_border_max < min_bleed:
+            x_border_max = min_bleed
 
-    y_border_max = 100000
+    y_border_max = min_bleed
     if len(y_pos) >= 2:
         y_pos.sort()
 
@@ -796,7 +799,7 @@ def calculate_max_print_bleed(x_pos: List[int], y_pos: List[int], width: int, he
 
         y_border_max = math.ceil((y_pos_1 - y_pos_0 - height) / 2)
 
-        if y_border_max < 0:
-            y_border_max = 100000
+        if y_border_max < min_bleed:
+            y_border_max = min_bleed
 
     return (x_border_max, y_border_max)
