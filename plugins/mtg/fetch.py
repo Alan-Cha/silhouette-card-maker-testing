@@ -67,6 +67,8 @@ def cli(
             deck_text,
             format,
             get_handle_card,
+            front_directory,
+            double_sided_directory,
         )
 
 if __name__ == '__main__':

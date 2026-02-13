@@ -5,7 +5,7 @@ weight: 1
 
 This plugin reads a decklist and automatically fetches the card art and puts them in the proper `game/` directories.
 
-This plugin supports many decklist formats such as `simple`, `mtga`, `mtgo`, `archidekt`, `deckstats`, `moxfield`, `scryfall_json`, `mpcfill_xml`, and `url`. To learn more, see [here](#formats).
+This plugin supports many decklist formats such as `simple`, `mtga`, `mtgo`, `archidekt`, `cubecobra_csv`, `deckstats`, `moxfield`, `scryfall_json`, `mpcfill_xml`, and `url`. To learn more, see [here](#formats).
 
 ## Basic Instructions
 
@@ -28,7 +28,7 @@ Now you can create the PDF using [`create_pdf.py`]({{% ref "../docs/create" %}})
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH {archidekt|deckstats|moxfield|mpcfill_xml|mtga|mtgo|scryfall_json|simple|url}
+Usage: fetch.py [OPTIONS] DECK_PATH {archidekt|cubecobra_csv|deckstats|moxfield|mpcfill_xml|mtga|mtgo|scryfall_json|simple|url}
 
 Options:
   -i, --ignore_set_and_collector_number
@@ -92,6 +92,16 @@ python plugins/mtg/fetch.py game/decklist/eldraine_commander.txt deckstats -s el
 1x Arachnogenesis (cmm) 647 [Maybeboard{noDeck}{noPrice},Mass Disruption]
 1x Ashnod's Altar (ema) 218 *F* [Mana Advantage]
 1x Assassin's Trophy (sld) 139 [Targeted Disruption]
+```
+
+### `cubecobra_csv`
+
+[CubeCobra](https://cubecobra.com) CSV export format. Export your cube from CubeCobra using the "Export as CSV" option.
+
+```csv
+name,CMC,Type,Color,Set,Collector Number,Rarity,Color Category,status,Finish,maybeboard,image URL,image Back URL,tags,Notes,MTGO ID,Custom
+"Lightning Bolt",1,"Instant",R,"leb","162",common,null,Owned,Non-foil,false,,,"","",-1,false
+"Death Ward",1,"Instant",W,"leb","18",common,null,Owned,Non-foil,false,"https://i.imgur.com/ytZ2uaY.png",,"","",-1,false
 ```
 
 ### `deckstats`

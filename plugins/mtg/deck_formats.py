@@ -1,4 +1,7 @@
+import csv
+import io
 import json
+import os
 import re
 
 from enum import Enum
@@ -10,7 +13,11 @@ from pyparsing import line
 from patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 
 import cloudscraper
+import filetype
 import mtg_parser
+import requests
+
+from common import remove_nonalphanumeric
 
 card_data_tuple = Tuple[str, str, int, int]
 
@@ -260,6 +267,82 @@ def parse_mpcfill_xml(deck_text, handle_card: Callable) -> None:
         print(', '.join(parts))
         handle_card(index, item["id"], item["name"], item.get("back", None), item["quantity"])
 
+# CubeCobra CSV
+# Exported from CubeCobra (https://cubecobra.com)
+# CSV columns: name, CMC, Type, Color, Set, Collector Number, Rarity, Color Category,
+#              status, Finish, maybeboard, image URL, image Back URL, tags, Notes, MTGO ID, Custom
+#
+# Cards with an image URL are fetched directly. Cards without an image URL are fetched
+# from Scryfall using set and collector number, or by name as a fallback.
+# Identical cards are tallied to minimize Scryfall API calls.
+def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, double_sided_dir: str) -> None:
+    reader = csv.DictReader(io.StringIO(deck_text))
+
+    # Phase 1: Parse all rows and tally unique cards
+    # Key: (name, set_code, collector_number, image_url, image_back_url)
+    # Value: quantity (number of identical rows)
+    unique_cards = {}
+
+    for row in reader:
+        name = row.get('name', '')
+        set_code = row.get('Set', '')
+        collector_number = row.get('Collector Number', '')
+        image_url = row.get('image URL', '')
+        image_back_url = row.get('image Back URL', '')
+
+        key = (name, set_code, collector_number, image_url, image_back_url)
+        unique_cards[key] = unique_cards.get(key, 0) + 1
+
+    total_cards = sum(unique_cards.values())
+    print(f'Parsed {total_cards} cards into {len(unique_cards)} unique entries')
+
+    # Phase 2: Process unique cards
+    error_lines = []
+
+    index = 0
+    for (name, set_code, collector_number, image_url, image_back_url), quantity in unique_cards.items():
+        index += 1
+
+        parts = [f'Index: {index}', f'quantity: {quantity}']
+        if set_code: parts.append(f'set code: {set_code}')
+        if collector_number: parts.append(f'collector number: {collector_number}')
+        if name: parts.append(f'name: {name}')
+        print(', '.join(parts))
+
+        try:
+            if image_url:
+                # Fetch image directly from URL
+                print(f'Fetching image from URL: {image_url}')
+                clean_name = remove_nonalphanumeric(name)
+                response = requests.get(image_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+                response.raise_for_status()
+                kind = filetype.guess(response.content)
+                ext = f'.{kind.extension}' if kind else '.png'
+                for counter in range(quantity):
+                    image_path = os.path.join(front_img_dir, f'{str(index)}{clean_name}{str(counter + 1)}{ext}')
+                    with open(image_path, 'wb') as f:
+                        f.write(response.content)
+
+                if image_back_url:
+                    print(f'Fetching back image from URL: {image_back_url}')
+                    back_response = requests.get(image_back_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+                    back_response.raise_for_status()
+                    back_kind = filetype.guess(back_response.content)
+                    back_ext = f'.{back_kind.extension}' if back_kind else '.png'
+                    for counter in range(quantity):
+                        image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_name}{str(counter + 1)}{back_ext}')
+                        with open(image_path, 'wb') as f:
+                            f.write(back_response.content)
+            else:
+                # Fetch from Scryfall using set/collector number or name
+                handle_card(index, name, set_code, collector_number, quantity)
+        except Exception as e:
+            print(f'Error: {e}')
+            error_lines.append((name, e))
+
+    if len(error_lines) > 0:
+        print(f'Errors: {error_lines}')
+
 # URL Auto-Import
 #   Supported sites:
 #     Aetherhub, Archidekt, Deckstats, Moxfield, MTG Goldfish,
@@ -295,6 +378,7 @@ def parse_url(deck_url, handle_card: Callable) -> None:
 
 class DeckFormat(str, Enum):
     ARCHIDEKT = "archidekt"
+    CUBECOBRA_CSV = "cubecobra_csv"
     DECKSTATS = "deckstats"
     MOXFIELD = "moxfield"
     MPCFILL_XML = "mpcfill_xml"
@@ -304,7 +388,7 @@ class DeckFormat(str, Enum):
     SIMPLE = "simple"
     URL = "url"
 
-def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> None:
+def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable, front_img_dir: str = '', double_sided_dir: str = '') -> None:
     if format == DeckFormat.SIMPLE:
         parse_simple_list(deck_text, handle_card)
     elif format == DeckFormat.MTGA:
@@ -321,6 +405,8 @@ def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable) -> Non
         parse_scryfall_json(deck_text, handle_card)
     elif format == DeckFormat.MPCFILL_XML:
         parse_mpcfill_xml(deck_text, handle_card)
+    elif format == DeckFormat.CUBECOBRA_CSV:
+        parse_cubecobra_csv(deck_text, handle_card, front_img_dir, double_sided_dir)
     elif format == DeckFormat.URL:
         parse_url(deck_text, handle_card)
     else:
