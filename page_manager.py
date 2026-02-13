@@ -10,6 +10,13 @@ import io
 import size_convert
 from enums import Orientation
 
+# Registration mark constraints (in mm)
+MAX_REG_LENGTH_MM = 20.0
+MAX_REG_THICKNESS_MM = 1.0
+MAX_REG_INSET_MM = 86.36
+MIN_REG_LENGTH_MM = 5.0
+MIN_REG_THICKNESS_MM = 0.5
+MIN_REG_INSET_MM = 10.0
 
 class CardLayout(NamedTuple):
     card_width_px: int
@@ -48,6 +55,11 @@ def generate_reg_mark(
     thickness_mm = size_convert.size_to_mm(thickness)
     thickness_pt = size_convert.size_to_pt(thickness)
     length_mm = size_convert.size_to_mm(length)
+
+    # Constrain registration mark parameters within valid ranges
+    length_mm = max(MIN_REG_LENGTH_MM, min(length_mm, MAX_REG_LENGTH_MM))
+    thickness_mm = max(MIN_REG_THICKNESS_MM, min(thickness_mm, MAX_REG_THICKNESS_MM))
+    inset_mm = max(MIN_REG_INSET_MM, min(inset_mm, MAX_REG_INSET_MM))
 
     # Create figure sized to the paper dimensions
     fig = plt.figure(figsize=(paper_width_mm / 25.4, paper_height_mm / 25.4), dpi=dpi)
@@ -381,6 +393,9 @@ def generate_layout(
         max(start_x - inset_px, start_y - inset_px) - bleed_px
     )
     max_length_mm = round(max_length_px * 25.4 / ppi, 2)
+
+    # Cap at the absolute maximum registration mark length
+    max_length_mm = min(max_length_mm, MAX_REG_LENGTH_MM)
 
     return CardLayout(
         card_width_px=card_width_px,
