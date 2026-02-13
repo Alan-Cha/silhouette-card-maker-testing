@@ -140,6 +140,10 @@ Options:
   --registration [3|4]            The desired registration.  [default: 3]
   --only_fronts                   Only use the card fronts, exclude the card
                                   backs.
+  --fit [stretch|crop]            How to fit images to card size. 'stretch'
+                                  allows distortion, 'crop' preserves aspect
+                                  ratio by center-cropping.  [default:
+                                  stretch]
   --crop TEXT                     Crop the outer portion of front and double-
                                   sided images. Examples: 3mm, 0.125in, 6.5.
   --crop_backs TEXT               Crop the outer portion of back images.
@@ -156,10 +160,6 @@ Options:
   --skip INTEGER RANGE            Skip a card based on its index. Useful for
                                   registration issues. Examples: 0, 4.  [x>=0]
   --name TEXT                     Label each page of the PDF with a name.
-  --fit [stretch|crop]            How to fit images to card size. 'stretch'
-                                  allows distortion, 'crop' preserves aspect
-                                  ratio by center-cropping.  [default:
-                                  stretch]
   --version                       Show the version and exit.
   --help                          Show this message and exit.
 ```

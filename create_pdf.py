@@ -21,6 +21,7 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--paper_size", default=PaperSize.LETTER.value, type=click.Choice([t.value for t in PaperSize], case_sensitive=False), show_default=True, help="The desired paper size.")
 @click.option("--registration", default=Registration.THREE.value, type=click.Choice([t.value for t in Registration], case_sensitive=False), show_default=True, help="The desired registration.")
 @click.option("--only_fronts", default=False, is_flag=True, help="Only use the card fronts, exclude the card backs.")
+@click.option("--fit", default=FitMode.STRETCH.value, type=click.Choice([t.value for t in FitMode], case_sensitive=False), show_default=True, help="How to fit images to card size. 'stretch' allows distortion, 'crop' preserves aspect ratio by center-cropping.")
 @click.option("--crop", help="Crop the outer portion of front and double-sided images. Examples: 3mm, 0.125in, 6.5.")
 @click.option("--crop_backs", help="Crop the outer portion of back images. Examples: 3mm, 0.125in, 6.5.")
 @click.option("--extend_corners", default=0, type=click.IntRange(min=0), show_default=True, help="Reduce artifacts produced by rounded corners in card images.")
@@ -29,7 +30,6 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--load_offset", default=False, is_flag=True, help="Apply saved offsets. See `offset_pdf.py` for more information.")
 @click.option("--skip", type=click.IntRange(min=0), multiple=True, help="Skip a card based on its index. Useful for registration issues. Examples: 0, 4.")
 @click.option("--name", help="Label each page of the PDF with a name.")
-@click.option("--fit", default=FitMode.STRETCH.value, type=click.Choice([t.value for t in FitMode], case_sensitive=False), show_default=True, help="How to fit images to card size. 'stretch' allows distortion, 'crop' preserves aspect ratio by center-cropping.")
 @click.version_option("1.7.0")
 
 def cli(
@@ -42,6 +42,7 @@ def cli(
     paper_size,
     registration,
     only_fronts,
+    fit,
     crop,
     crop_backs,
     extend_corners,
@@ -49,8 +50,7 @@ def cli(
     quality,
     skip,
     load_offset,
-    name,
-    fit
+    name
 ):
     generate_pdf(
         front_dir_path,
@@ -62,6 +62,7 @@ def cli(
         paper_size,
         registration,
         only_fronts,
+        fit,
         crop,
         crop_backs,
         extend_corners,
@@ -69,8 +70,7 @@ def cli(
         quality,
         skip,
         load_offset,
-        name,
-        fit
+        name
     )
 
 if __name__ == '__main__':

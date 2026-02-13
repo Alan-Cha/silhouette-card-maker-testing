@@ -508,6 +508,7 @@ def generate_pdf(
     paper_size: PaperSize,
     registration: Registration,
     only_fronts: bool,
+    fit: FitMode,
     crop_string: str | None,
     crop_backs_string: str | None,
     extend_corners: int,
@@ -515,8 +516,7 @@ def generate_pdf(
     quality: int,
     skip_indices: List[int],
     load_offset: bool,
-    name: str,
-    fit: FitMode
+    name: str
 ):
     # Sanity checks for the different directories
     f_path = Path(front_dir_path)
