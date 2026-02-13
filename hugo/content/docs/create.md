@@ -133,7 +133,7 @@ Options:
   --output_path TEXT              The desired path to the output PDF.
                                   [default: game/output/game.pdf]
   --output_images                 Create images instead of a PDF.
-  --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|tarot|domino|domino_square]
+  --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|tarot|domino|domino_square]      
                                   The desired card size.  [default: standard]
   --paper_size [letter|tabloid|a4|a3|archb]
                                   The desired paper size.  [default: letter]
@@ -156,6 +156,10 @@ Options:
   --skip INTEGER RANGE            Skip a card based on its index. Useful for
                                   registration issues. Examples: 0, 4.  [x>=0]
   --name TEXT                     Label each page of the PDF with a name.
+  --fit [stretch|crop]            How to fit images to card size. 'stretch'
+                                  allows distortion, 'crop' preserves aspect
+                                  ratio by center-cropping.  [default:
+                                  stretch]
   --version                       Show the version and exit.
   --help                          Show this message and exit.
 ```

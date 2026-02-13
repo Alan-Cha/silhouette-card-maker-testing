@@ -29,6 +29,7 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--load_offset", default=False, is_flag=True, help="Apply saved offsets. See `offset_pdf.py` for more information.")
 @click.option("--skip", type=click.IntRange(min=0), multiple=True, help="Skip a card based on its index. Useful for registration issues. Examples: 0, 4.")
 @click.option("--name", help="Label each page of the PDF with a name.")
+@click.option("--fit", default="stretch", type=click.Choice(["stretch", "crop"], case_sensitive=False), show_default=True, help="How to fit images to card size. 'stretch' allows distortion, 'crop' preserves aspect ratio by center-cropping.")
 @click.version_option("1.7.0")
 
 def cli(
@@ -48,7 +49,8 @@ def cli(
     quality,
     skip,
     load_offset,
-    name
+    name,
+    fit
 ):
     generate_pdf(
         front_dir_path,
@@ -67,7 +69,8 @@ def cli(
         quality,
         skip,
         load_offset,
-        name
+        name,
+        fit
     )
 
 if __name__ == '__main__':

@@ -203,6 +203,51 @@ def get_back_card_image_path(back_dir_path) -> str | None:
 
     return files[index]
 
+def fit_image_to_size(
+    card_image: Image.Image,
+    scaled_width: int,
+    scaled_height: int,
+    fit_mode: str
+) -> Image.Image:
+    """
+    Fit an image to the target size.
+
+    Args:
+        card_image: The image to fit
+        scaled_width: Target width
+        scaled_height: Target height
+        fit_mode: Either "stretch" (allows distortion) or "crop" (preserves aspect ratio)
+
+    Returns:
+        The fitted image
+    """
+    if fit_mode == "stretch":
+        # Current behavior: stretch to fit (may distort)
+        return card_image.resize((scaled_width, scaled_height))
+
+    elif fit_mode == "crop":
+        # New behavior: crop to preserve aspect ratio, then scale
+        card_width, card_height = card_image.size
+        target_aspect = scaled_width / scaled_height
+        current_aspect = card_width / card_height
+
+        if current_aspect > target_aspect:
+            # Image is wider than target, crop left and right
+            new_width = int(card_height * target_aspect)
+            crop_x = (card_width - new_width) // 2
+            card_image = card_image.crop((crop_x, 0, crop_x + new_width, card_height))
+        elif current_aspect < target_aspect:
+            # Image is taller than target, crop top and bottom
+            new_height = int(card_width / target_aspect)
+            crop_y = (card_height - new_height) // 2
+            card_image = card_image.crop((0, crop_y, card_width, crop_y + new_height))
+
+        # Now scale to target size (no distortion because aspect ratios match)
+        return card_image.resize((scaled_width, scaled_height))
+
+    else:
+        raise ValueError(f"Invalid fit_mode: {fit_mode}. Must be 'stretch' or 'crop'.")
+
 def crop_and_scale_image(
     card_image: Image.Image,
     crop_percent_x: float,
@@ -322,7 +367,8 @@ def draw_card_layout(
     crop_backs: tuple[float, float],
     ppi_ratio: float,
     extend_corners: int,
-    flip: bool
+    flip: bool,
+    fit_mode: str
 ):
     num_cards = num_rows * num_cols
     crop_percent_x, crop_percent_y = crop
@@ -375,7 +421,8 @@ def draw_card_layout(
                 scaled_bleed_height
             )
         else:
-            card_image = card_image.resize((scaled_width, scaled_height))
+            # Use the fit mode to resize the image
+            card_image = fit_image_to_size(card_image, scaled_width, scaled_height, fit_mode)
 
         # Extend the corners if required
         card_image = card_image.crop((
@@ -464,7 +511,8 @@ def generate_pdf(
     quality: int,
     skip_indices: List[int],
     load_offset: bool,
-    name: str
+    name: str,
+    fit_mode: str
 ):
     # Sanity checks for the different directories
     f_path = Path(front_dir_path)
@@ -665,7 +713,8 @@ def generate_pdf(
                     crop_backs,
                     ppi_ratio,
                     extend_corners,
-                    flip=False
+                    flip=False,
+                    fit_mode=fit_mode
                 )
 
                 # Create back layout
@@ -684,7 +733,8 @@ def generate_pdf(
                     crop_backs,
                     ppi_ratio,
                     extend_corners,
-                    flip=True # Flip the back sides
+                    flip=True, # Flip the back sides
+                    fit_mode=fit_mode
                 )
 
                 # Add the front and back layouts
