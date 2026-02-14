@@ -232,18 +232,19 @@ Options:
                                   Examples: 3mm, 0.125in, 6.5.
   --extend_corners INTEGER RANGE  Reduce artifacts produced by rounded corners
                                   in card images.  [default: 0; x>=0]
+  --bleed_percent INTEGER RANGE   Amount of print bleed. 100 is full bleed, 0
+                                  is no bleed.  [default: 100; 0<=x<=100]
   --ppi INTEGER RANGE             Pixels per inch (PPI) when creating PDF.
-                                  [default: 300; x>=0]
   --quality INTEGER RANGE         File compression. A higher value corresponds
                                   to better quality and larger file size.
-                                  [default: 75; 0<=x<=100]
+                                  [default: 75; 0<=x<=100]     
   --load_offset                   Apply saved offsets. See `offset_pdf.py` for
                                   more information.
   --skip INTEGER RANGE            Skip a card based on its index. Useful for
                                   registration issues. Examples: 0, 4.  [x>=0]
   --name TEXT                     Label each page of the PDF with a name.
-  --version                       Show the version and exit.
-  --help                          Show this message and exit.
+  --version                       Show the version and exit.   
+  --help                          Show this message and exit. 
 ```
 
 ### Examples

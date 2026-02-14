@@ -512,6 +512,7 @@ def generate_pdf(
     crop_string: str | None,
     crop_backs_string: str | None,
     extend_corners: int,
+    bleed_percent: int,
     ppi: int,
     quality: int,
     skip_indices: List[int],
@@ -623,6 +624,7 @@ def generate_pdf(
             pages: List[Image.Image] = []
 
             max_print_bleed = calculate_max_print_bleed(card_layout.x_pos, card_layout.y_pos, card_layout_size.width, card_layout_size.height, MINIMUM_BLEED)
+            max_print_bleed = (math.floor(max_print_bleed[0] * bleed_percent / 100), math.floor(max_print_bleed[1] * bleed_percent / 100))
 
             # Load and cache the single back image for reuse
             # Do this if we expect both front and back pages and if we have a back image

@@ -25,6 +25,7 @@ default_output_path = os.path.join(output_directory, 'game.pdf')
 @click.option("--crop", help="Crop the outer portion of front and double-sided images. Examples: 3mm, 0.125in, 6.5.")
 @click.option("--crop_backs", help="Crop the outer portion of back images. Examples: 3mm, 0.125in, 6.5.")
 @click.option("--extend_corners", default=0, type=click.IntRange(min=0), show_default=True, help="Reduce artifacts produced by rounded corners in card images.")
+@click.option("--bleed_percent", default=100, type=click.IntRange(min=0, max=100), show_default=True, help="Amount of print bleed. 100 is full bleed, 0 is no bleed.")
 @click.option("--ppi", default=300, type=click.IntRange(min=0), show_default=True, help="Pixels per inch (PPI) when creating PDF.")
 @click.option("--quality", default=75, type=click.IntRange(min=0, max=100), show_default=True, help="File compression. A higher value corresponds to better quality and larger file size.")
 @click.option("--load_offset", default=False, is_flag=True, help="Apply saved offsets. See `offset_pdf.py` for more information.")
@@ -46,6 +47,7 @@ def cli(
     crop,
     crop_backs,
     extend_corners,
+    bleed_percent,
     ppi,
     quality,
     skip,
@@ -66,6 +68,7 @@ def cli(
         crop,
         crop_backs,
         extend_corners,
+        bleed_percent,
         ppi,
         quality,
         skip,
