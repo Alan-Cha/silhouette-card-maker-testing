@@ -2,28 +2,25 @@ import math
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-from utilities import PaperSize
+import size_convert
+from utilities import PaperSize, load_layout_config
 
 # Specify directory locations
 asset_directory = 'assets'
 
-for paper_size in PaperSize:
-    base_filename = f'{paper_size.value}_blank.jpg'
-    base_path = os.path.join(asset_directory, base_filename)
+layout_config = load_layout_config()
 
-    # Load a base page
-    with Image.open(base_path) as im:
+for paper_size in PaperSize:
+    paper_def = layout_config.paper_sizes[paper_size.value]
+    print_width = size_convert.size_to_pixel(paper_def.width, layout_config.ppi)
+    print_height = size_convert.size_to_pixel(paper_def.height, layout_config.ppi)
+
+    # Generate a blank white base image
+    im = Image.new('RGB', (print_width, print_height), 'white')
+    with im:
         font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 40)
         coord_font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 25)
-        
-        print_width = im.width
-        print_height = im.height
-        
-        if print_height > print_width:
-            im = im.rotate(90, expand=True)
-            print_width = im.width
-            print_height = im.height
-            
+
         front_image = im.copy()
         front_draw = ImageDraw.Draw(front_image)
         front_draw.text((print_width - 180, print_height - 180), 'front', fill=(0, 0, 0), anchor="ra", font=font)
