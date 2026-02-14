@@ -749,44 +749,6 @@ def generate_pdf(
                 crop_backs,
                 ppi_ratio,
                 extend_corners,
-                flip=False
-            )
-
-            # Create back layout
-            draw_card_layout(
-                back_card_images,
-                single_back_image,
-                back_page,
-                num_rows,
-                num_cols,
-                x_pos,
-                y_pos,
-                card_width_px,
-                card_height_px,
-                max_print_bleed,
-                crop,
-                crop_backs,
-                ppi_ratio,
-                extend_corners,
-                flip=True # Flip the back sides
-            )
-
-            # Create front layout
-            draw_card_layout(
-                front_card_images,
-                single_back_image,
-                front_page,
-                num_rows,
-                num_cols,
-                x_pos,
-                y_pos,
-                card_width_px,
-                card_height_px,
-                max_print_bleed,
-                crop,
-                crop_backs,
-                ppi_ratio,
-                extend_corners,
                 flip=False,
                 fit=fit
             )
