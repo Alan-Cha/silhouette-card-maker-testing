@@ -389,14 +389,15 @@ def generate_layout(
         ValueError if no valid layout exists.
     """
 
-    BLEED = "1.25mm"
+    # Equivalent to double the bleed
+    CARD_DISTANCE = "1.25mm"
 
     # Convert all dimensions to pixels
     page_width_px = size_convert.size_to_pixel(paper_width, ppi)
     page_height_px = size_convert.size_to_pixel(paper_height, ppi)
     card_width_px = size_convert.size_to_pixel(card_width, ppi)
     card_height_px = size_convert.size_to_pixel(card_height, ppi)
-    bleed_px = size_convert.size_to_pixel(BLEED, ppi)
+    card_distance_px = size_convert.size_to_pixel(CARD_DISTANCE, ppi)
     inset_px = size_convert.size_to_pixel(inset, ppi)
     length_px = size_convert.size_to_pixel(length, ppi)
 
@@ -411,7 +412,7 @@ def generate_layout(
         page_height_px,
         card_width_px,
         card_height_px,
-        bleed_px,
+        card_distance_px,
         inset_px,
         length_px,
     )
@@ -422,7 +423,7 @@ def generate_layout(
         rows,
         card_width_px,
         card_height_px,
-        bleed_px,
+        card_distance_px,
         margin_x,
         margin_y,
         usable_w,
@@ -432,7 +433,7 @@ def generate_layout(
     # Maximum registration mark length that fits with a bleed safety buffer
     max_length_px = max(
         0,
-        max(start_x - inset_px, start_y - inset_px) - bleed_px
+        max(start_x - inset_px, start_y - inset_px) - card_distance_px
     )
     max_length_mm = round(max_length_px * 25.4 / ppi, 2)
 
