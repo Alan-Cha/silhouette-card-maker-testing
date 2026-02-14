@@ -387,7 +387,8 @@ def draw_card_layout(
     ppi_ratio: float,
     extend_corners: int,
     flip: bool,
-    fit: FitMode
+    fit: FitMode,
+    orientation: Orientation
 ):
     num_cards = num_rows * num_cols
     crop_percent_x, crop_percent_y = crop
@@ -410,8 +411,12 @@ def draw_card_layout(
         # Calculate base position from layout
         col = i % num_cards % num_cols
         row = (i % num_cards) // num_cols
+        # Long-side flip: landscape flips rows, portrait flips columns
         if flip:
-            row = num_rows - row - 1
+            if orientation == Orientation.PORTRAIT:
+                col = num_cols - col - 1
+            else:
+                row = num_rows - row - 1
 
         base_x = math.floor(x_pos[col] * ppi_ratio)
         base_y = math.floor(y_pos[row] * ppi_ratio)
@@ -451,7 +456,7 @@ def draw_card_layout(
             card_image.height - extend_corners_thickness
         ))
 
-        if flip:
+        if flip and orientation == Orientation.LANDSCAPE:
             card_image = card_image.rotate(180)
 
         # Calculate final position
@@ -648,7 +653,7 @@ def generate_pdf(
     ppi_ratio = ppi / 300
 
     # Load an image with the registration marks
-    with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, silhouette.inset, silhouette.thickness, f"{layout_def.max_length_mm}mm", ppi, registration) as reg_im:
+    with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, silhouette.inset, silhouette.thickness, f"{layout_def.max_length_mm}mm", ppi, registration, orientation) as reg_im:
         reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
 
         # Create the array that will store the filled templates
@@ -750,7 +755,8 @@ def generate_pdf(
                 ppi_ratio,
                 extend_corners,
                 flip=False,
-                fit=fit
+                fit=fit,
+                orientation=orientation,
             )
 
             # Create back layout
@@ -770,8 +776,15 @@ def generate_pdf(
                 ppi_ratio,
                 extend_corners,
                 flip=True, # Flip the back sides
-                fit=fit
+                fit=fit,
+                orientation=orientation,
             )
+
+            # Rotate back to landscape so the generated PDF is always landscape.
+            # This ensures offset_pdf.py works regardless of orientation detection.
+            if orientation == Orientation.PORTRAIT:
+                front_page = front_page.rotate(-90, expand=True)
+                back_page = back_page.rotate(-90, expand=True)
 
             # Add the front and back layouts
             add_front_back_pages(
