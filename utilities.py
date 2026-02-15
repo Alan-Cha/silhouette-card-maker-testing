@@ -465,6 +465,31 @@ def draw_card_layout(
 
         draw_card_with_bleed(card_image, base_image, x, y, (synthetic_bleed[0] + extend_corners_thickness, synthetic_bleed[1] + extend_corners_thickness))
 
+def draw_outline(
+    page: Image.Image,
+    x_pos: List[int],
+    y_pos: List[int],
+    card_width_px: int,
+    card_height_px: int,
+    radius_px: int,
+    ppi_ratio: float,
+):
+    draw = ImageDraw.Draw(page)
+    scaled_w = math.floor(card_width_px * ppi_ratio)
+    scaled_h = math.floor(card_height_px * ppi_ratio)
+    scaled_r = math.floor(radius_px * ppi_ratio)
+
+    for x in x_pos:
+        for y in y_pos:
+            sx = math.floor(x * ppi_ratio)
+            sy = math.floor(y * ppi_ratio)
+            draw.rounded_rectangle(
+                [sx, sy, sx + scaled_w, sy + scaled_h],
+                radius=scaled_r,
+                outline='white',
+                width=1,
+            )
+
 def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, name: str):
     # Add template version number to the back
     draw = ImageDraw.Draw(front_page)
@@ -536,7 +561,8 @@ def generate_pdf(
     quality: int,
     skip_indices: List[int],
     load_offset: bool,
-    name: str
+    name: str,
+    show_outline: bool = False,
 ):
     # Sanity checks for the different directories
     f_path = Path(front_dir_path)
@@ -629,6 +655,9 @@ def generate_pdf(
     # Determine the amount of x and y crop
     crop = parse_crop_string(crop_string, card_width_px, card_height_px)
     crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
+
+    # Convert corner radius to pixels for outline drawing
+    radius_px = size_convert.size_to_pixel(card_size_def.radius, layout_config.ppi)
 
     num_rows = len(y_pos)
     num_cols = len(x_pos)
@@ -779,6 +808,11 @@ def generate_pdf(
                 fit=fit,
                 orientation=orientation,
             )
+
+            # Draw cutting path outlines on top of the card images
+            if show_outline:
+                draw_outline(front_page, x_pos, y_pos, card_width_px, card_height_px, radius_px, ppi_ratio)
+                draw_outline(back_page, x_pos, y_pos, card_width_px, card_height_px, radius_px, ppi_ratio)
 
             # Rotate back to landscape so the generated PDF is always landscape.
             # This ensures offset_pdf.py works regardless of orientation detection.
