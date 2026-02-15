@@ -1,26 +1,35 @@
 from os import path
+from io import BytesIO
 from requests import Response, get
 from time import sleep
 from PIL import Image
 from re import sub
 from unicodedata import normalize, category
+from enum import Enum
 
 DECK_API_URL = 'https://decklog-en.bushiroad.com/system/app/api/view/{deck_code}'
 
-game_title_mapping = {
-    '1': 'Cardfight Vanguard',
-    '2': 'Weiss Schwarz',
-    '6': 'Shadowverse: Evolve',
-    '7': 'Godzilla',
-    '8': 'Hololive',
+class GameTitle(str, Enum):
+    CARDFIGHT_VANGUARD = 'Cardfight Vanguard'
+    WEISS_SCHWARZ = 'Weiss Schwarz'
+    SHADOWVERSE_EVOLVE = 'Shadowverse: Evolve'
+    GODZILLA = 'Godzilla'
+    HOLOLIVE = 'Hololive'
+
+game_title_id_mapping = {
+    '1': GameTitle.CARDFIGHT_VANGUARD,
+    '2': GameTitle.WEISS_SCHWARZ,
+    '6': GameTitle.SHADOWVERSE_EVOLVE,
+    '7': GameTitle.GODZILLA,
+    '8': GameTitle.HOLOLIVE,
 }
 
 game_image_url_mapping = {
-    'Cardfight Vanguard': 'https://en.cf-vanguard.com/wordpress/wp-content/images/cardlist/{card_image}',
-    'Weiss Schwarz': 'https://en.ws-tcg.com/wordpress/wp-content/images/cardimages/{card_image}',
-    'Shadowverse: Evolve': 'https://en.shadowverse-evolve.com/wordpress/wp-content/images/cardlist/{card_image}',
-    'Godzilla': 'https://en.godzilla-cardgame.com/wordpress/wp-content/images/cardlist/{card_image}',
-    'Hololive': 'https://en.hololive-official-cardgame.com/wp-content/images/cardlist/{card_image}'
+    GameTitle.CARDFIGHT_VANGUARD: 'https://en.cf-vanguard.com/wordpress/wp-content/images/cardlist/{card_image}',
+    GameTitle.WEISS_SCHWARZ: 'https://en.ws-tcg.com/wordpress/wp-content/images/cardimages/{card_image}',
+    GameTitle.SHADOWVERSE_EVOLVE: 'https://en.shadowverse-evolve.com/wordpress/wp-content/images/cardlist/{card_image}',
+    GameTitle.GODZILLA: 'https://en.godzilla-cardgame.com/wordpress/wp-content/images/cardlist/{card_image}',
+    GameTitle.HOLOLIVE: 'https://en.hololive-official-cardgame.com/wp-content/images/cardlist/{card_image}'
 }
 
 def request_bushiroad(query: str, referer: str = '') -> Response:
@@ -34,11 +43,21 @@ def request_bushiroad(query: str, referer: str = '') -> Response:
 
     return r
 
+def resolve_image_url(game_title: GameTitle, card_image: str) -> str:
+    image_url_template = game_image_url_mapping.get(game_title)
+    if image_url_template is None:
+        raise ValueError(f'Unsupported game title: {game_title}')
+    return image_url_template.format(card_image=card_image)
+
 def fetch_decklist(deck_code: str):
     deck_request = request_bushiroad(DECK_API_URL.format(deck_code=deck_code), 'https://decklog-en.bushiroad.com/')
     json = deck_request.json()
 
-    game_title = str(game_title_mapping.get(str(json.get('game_title_id'))))
+    game_title_id = str(json.get('game_title_id'))
+    game_title = game_title_id_mapping.get(game_title_id)
+    if game_title is None:
+        raise ValueError(f'Unsupported game title ID: {game_title_id}')
+
     main_deck = json.get('list') or []
     leader = json.get('p_list') or []
     evolve_deck = json.get('sub_list') or []
@@ -46,64 +65,48 @@ def fetch_decklist(deck_code: str):
 
     return (game_title, deck)
 
+def prepare_card_image(card_art: bytes) -> Image.Image:
+    img = Image.open(BytesIO(card_art))
+    if img.height < img.width:
+        img = img.rotate(-90, expand=True)
+    return img
+
 def fetch_card(
     index: int,
     quantity: int,
-    game_title: str,
     name: str,
-    front_image: str,
-    back_image: str,
+    front_url: str,
+    back_url: str,
     front_img_dir: str,
     back_img_dir: str
 ):
-    # Query for card info
-    image_url = game_image_url_mapping.get(game_title)
-    front_card_art = request_bushiroad(image_url.format(card_image=front_image)).content
-    back_card_art = None
-
-    if back_image != '':
-        back_card_art = request_bushiroad(image_url.format(card_image=back_image)).content
-
     sanitized_name = sub(r'[^A-Za-z0-9 \-]+', '', ''.join(c for c in normalize('NFD', name) if category(c) != 'Mn'))
 
-    for counter in range(quantity):
+    if front_url:
+        front_img = prepare_card_image(request_bushiroad(front_url).content)
 
-        if front_card_art is not None:
+        for counter in range(quantity):
             front_image_path = path.join(front_img_dir, f'{str(index)}{sanitized_name}{str(counter + 1)}.png')
+            front_img.save(front_image_path)
 
-            with open(front_image_path, 'wb') as f:
-                f.write(front_card_art)
-                
-            # Align the rotated art so that it has the correct orientation
-            front_image_for_rotation = Image.open(front_image_path)
-            if front_image_for_rotation.height < front_image_for_rotation.width:
-                front_image_rotated = front_image_for_rotation.rotate(-90, expand=True)
-                front_image_rotated.save(front_image_path) 
+    if back_url:
+        back_img = prepare_card_image(request_bushiroad(back_url).content)
 
-        if back_card_art is not None:
+        for counter in range(quantity):
             back_image_path = path.join(back_img_dir, f'{str(index)}{sanitized_name}{str(counter + 1)}.png')
-
-            with open(back_image_path, 'wb') as f:
-                f.write(back_card_art)
-                
-            # Align the rotated art so that it has the correct orientation
-            back_image_for_rotation = Image.open(back_image_path)
-            if back_image_for_rotation.height < back_image_for_rotation.width:
-                back_image_rotated = back_image_for_rotation.rotate(-90, expand=True)
-                back_image_rotated.save(back_image_path)
+            back_img.save(back_image_path)
 
 def get_handle_card(
     front_img_dir: str,
     back_img_dir: str
 ):
-    def configured_fetch_card(index: int, game_title: str, name: str, front_image: str, back_image: str, quantity = 1):
+    def configured_fetch_card(index: int, name: str, front_url: str, back_url: str, quantity = 1):
         fetch_card(
             index,
             quantity,
-            game_title,
             name,
-            front_image,
-            back_image,
+            front_url,
+            back_url,
             front_img_dir,
             back_img_dir
         )
