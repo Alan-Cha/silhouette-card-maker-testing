@@ -20,27 +20,32 @@ Put your decklist into a text file in `game/decklist`. In this example, the file
 Run the script.
 
 ```sh
-python plugins/bushiroad/fetch.py game/decklist/deck.txt bushiroad
+python plugins/bushiroad/fetch.py game/decklist/deck.txt bushiroad_url
 ```
 
-Now you can create the PDF using [`create_pdf.py`]({{% ref "../docs/create" %}}).
+Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy).
 
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH {bushiroad}
+Usage: fetch.py [OPTIONS] DECK_PATH {bushiroad_url}
 
 Options:
   --help  Show this message and exit.
 ```
 
-## Format
+## Formats
 
-### `bushiroad`
+### `bushiroad_url`
 
-Bushiroad Deck Log format.
+Bushiroad Deck Log URL format.
 
 ```
-1HF6L
-3H3J8
+https://decklog-en.bushiroad.com/view/1HF6L
+```
+
+You can also use a Bushiroad Deck Log URL directly in the command line.
+
+```sh
+python plugins/bushiroad/fetch.py https://decklog-en.bushiroad.com/view/5ZJ74 bushiroad_url
 ```
