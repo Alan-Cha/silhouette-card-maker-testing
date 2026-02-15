@@ -227,6 +227,12 @@ def parse_scryfall_json(deck_text, handle_card: Callable) -> None:
             handle_card(index, name, set_code, collector_number, quantity)
 
 # MPCFill XML
+def _extract_card_name(raw_name: str) -> str:
+    """Extract card name by stripping the file extension (e.g. 'Mountain.png' -> 'Mountain')."""
+    parts = raw_name.split(".")
+    return ".".join(parts[:-1]) if len(parts) > 1 else parts[0]
+
+
 def extract_mpcfill_card_ids(deck_text: str) -> set[str]:
     """Extract all unique card IDs from MPCFill XML for prefetching."""
     data = ET.fromstring(deck_text)
@@ -269,8 +275,7 @@ def parse_mpcfill_xml(deck_text, handle_card: Callable) -> None:
     # Assign fronts to ALL their slots
     for front in fronts.findall("card"):
         card_id = front.find("id").text
-        name_parts = front.find("name").text.split(".")
-        name = ".".join(name_parts[:-1]) if len(name_parts) > 1 else name_parts[0]
+        name = _extract_card_name(front.find("name").text)
         slot_indices = [int(s) for s in front.find("slots").text.split(",")]
         for slot_idx in slot_indices:
             slots[slot_idx]["front_id"] = card_id
@@ -280,8 +285,7 @@ def parse_mpcfill_xml(deck_text, handle_card: Callable) -> None:
     if backs:
         for back in backs.findall("card"):
             card_id = back.find("id").text
-            name_parts = back.find("name").text.split(".")
-            name = ".".join(name_parts[:-1]) if len(name_parts) > 1 else name_parts[0]
+            name = _extract_card_name(back.find("name").text)
             slot_indices = [int(s) for s in back.find("slots").text.split(",")]
             for slot_idx in slot_indices:
                 slots[slot_idx]["back_id"] = card_id

@@ -1,3 +1,22 @@
+"""
+MPCFill image fetching and caching.
+
+The MPCFill API is a Google Apps Script that returns base64-encoded card images.
+Each HTTP request has significant latency due to the Google Apps Script cold-start
+overhead, so fetching images one at a time is very slow for large decks.
+
+To speed this up, prefetch_mpcfill() uses a ThreadPoolExecutor to fetch multiple
+images at the same time. A ThreadPoolExecutor creates a pool of worker threads
+(up to MAX_WORKERS) that each make HTTP requests independently. This means
+instead of waiting for one request to finish before starting the next, up to
+MAX_WORKERS requests can be in flight simultaneously.
+
+All fetched images are stored in _image_cache so that duplicate card IDs
+(e.g. 4 copies of the same card across different slots) only require one
+network request. When write_slot_image() is called for each slot, it pulls
+from the cache via get_cached_image() instead of hitting the network again.
+"""
+
 import os
 from base64 import b64decode
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -8,10 +27,13 @@ from filetype.filetype import guess_extension
 
 from common import remove_nonalphanumeric
 
-# Cache for fetched images: card_id -> decoded image bytes
+# Cache for fetched images: card_id -> decoded image bytes.
+# Populated by prefetch_mpcfill() and read by get_cached_image().
 _image_cache: dict[str, bytes] = {}
 
-# Number of parallel workers for fetching
+# Maximum number of concurrent HTTP requests during prefetching.
+# Each worker thread fetches one image at a time, so 8 workers means
+# up to 8 simultaneous downloads.
 MAX_WORKERS = 8
 
 
@@ -24,7 +46,7 @@ def request_mpcfill(card_id: str) -> bytes:
 
 
 def _fetch_single(card_id: str) -> tuple[str, bytes | None]:
-    """Fetch a single card and return (card_id, image_bytes)."""
+    """Fetch a single card, returning None on failure instead of raising."""
     try:
         image_bytes = request_mpcfill(card_id)
         return (card_id, image_bytes)
@@ -33,9 +55,16 @@ def _fetch_single(card_id: str) -> tuple[str, bytes | None]:
         return (card_id, None)
 
 
-def prefetch_images(card_ids: Set[str]) -> None:
-    """Prefetch all unique card images in parallel and cache them."""
-    # Filter out already cached IDs
+def prefetch_mpcfill(card_ids: Set[str]) -> None:
+    """
+    Fetch all unique card images in parallel and store them in _image_cache.
+
+    Uses ThreadPoolExecutor to run up to MAX_WORKERS downloads concurrently.
+    executor.submit() schedules _fetch_single for each card ID, returning a
+    Future object that will hold the result once the download completes.
+    as_completed() then yields each Future as it finishes (not necessarily in
+    submission order), allowing us to process results as soon as they're ready.
+    """
     ids_to_fetch = [cid for cid in card_ids if cid not in _image_cache]
 
     if not ids_to_fetch:
@@ -44,9 +73,13 @@ def prefetch_images(card_ids: Set[str]) -> None:
     print(f"Prefetching {len(ids_to_fetch)} images with {MAX_WORKERS} workers...")
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # Submit all fetch tasks to the thread pool. Each call returns a Future
+        # representing the pending result. We map each Future back to its card_id.
         futures = {executor.submit(_fetch_single, card_id): card_id for card_id in ids_to_fetch}
 
         completed = 0
+        # as_completed() yields futures in the order they finish, so we can
+        # cache results as soon as each download completes.
         for future in as_completed(futures):
             card_id, image_bytes = future.result()
             if image_bytes is not None:
@@ -59,7 +92,7 @@ def prefetch_images(card_ids: Set[str]) -> None:
 
 
 def get_cached_image(card_id: str) -> bytes | None:
-    """Get an image from cache, fetching if not present."""
+    """Get an image from cache, fetching on-demand if not already cached."""
     if card_id not in _image_cache:
         _, image_bytes = _fetch_single(card_id)
         if image_bytes:

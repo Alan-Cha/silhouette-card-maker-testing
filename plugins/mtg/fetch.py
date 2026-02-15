@@ -5,7 +5,7 @@ import click
 
 from deck_formats import DeckFormat, parse_deck, extract_mpcfill_card_ids
 from scryfall import get_handle_card as scryfall_get_handle_card
-from mpcfill import get_handle_card as mpc_get_handle_card, prefetch_images
+from mpcfill import get_handle_card as mpc_get_handle_card, prefetch_mpcfill
 
 front_directory = os.path.join('game', 'front')
 double_sided_directory = os.path.join('game', 'double_sided')
@@ -36,35 +36,29 @@ def cli(
         print(f'{deck_path} is not a valid file.')
         return
     
-    if format == DeckFormat.MPCFILL_XML:
-        get_handle_card = mpc_get_handle_card(
-            front_directory,
-            double_sided_directory
-        )
-    else:
-        get_handle_card = scryfall_get_handle_card(
-            ignore_set_and_collector_number,
+    with open(deck_path, 'r') as deck_file:
+        deck_text = deck_file.read()
 
-            prefer_older_sets,
-            prefer_set,
-            
-            prefer_showcase,
-            prefer_extra_art,
-            tokens,
+        if format == DeckFormat.MPCFILL_XML:
+            get_handle_card = mpc_get_handle_card(
+                front_directory,
+                double_sided_directory
+            )
+            prefetch_mpcfill(extract_mpcfill_card_ids(deck_text))
+        else:
+            get_handle_card = scryfall_get_handle_card(
+                ignore_set_and_collector_number,
 
-            front_directory,
-            double_sided_directory
-        )
+                prefer_older_sets,
+                prefer_set,
 
-    # If format is URL, skip reading file and pass URL as deck_text (deck_url for parse_url()).
-    if format == DeckFormat.URL:
-        parse_deck(deck_path, format, get_handle_card)
-        return
+                prefer_showcase,
+                prefer_extra_art,
+                tokens,
 
-    # For MPCFill XML, prefetch all unique images in parallel before processing
-    if format == DeckFormat.MPCFILL_XML:
-        card_ids = extract_mpcfill_card_ids(deck_text)
-        prefetch_images(card_ids)
+                front_directory,
+                double_sided_directory
+            )
 
     parse_deck(
         deck_text,
