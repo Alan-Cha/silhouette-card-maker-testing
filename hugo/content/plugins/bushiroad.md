@@ -1,6 +1,6 @@
 ---
 title: 'Bushiroad'
-weight: 50
+weight: 27
 ---
 
 This plugin reads deck codes, automatically retrieves the decklist and fetches card art from Bushiroad, and puts them in the proper `game/` directories.
