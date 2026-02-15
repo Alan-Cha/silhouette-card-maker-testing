@@ -42,31 +42,33 @@ class TestParseCropString:
     def test_mm_integer(self):
         """Millimeter format with integer should convert correctly."""
         result = parse_crop_string("3mm", 750, 1050)
-        # 3mm = 3/25.4 inches, then convertInToCrop is called
-        assert isinstance(result, tuple)
-        assert len(result) == 2
-        assert result[0] > 0
-        assert result[1] > 0
+        # 3mm = 3/25.4 inches; card is 2.5in x 3.5in at 300ppi
+        # crop_x = 2 * (3/25.4) / 2.5 * 100, crop_y = 2 * (3/25.4) / 3.5 * 100
+        assert result[0] == pytest.approx(600 / 63.5)
+        assert result[1] == pytest.approx(600 / 88.9)
 
     def test_mm_float(self):
         """Millimeter format with float should convert correctly."""
         result = parse_crop_string("2.5mm", 750, 1050)
-        assert isinstance(result, tuple)
-        assert len(result) == 2
+        # 2.5mm = 2.5/25.4 inches
+        assert result[0] == pytest.approx(500 / 63.5)
+        assert result[1] == pytest.approx(500 / 88.9)
 
     def test_inches_format(self):
         """Inch format should convert correctly."""
         result = parse_crop_string("0.125in", 750, 1050)
-        assert isinstance(result, tuple)
-        assert len(result) == 2
-        assert result[0] > 0
-        assert result[1] > 0
+        # crop_x = 2 * 0.125 / 2.5 * 100 = 10.0
+        # crop_y = 2 * 0.125 / 3.5 * 100 = 100/14
+        assert result[0] == pytest.approx(10.0)
+        assert result[1] == pytest.approx(100 / 14)
 
     def test_inches_format_no_leading_zero(self):
         """Inch format without leading zero should work."""
         result = parse_crop_string(".1in", 750, 1050)
-        assert isinstance(result, tuple)
-        assert len(result) == 2
+        # crop_x = 2 * 0.1 / 2.5 * 100 = 8.0
+        # crop_y = 2 * 0.1 / 3.5 * 100 = 40/7
+        assert result[0] == pytest.approx(8.0)
+        assert result[1] == pytest.approx(40 / 7)
 
     def test_case_insensitive_mm(self):
         """Millimeter format should be case insensitive."""
@@ -107,11 +109,14 @@ class TestConvertInToCrop:
         """Zero inch crop should return zero percentages."""
         assert convertInToCrop(0, 750, 1050) == (0, 0)
 
-    def test_positive_crop(self):
-        """Positive inch crop should return positive percentages."""
+    def test_exact_values(self):
+        """Should compute correct percentages for known inputs."""
+        # card_width_mm = 750/300 = 2.5in, card_height_mm = 1050/300 = 3.5in
+        # crop_x = 2 * 0.125 / 2.5 * 100 = 10.0
+        # crop_y = 2 * 0.125 / 3.5 * 100 ≈ 7.1429
         result = convertInToCrop(0.125, 750, 1050)
-        assert result[0] > 0
-        assert result[1] > 0
+        assert result[0] == pytest.approx(10.0)
+        assert result[1] == pytest.approx(100 / 14)
 
     def test_x_y_different_for_nonsquare(self):
         """Non-square card should have different x and y crop percentages."""
@@ -298,22 +303,22 @@ class TestCalculateMaxPrintBleed:
         assert result == (0, 0)
 
     def test_two_columns(self):
-        """Two columns should calculate horizontal bleed."""
+        """Two columns should calculate horizontal bleed; single row falls back to min_bleed."""
         # Cards at x=100 and x=400, width=200
         # Gap = 400 - 100 - 200 = 100, bleed = 100/2 = 50
         x_pos = [100, 400]
         y_pos = [100]
         result = calculate_max_print_bleed(x_pos, y_pos, 200, 300)
         assert result[0] == 50  # x bleed
-        assert result[1] == 100000  # y bleed (single row)
+        assert result[1] == 0   # y bleed defaults to min_bleed (0)
 
     def test_two_rows(self):
-        """Two rows should calculate vertical bleed."""
+        """Two rows should calculate vertical bleed; single column falls back to min_bleed."""
         x_pos = [100]
         y_pos = [100, 500]
         # Gap = 500 - 100 - 300 = 100, bleed = 100/2 = 50
         result = calculate_max_print_bleed(x_pos, y_pos, 200, 300)
-        assert result[0] == 100000  # x bleed (single column)
+        assert result[0] == 0   # x bleed defaults to min_bleed (0)
         assert result[1] == 50  # y bleed
 
     def test_grid_layout(self):
@@ -332,13 +337,27 @@ class TestCalculateMaxPrintBleed:
         assert result[0] == 50
         assert result[1] == 50
 
-    def test_no_gap_returns_large_value(self):
-        """Overlapping cards (negative gap) should return large bleed value."""
+    def test_min_bleed_single_card(self):
+        """Single card with min_bleed should return (min_bleed, min_bleed)."""
+        result = calculate_max_print_bleed([100], [100], 200, 300, min_bleed=15)
+        assert result == (15, 15)
+
+    def test_min_bleed_single_axis(self):
+        """Single-axis dimension should use min_bleed as floor."""
+        x_pos = [100, 400]
+        y_pos = [100]
+        result = calculate_max_print_bleed(x_pos, y_pos, 200, 300, min_bleed=15)
+        assert result[0] == 50  # computed from gap
+        assert result[1] == 15  # single row uses min_bleed
+
+    def test_negative_gap_clamped_to_zero(self):
+        """Overlapping cards (negative gap) should clamp bleed to zero."""
         # Cards would overlap: positions closer than card width
-        x_pos = [100, 150]  # gap = 150 - 100 - 200 = -150 (overlap)
+        x_pos = [100, 150]  # gap = 150 - 100 - 200 = -150, max(0, -75) = 0
         y_pos = [100]
         result = calculate_max_print_bleed(x_pos, y_pos, 200, 300)
-        assert result[0] == 100000  # Falls back to large value
+        assert result[0] == 0  # Negative gap clamped to 0
+        assert result[1] == 0  # Single row defaults to min_bleed (0)
 
 
 class TestDeleteHiddenFilesInDirectory:
@@ -432,32 +451,42 @@ class TestOffsetImages:
         img = Image.new('RGB', (100, 100), color='red')
         result = offset_images([img], 10, 10, 300)
         assert len(result) == 1
-        # First image should not be offset
+        assert result[0] is img  # Same object, not modified
 
     def test_alternating_offset(self):
         """Should offset every other image (back pages)."""
         img1 = Image.new('RGB', (100, 100), color='red')
-        img2 = Image.new('RGB', (100, 100), color='blue')
         img3 = Image.new('RGB', (100, 100), color='green')
+
+        # img2 has a white marker pixel at (0, 0) on a black background
+        img2 = Image.new('RGB', (100, 100), color='black')
+        img2.putpixel((0, 0), (255, 255, 255))
 
         result = offset_images([img1, img2, img3], 10, 10, 300)
         assert len(result) == 3
-        # img1 (index 0) - no offset
-        # img2 (index 1) - offset applied
-        # img3 (index 2) - no offset
+        assert result[0] is img1  # Front page unchanged
+        assert result[2] is img3  # Front page unchanged
+        # Back page offset by 10px at 300 PPI: white pixel moves (0,0) -> (10,10)
+        assert result[1].getpixel((10, 10)) == (255, 255, 255)
+        assert result[1].getpixel((0, 0)) == (0, 0, 0)
 
     def test_ppi_scaling(self):
         """Offset should scale with PPI."""
-        img1 = Image.new('RGB', (100, 100), color='red')
-        img2 = Image.new('RGB', (100, 100), color='blue')
+        img_front = Image.new('RGB', (100, 100), color='red')
 
-        # At 300 PPI, offset of 30 should be 30 pixels
-        result_300 = offset_images([img1.copy(), img2.copy()], 30, 30, 300)
-        # At 600 PPI, offset of 30 should be 60 pixels
-        result_600 = offset_images([img1.copy(), img2.copy()], 30, 30, 600)
+        # White marker pixel at (0, 0) on a black background
+        img_back_a = Image.new('RGB', (100, 100), color='black')
+        img_back_a.putpixel((0, 0), (255, 255, 255))
+        img_back_b = Image.new('RGB', (100, 100), color='black')
+        img_back_b.putpixel((0, 0), (255, 255, 255))
 
-        assert len(result_300) == 2
-        assert len(result_600) == 2
+        # At 300 PPI, offset of 30 = floor(30 * 300/300) = 30 pixels
+        result_300 = offset_images([img_front.copy(), img_back_a], 30, 0, 300)
+        # At 600 PPI, offset of 30 = floor(30 * 600/300) = 60 pixels
+        result_600 = offset_images([img_front.copy(), img_back_b], 30, 0, 600)
+
+        assert result_300[1].getpixel((30, 0)) == (255, 255, 255)
+        assert result_600[1].getpixel((60, 0)) == (255, 255, 255)
 
 
 class TestOffsetDataSaveLoad:
@@ -489,8 +518,33 @@ class TestOffsetDataSaveLoad:
             finally:
                 os.chdir(original_cwd)
 
+    def test_save_and_load_with_angle(self):
+        """Saved offset with angle should roundtrip correctly."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            original_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                save_offset(10, 20, angle_offset=1.5)
+                result = load_saved_offset()
+                assert result is not None
+                assert result.x_offset == 10
+                assert result.y_offset == 20
+                assert result.angle_offset == 1.5
+            finally:
+                os.chdir(original_cwd)
+
     def test_offset_data_model(self):
         """OffsetData model should work correctly."""
         data = OffsetData(x_offset=5, y_offset=15)
         assert data.x_offset == 5
         assert data.y_offset == 15
+
+    def test_offset_data_default_angle(self):
+        """OffsetData should default angle_offset to 0.0."""
+        data = OffsetData(x_offset=5, y_offset=15)
+        assert data.angle_offset == 0.0
+
+    def test_offset_data_with_angle(self):
+        """OffsetData should store angle_offset."""
+        data = OffsetData(x_offset=5, y_offset=15, angle_offset=2.5)
+        assert data.angle_offset == 2.5
