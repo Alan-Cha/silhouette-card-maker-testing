@@ -1,3 +1,4 @@
+import math
 import os
 import tempfile
 import pytest
@@ -17,6 +18,13 @@ from utilities import (
     save_offset,
     load_saved_offset,
     OffsetData,
+    get_back_card_image_path,
+    crop_and_scale_image,
+    draw_card_with_bleed,
+    draw_card_layout,
+    add_front_back_pages,
+    FitMode,
+    asset_directory,
 )
 
 
@@ -548,3 +556,320 @@ class TestOffsetDataSaveLoad:
         """OffsetData should store angle_offset."""
         data = OffsetData(x_offset=5, y_offset=15, angle_offset=2.5)
         assert data.angle_offset == 2.5
+
+
+class TestGetBackCardImagePath:
+    """Tests for get_back_card_image_path() function."""
+
+    def test_empty_directory_returns_none(self):
+        """Directory with no images should return None."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = get_back_card_image_path(tmpdir)
+            assert result is None
+
+    def test_non_image_files_returns_none(self):
+        """Directory with only non-image files should return None."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            txt_path = os.path.join(tmpdir, 'readme.txt')
+            with open(txt_path, 'w') as f:
+                f.write('not an image')
+
+            result = get_back_card_image_path(tmpdir)
+            assert result is None
+
+    def test_single_image_returns_path(self):
+        """Directory with one image should return that image's path."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            img = Image.new('RGB', (100, 100), color='red')
+            img_path = os.path.join(tmpdir, 'back.png')
+            img.save(img_path, 'PNG')
+
+            result = get_back_card_image_path(tmpdir)
+            assert result is not None
+            assert str(result).endswith('back.png')
+
+
+class TestCropAndScaleImage:
+    """Tests for crop_and_scale_image() function."""
+
+    def test_stretch_real_bleed_both_axes(self):
+        """STRETCH with enough source pixels should use real bleed on both axes."""
+        # 300x420 source, 20% crop → cropped 240x336, ratio 1.2
+        # unscaled bleed: 210*1.2=252 <= 300, 290*1.2=348 <= 420
+        img = Image.new('RGB', (300, 420), color='red')
+        result_img, off_x, off_y, synth = crop_and_scale_image(
+            img, 20, 20, 200, 280, 5, 5, FitMode.STRETCH
+        )
+        assert result_img.size == (210, 290)
+        assert off_x == -5
+        assert off_y == -5
+        assert synth == (0, 0)
+
+    def test_stretch_no_room_for_bleed(self):
+        """STRETCH without room for bleed should fall back to synthetic bleed."""
+        # 200x280 source, 10% crop → cropped 180x252, ratio 0.9
+        # unscaled bleed: 300*0.9=270 > 200
+        img = Image.new('RGB', (200, 280), color='red')
+        result_img, off_x, off_y, synth = crop_and_scale_image(
+            img, 10, 10, 200, 280, 50, 50, FitMode.STRETCH
+        )
+        assert result_img.size == (200, 280)
+        assert off_x == 0
+        assert off_y == 0
+        assert synth == (50, 50)
+
+    def test_zero_crop_zero_bleed(self):
+        """Zero crop and zero bleed should resize to target dimensions."""
+        img = Image.new('RGB', (500, 700), color='red')
+        result_img, off_x, off_y, synth = crop_and_scale_image(
+            img, 0, 0, 200, 280, 0, 0, FitMode.STRETCH
+        )
+        assert result_img.size == (200, 280)
+        assert off_x == 0
+        assert off_y == 0
+        assert synth == (0, 0)
+
+    def test_crop_mode_real_bleed_both(self):
+        """CROP mode with room on both axes should use real bleed."""
+        # 300x420 source, 20% crop, uniform ratio = min(240/200, 336/280) = 1.2
+        # unscaled bleed: 210*1.2=252 <= 300, 290*1.2=348 <= 420
+        img = Image.new('RGB', (300, 420), color='red')
+        result_img, off_x, off_y, synth = crop_and_scale_image(
+            img, 20, 20, 200, 280, 5, 5, FitMode.CROP
+        )
+        assert result_img.size == (210, 290)
+        assert off_x == -5
+        assert off_y == -5
+        assert synth == (0, 0)
+
+    def test_crop_mode_real_bleed_x_only(self):
+        """CROP mode with wide source should have real X bleed, synthetic Y."""
+        # 300x280 source, 0% crop, uniform ratio = min(1.5, 1.0) = 1.0
+        # unscaled X: 220*1.0=220 <= 300, unscaled Y: 300*1.0=300 > 280
+        img = Image.new('RGB', (300, 280), color='red')
+        result_img, off_x, off_y, synth = crop_and_scale_image(
+            img, 0, 0, 200, 280, 10, 10, FitMode.CROP
+        )
+        assert result_img.size == (220, 280)
+        assert off_x == -10
+        assert off_y == 0
+        assert synth == (0, 10)
+
+    def test_crop_mode_real_bleed_y_only(self):
+        """CROP mode with tall source should have synthetic X, real Y bleed."""
+        # 200x420 source, 0% crop, uniform ratio = min(1.0, 1.5) = 1.0
+        # unscaled X: 220*1.0=220 > 200, unscaled Y: 300*1.0=300 <= 420
+        img = Image.new('RGB', (200, 420), color='red')
+        result_img, off_x, off_y, synth = crop_and_scale_image(
+            img, 0, 0, 200, 280, 10, 10, FitMode.CROP
+        )
+        assert result_img.size == (200, 300)
+        assert off_x == 0
+        assert off_y == -10
+        assert synth == (10, 0)
+
+    def test_crop_mode_neither_axis_bleeds(self):
+        """CROP mode with tight source should use synthetic bleed on both axes."""
+        # 200x280 source, 0% crop, uniform ratio = 1.0
+        # unscaled X: 220 > 200, unscaled Y: 300 > 280
+        img = Image.new('RGB', (200, 280), color='red')
+        result_img, off_x, off_y, synth = crop_and_scale_image(
+            img, 0, 0, 200, 280, 10, 10, FitMode.CROP
+        )
+        assert result_img.size == (200, 280)
+        assert off_x == 0
+        assert off_y == 0
+        assert synth == (10, 10)
+
+
+class TestDrawCardWithBleed:
+    """Tests for draw_card_with_bleed() function."""
+
+    def test_card_placed_at_position(self):
+        """Card should be pasted at the specified position."""
+        card = Image.new('RGB', (10, 10), color='red')
+        base = Image.new('RGB', (40, 40), color='white')
+        draw_card_with_bleed(card, base, 15, 15, (5, 5))
+        assert base.getpixel((15, 15)) == (255, 0, 0)
+        assert base.getpixel((0, 0)) == (255, 255, 255)
+
+    def test_edge_bleed_extends(self):
+        """Edge bleed should extend the card's border pixels outward."""
+        card = Image.new('RGB', (10, 10), color='red')
+        base = Image.new('RGB', (40, 40), color='white')
+        draw_card_with_bleed(card, base, 15, 15, (5, 5))
+        # Top bleed: top row extended upward
+        assert base.getpixel((15, 14)) == (255, 0, 0)
+        assert base.getpixel((15, 10)) == (255, 0, 0)
+        # Left bleed: left column extended leftward
+        assert base.getpixel((14, 15)) == (255, 0, 0)
+        assert base.getpixel((10, 15)) == (255, 0, 0)
+        # Bottom bleed
+        assert base.getpixel((15, 25)) == (255, 0, 0)
+        # Right bleed
+        assert base.getpixel((25, 15)) == (255, 0, 0)
+
+    def test_corner_bleed_fills(self):
+        """Corner bleed regions should be filled with corner pixel color."""
+        card = Image.new('RGB', (10, 10), color='red')
+        base = Image.new('RGB', (40, 40), color='white')
+        draw_card_with_bleed(card, base, 15, 15, (5, 5))
+        # Top-left corner bleed region
+        assert base.getpixel((10, 10)) == (255, 0, 0)
+        assert base.getpixel((14, 14)) == (255, 0, 0)
+        # Bottom-right corner bleed region
+        assert base.getpixel((25, 25)) == (255, 0, 0)
+        assert base.getpixel((29, 29)) == (255, 0, 0)
+
+    def test_zero_bleed(self):
+        """Zero bleed should just place the card with no bleed extension."""
+        card = Image.new('RGB', (10, 10), color='red')
+        base = Image.new('RGB', (40, 40), color='white')
+        draw_card_with_bleed(card, base, 15, 15, (0, 0))
+        assert base.getpixel((15, 15)) == (255, 0, 0)
+        assert base.getpixel((24, 24)) == (255, 0, 0)
+        # Adjacent pixels outside card should remain white
+        assert base.getpixel((14, 15)) == (255, 255, 255)
+        assert base.getpixel((15, 14)) == (255, 255, 255)
+
+
+class TestDrawCardLayout:
+    """Tests for draw_card_layout() function."""
+
+    def test_single_card_placed(self):
+        """Single card in 1x1 layout should be placed at the layout position."""
+        card = Image.new('RGB', (100, 140), color='red')
+        back = Image.new('RGB', (100, 140), color='blue')
+        base = Image.new('RGB', (300, 400), color='white')
+
+        draw_card_layout(
+            card_images=[card],
+            single_back_image=back,
+            base_image=base,
+            num_rows=1, num_cols=1,
+            x_pos=[50], y_pos=[50],
+            width=100, height=140,
+            print_bleed=(0, 0),
+            crop=(0, 0), crop_backs=(0, 0),
+            ppi_ratio=1.0, extend_corners=0,
+            flip=False, fit=FitMode.STRETCH
+        )
+        assert base.getpixel((50, 50)) == (255, 0, 0)
+        assert base.getpixel((100, 100)) == (255, 0, 0)
+        # Outside card area should remain white
+        assert base.getpixel((0, 0)) == (255, 255, 255)
+
+    def test_none_card_skipped(self):
+        """None entries in card list should leave base image unchanged."""
+        back = Image.new('RGB', (100, 140), color='blue')
+        base = Image.new('RGB', (300, 400), color='white')
+        original_data = list(base.tobytes())
+
+        draw_card_layout(
+            card_images=[None],
+            single_back_image=back,
+            base_image=base,
+            num_rows=1, num_cols=1,
+            x_pos=[50], y_pos=[50],
+            width=100, height=140,
+            print_bleed=(0, 0),
+            crop=(0, 0), crop_backs=(0, 0),
+            ppi_ratio=1.0, extend_corners=0,
+            flip=False, fit=FitMode.STRETCH
+        )
+        assert list(base.tobytes()) == original_data
+
+    def test_flip_reverses_row_order(self):
+        """Flip should place first card at bottom row and second at top."""
+        red_card = Image.new('RGB', (100, 140), color='red')
+        blue_card = Image.new('RGB', (100, 140), color='blue')
+        back = Image.new('RGB', (100, 140), color='green')
+        base = Image.new('RGB', (300, 500), color='white')
+
+        draw_card_layout(
+            card_images=[red_card, blue_card],
+            single_back_image=back,
+            base_image=base,
+            num_rows=2, num_cols=1,
+            x_pos=[50], y_pos=[50, 250],
+            width=100, height=140,
+            print_bleed=(0, 0),
+            crop=(0, 0), crop_backs=(0, 0),
+            ppi_ratio=1.0, extend_corners=0,
+            flip=True, fit=FitMode.STRETCH
+        )
+        # With flip: card 0 (red) goes to row 1 (y=250), card 1 (blue) to row 0 (y=50)
+        # Images are rotated 180 degrees, but still the same color
+        assert base.getpixel((50, 250)) == (255, 0, 0)
+        assert base.getpixel((50, 50)) == (0, 0, 255)
+
+
+class TestAddFrontBackPages:
+    """Tests for add_front_back_pages() function."""
+
+    def test_appends_front_and_back(self):
+        """With only_fronts=False, should append both front and back pages."""
+        front = Image.new('RGB', (300, 400), color='white')
+        back = Image.new('RGB', (300, 400), color='white')
+        pages = []
+
+        add_front_back_pages(
+            front, back, pages,
+            page_width=300, page_height=400,
+            ppi_ratio=1.0, template='test_v1',
+            only_fronts=False, name=None
+        )
+        assert len(pages) == 2
+        assert pages[0] is front
+        assert pages[1] is back
+
+    def test_only_fronts_appends_one(self):
+        """With only_fronts=True, should append only the front page."""
+        front = Image.new('RGB', (300, 400), color='white')
+        back = Image.new('RGB', (300, 400), color='white')
+        pages = []
+
+        add_front_back_pages(
+            front, back, pages,
+            page_width=300, page_height=400,
+            ppi_ratio=1.0, template='test_v1',
+            only_fronts=True, name=None
+        )
+        assert len(pages) == 1
+        assert pages[0] is front
+
+    def test_sheet_numbering_increments(self):
+        """Sheet number should increment based on existing pages list size."""
+        front1 = Image.new('RGB', (300, 400), color='white')
+        back1 = Image.new('RGB', (300, 400), color='white')
+        front2 = Image.new('RGB', (300, 400), color='white')
+        back2 = Image.new('RGB', (300, 400), color='white')
+        pages = []
+
+        add_front_back_pages(
+            front1, back1, pages,
+            page_width=300, page_height=400,
+            ppi_ratio=1.0, template='test_v1',
+            only_fronts=False, name=None
+        )
+        add_front_back_pages(
+            front2, back2, pages,
+            page_width=300, page_height=400,
+            ppi_ratio=1.0, template='test_v1',
+            only_fronts=False, name=None
+        )
+        assert len(pages) == 4
+
+    def test_name_label(self):
+        """Providing a name should not raise (label includes name)."""
+        front = Image.new('RGB', (300, 400), color='white')
+        back = Image.new('RGB', (300, 400), color='white')
+        pages = []
+
+        add_front_back_pages(
+            front, back, pages,
+            page_width=300, page_height=400,
+            ppi_ratio=1.0, template='test_v1',
+            only_fronts=False, name='my_deck'
+        )
+        assert len(pages) == 2
