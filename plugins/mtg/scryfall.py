@@ -1,11 +1,14 @@
 import os
+from io import BytesIO
 from typing import List, Set, Tuple
 import requests
 import time
 
+from PIL import Image
+
 from .common import remove_nonalphanumeric
 
-double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card']
+double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card', 'meld']
 
 def request_scryfall(
     query: str,
@@ -22,6 +25,59 @@ def request_scryfall(
 
     return r
 
+def fetch_meld_back(
+    index: int,
+    quantity: int,
+
+    clean_card_name: str,
+    card_name: str,
+    all_parts: List,
+
+    double_sided_dir: str
+) -> None:
+    meld_result = None
+    meld_parts = []
+    for part in all_parts:
+        if part['component'] == 'meld_result':
+            meld_result = part
+        elif part['component'] == 'meld_part':
+            meld_parts.append(part)
+
+    if meld_result is None or len(meld_parts) != 2:
+        return
+
+    # Don't fetch back if this card is the meld result itself
+    if meld_result['name'] == card_name:
+        return
+
+    # Determine which half this card is (first meld_part = top, second = bottom)
+    meld_part_index = next((i for i, p in enumerate(meld_parts) if p['name'] == card_name), -1)
+    if meld_part_index == -1:
+        return
+
+    # Fetch the meld result card info and image
+    meld_result_json = request_scryfall(meld_result['uri']).json()
+    meld_result_image_query = f"https://api.scryfall.com/cards/{meld_result_json['set']}/{meld_result_json['collector_number']}/?format=image&version=png"
+    meld_result_image_data = request_scryfall(meld_result_image_query).content
+
+    # Split the meld result image into top/bottom halves
+    img = Image.open(BytesIO(meld_result_image_data))
+    width, height = img.size
+    half_height = height // 2
+
+    if meld_part_index == 0:
+        cropped = img.crop((0, 0, width, half_height))
+    else:
+        cropped = img.crop((0, half_height, width, height))
+
+    # Resize to full card dimensions
+    resized = cropped.resize((width, height), Image.LANCZOS)
+
+    # Save image based on quantity
+    for counter in range(quantity):
+        image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
+        resized.save(image_path)
+
 def fetch_card_art(
     index: int,
     quantity: int,
@@ -32,7 +88,10 @@ def fetch_card_art(
     layout: str,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
+
+    all_parts: List = None,
+    card_name: str = None
 ) -> None:
     # Query for the front side
     card_front_image_query = f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
@@ -48,16 +107,20 @@ def fetch_card_art(
 
     # Get backside of card, if it exists
     if layout in double_sided_layouts:
-        card_back_image_query = f'{card_front_image_query}&face=back'
-        card_art = request_scryfall(card_back_image_query).content
-        if card_art is not None:
+        if layout == 'meld':
+            if all_parts and card_name:
+                fetch_meld_back(index, quantity, clean_card_name, card_name, all_parts, double_sided_dir)
+        else:
+            card_back_image_query = f'{card_front_image_query}&face=back'
+            card_art = request_scryfall(card_back_image_query).content
+            if card_art is not None:
 
-            # Save image based on quantity
-            for counter in range(quantity):
-                image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
+                # Save image based on quantity
+                for counter in range(quantity):
+                    image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
 
-                with open(image_path, 'wb') as f:
-                    f.write(card_art)
+                    with open(image_path, 'wb') as f:
+                        f.write(card_art)
 
 def partition_printings(printings: List, condition: List) -> Tuple[List, List]:
     matches = []
@@ -121,7 +184,9 @@ def fetch_card(
             card_json['collector_number'],
             card_json['layout'],
             front_img_dir,
-            double_sided_dir
+            double_sided_dir,
+            card_json.get('all_parts'),
+            card_json['name']
         )
 
         # Fetch tokens
@@ -205,7 +270,9 @@ def fetch_card(
             collector_number,
             card_json['layout'],
             front_img_dir,
-            double_sided_dir
+            double_sided_dir,
+            card_json.get('all_parts'),
+            card_json['name']
         )
 
         # Fetch tokens
