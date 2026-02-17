@@ -35,18 +35,19 @@ DEFAULT_OUTPUT_DIR = Path(__file__).parent / "cutting_templates"
 def parse_dxf_filename(filename: str, config: LayoutConfig) -> tuple[str, str] | None:
     """Extract paper_size and card_size from a DXF filename.
 
-    Expected format: {paper_size}_{card_size}_v{N}.dxf
+    Expected format: {paper_size}-{card_size}-v{N}.dxf
     Card sizes may contain underscores (e.g. poker_half, bridge_square).
-    Matches against known paper sizes in layouts.json, then strips
-    the version suffix and checks if the remainder is a known card size.
+    Splits on the first hyphen to separate paper_size from the rest,
+    then strips the version suffix and checks if the remainder is a
+    known card size.
     """
     stem = Path(filename).stem
 
     for paper_size in config.paper_sizes:
-        if stem.startswith(paper_size + "_"):
+        if stem.startswith(paper_size + "-"):
             remainder = stem[len(paper_size) + 1:]
-            # Strip version suffix (_v1, _v2, etc.)
-            card_size = re.sub(r"_v\d+$", "", remainder)
+            # Strip version suffix (-v1, -v2, etc.)
+            card_size = re.sub(r"-v\d+$", "", remainder)
             if paper_size in config.layouts and card_size in config.layouts[paper_size]:
                 return paper_size, card_size
 

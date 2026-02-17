@@ -169,7 +169,7 @@ Print out the PDF and laminate the sheets. Because cardstock is thicker than pri
 
 ### Cut the sheets
 
-Open the `letter_standard_<version>.studio3` cutting template in Silhouette Studio. Cutting templates can be found in the [`cutting_templates/`](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/cutting_templates) folder.
+Open the `letter-standard-<version>.studio3` cutting template in Silhouette Studio. Cutting templates can be found in the [`cutting_templates/`](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/cutting_templates) folder.
 
 ![Cutting template](/images/cutting_template_standard.png)
 

@@ -70,7 +70,7 @@ If you configured you cutting settings, then try adjusting your settings by addi
 
 ## Why is my machine cutting in the wrong place?
 
-Make sure you're using the right cutting template. Each sheet should be labeled with the cutting template it's associated with, for example "letter_bridge_v1".
+Make sure you're using the right cutting template. Each sheet should be labeled with the cutting template it's associated with, for example "letter-bridge-v1".
 
 ## Why did my cards come out diagonally?
 

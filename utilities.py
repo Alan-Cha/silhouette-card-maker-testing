@@ -104,8 +104,8 @@ def load_layout_config() -> LayoutConfig:
 
 
 def template_name(paper_size: str, card_size: str, version: int) -> str:
-    """Compose the standard template name: {paper_size}_{card_size}_v{version}."""
-    return f"{paper_size}_{card_size}_v{version}"
+    """Compose the standard template name: {paper_size}-{card_size}-v{version}."""
+    return f"{paper_size}-{card_size}-v{version}"
 
 
 # Known junk files across OSes
