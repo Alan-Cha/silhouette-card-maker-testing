@@ -108,7 +108,7 @@
             "width": "420mm",
             "height": "297mm"
         },
-        "archb": {
+        "arch_b": {
             "width": "18in",
             "height": "12in"
         }
@@ -570,7 +570,7 @@
                 "max_length_mm": 21.59
             }
         },
-        "archb": {
+        "arch_b": {
             "bridge": {
                 "orientation": "landscape",
                 "version": 1,

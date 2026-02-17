@@ -47,7 +47,7 @@ Other notable card sizes include:
 
 The table below shows all possible paper and card size combinations and the layout of the cards.
 
-| Size | `letter` | `tabloid` | `a4` | `a3` | `archb` |
+| Size | `letter` | `tabloid` | `a4` | `a3` | `arch_b` |
 |---|---|---|---|---|---|
 | `bridge` | 4x2 (8) | 4x4 (16) | 4x2 (8) | 6x3 (18) | 7x3 (21) |
 | `bridge_square` | 3x4 (12) | 4x7 (28) | 3x4 (12) | 4x6 (24) | 4x7 (28) |
@@ -99,7 +99,7 @@ The table below shows each paper size, sorted by size and standard.
 | `tabloid` | **11 x 17** | 279.4 x 431.8 |
 | `a4` | 8.27 x 11.69 | **210 x 297** |
 | `a3` | 11.69 x 16.54 | **297 x 420** |
-| `archb` | **12 x 18** | 304.8 x 457.2 |
+| `arch_b` | **12 x 18** | 304.8 x 457.2 |
 
 You can find all the cutting templates for Silhouette Studio in [`cutting_templates/`](cutting_templates/).
 
@@ -250,7 +250,7 @@ Options:
   --output_images                 Create images instead of a PDF.
   --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|tarot|domino|domino_square]      
                                   The desired card size.  [default: standard]
-  --paper_size [letter|tabloid|a4|a3|archb]
+  --paper_size [letter|tabloid|a4|a3|arch_b]
                                   The desired paper size.  [default: letter]
   --registration [3|4]            The desired registration.  [default: 3]
   --only_fronts                   Only use the card fronts, exclude the card

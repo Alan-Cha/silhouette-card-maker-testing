@@ -63,7 +63,7 @@ The Hugo site is deployed to: https://alan-cha.github.io/silhouette-card-maker
 ## Key Scripts
 
 ### create_pdf.py
-Creates PDFs with card layouts and registration marks for cutting. Supports multiple card sizes (standard, japanese, poker, bridge, tarot, etc.) and paper sizes (letter, tabloid, a4, a3, archb).
+Creates PDFs with card layouts and registration marks for cutting. Supports multiple card sizes (standard, japanese, poker, bridge, tarot, etc.) and paper sizes (letter, tabloid, a4, a3, arch_b).
 
 Key options:
 - `--card_size` / `--paper_size`: Card and paper dimensions

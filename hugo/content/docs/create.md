@@ -135,7 +135,7 @@ Options:
   --output_images                 Create images instead of a PDF.
   --card_size [standard|standard_double|japanese|poker|poker_half|bridge|bridge_square|tarot|domino|domino_square]      
                                   The desired card size.  [default: standard]
-  --paper_size [letter|tabloid|a4|a3|archb]
+  --paper_size [letter|tabloid|a4|a3|arch_b]
                                   The desired paper size.  [default: letter]
   --registration [3|4]            The desired registration.  [default: 3]
   --only_fronts                   Only use the card fronts, exclude the card
