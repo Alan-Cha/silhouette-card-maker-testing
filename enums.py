@@ -24,7 +24,9 @@ class CardSize(str, Enum):
 
 class PaperSize(str, Enum):
     LETTER = "letter"
+    ANSI_A = "ansi_a"
     TABLOID = "tabloid"
+    ANSI_B = "ansi_b"
     A4 = "a4"
     A3 = "a3"
     ARCHB = "archb"

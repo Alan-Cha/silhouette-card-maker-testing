@@ -39,16 +39,12 @@
         "euro_business": {
             "width": "85mm",
             "height": "55mm",
-            "radius": "3mm"
+            "radius": "3mm",
+            "aliases": ["photo"]
         },
         "euro_mini": {
             "width": "44mm",
             "height": "68mm",
-            "radius": "3mm"
-        },
-        "euro_poker": {
-            "width": "63mm",
-            "height": "88mm",
             "radius": "3mm"
         },
         "japanese": {
@@ -71,11 +67,6 @@
             "height": "2.5in",
             "radius": "3mm"
         },
-        "photo": {
-            "width": "55mm",
-            "height": "85mm",
-            "radius": "3mm"
-        },
         "poker": {
             "width": "2.5in",
             "height": "3.5in",
@@ -84,7 +75,8 @@
         "standard": {
             "width": "63mm",
             "height": "88mm",
-            "radius": "3mm"
+            "radius": "3mm",
+            "aliases": ["euro_poker"]
         },
         "standard_double": {
             "width": "88mm",
@@ -100,11 +92,13 @@
     "paper_sizes": {
         "letter": {
             "width": "11in",
-            "height": "8.5in"
+            "height": "8.5in",
+            "aliases": ["ansi_a"]
         },
         "tabloid": {
             "width": "17in",
-            "height": "11in"
+            "height": "11in",
+            "aliases": ["ansi_b"]
         },
         "a4": {
             "width": "297mm",
@@ -177,13 +171,6 @@
                 "num_cols": 4,
                 "max_length_mm": 25.15
             },
-            "euro_poker": {
-                "orientation": "landscape",
-                "version": 1,
-                "num_rows": 2,
-                "num_cols": 4,
-                "max_length_mm": 8.04
-            },
             "japanese": {
                 "orientation": "landscape",
                 "version": 2,
@@ -211,13 +198,6 @@
                 "num_rows": 3,
                 "num_cols": 5,
                 "max_length_mm": 14.82
-            },
-            "photo": {
-                "orientation": "portrait",
-                "version": 1,
-                "num_rows": 3,
-                "num_cols": 3,
-                "max_length_mm": 12.87
             },
             "poker": {
                 "orientation": "landscape",
@@ -305,13 +285,6 @@
                 "num_cols": 9,
                 "max_length_mm": 25.15
             },
-            "euro_poker": {
-                "orientation": "portrait",
-                "version": 1,
-                "num_rows": 4,
-                "num_cols": 4,
-                "max_length_mm": 26.84
-            },
             "japanese": {
                 "orientation": "portrait",
                 "version": 1,
@@ -339,13 +312,6 @@
                 "num_rows": 4,
                 "num_cols": 8,
                 "max_length_mm": 22.44
-            },
-            "photo": {
-                "orientation": "landscape",
-                "version": 1,
-                "num_rows": 3,
-                "num_cols": 7,
-                "max_length_mm": 8.21
             },
             "poker": {
                 "orientation": "portrait",
@@ -433,13 +399,6 @@
                 "num_cols": 6,
                 "max_length_mm": 25.15
             },
-            "euro_poker": {
-                "orientation": "landscape",
-                "version": 1,
-                "num_rows": 2,
-                "num_cols": 4,
-                "max_length_mm": 9.4
-            },
             "japanese": {
                 "orientation": "portrait",
                 "version": 3,
@@ -467,13 +426,6 @@
                 "num_rows": 4,
                 "num_cols": 4,
                 "max_length_mm": 8.38
-            },
-            "photo": {
-                "orientation": "portrait",
-                "version": 1,
-                "num_rows": 3,
-                "num_cols": 3,
-                "max_length_mm": 9.91
             },
             "poker": {
                 "orientation": "landscape",
@@ -561,13 +513,6 @@
                 "num_cols": 8,
                 "max_length_mm": 18.2
             },
-            "euro_poker": {
-                "orientation": "landscape",
-                "version": 2,
-                "num_rows": 3,
-                "num_cols": 6,
-                "max_length_mm": 6.6
-            },
             "japanese": {
                 "orientation": "landscape",
                 "version": 1,
@@ -595,13 +540,6 @@
                 "num_rows": 4,
                 "num_cols": 8,
                 "max_length_mm": 16.51
-            },
-            "photo": {
-                "orientation": "landscape",
-                "version": 1,
-                "num_rows": 3,
-                "num_cols": 7,
-                "max_length_mm": 8.47
             },
             "poker": {
                 "orientation": "portrait",
@@ -689,13 +627,6 @@
                 "num_cols": 9,
                 "max_length_mm": 14.14
             },
-            "euro_poker": {
-                "orientation": "landscape",
-                "version": 1,
-                "num_rows": 3,
-                "num_cols": 6,
-                "max_length_mm": 25.15
-            },
             "japanese": {
                 "orientation": "landscape",
                 "version": 1,
@@ -723,13 +654,6 @@
                 "num_rows": 4,
                 "num_cols": 9,
                 "max_length_mm": 12.28
-            },
-            "photo": {
-                "orientation": "landscape",
-                "version": 1,
-                "num_rows": 3,
-                "num_cols": 7,
-                "max_length_mm": 20.91
             },
             "poker": {
                 "orientation": "landscape",
