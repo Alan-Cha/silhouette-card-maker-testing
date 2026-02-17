@@ -93,7 +93,7 @@ python tools/dxf_to_studio3_advanced.py convert input.dxf output.studio3 --regis
 Generate .studio3 files directly by modifying an existing template:
 
 ```bash
-python tools/generate_studio3.py --paper_size letter --card_size standard --output new_template.studio3 --template cutting_templates/letter_poker_v2.studio3
+python tools/generate_studio3.py --paper_size letter --card_size standard --output new_template.studio3 --template cutting_templates/letter-poker-v2.studio3
 ```
 
 This approach works best when:

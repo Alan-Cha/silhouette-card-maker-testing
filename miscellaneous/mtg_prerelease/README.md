@@ -35,8 +35,8 @@ You also need foil (coupon code: `DIYBOARDGAMES`):
 
 ## Contents
 
-* [letter_standard_v4_prerelease.studio3](./letter_standard_v4_prerelease.studio3), a template for `letter` paper
-* [a4_standard_v3_prerelease.studio3](./a4_standard_v3_prerelease.studio3), a template for `a4` paper
+* [letter-standard-v4_prerelease.studio3](./letter-standard-v4_prerelease.studio3), a template for `letter` paper
+* [a4-standard-v3_prerelease.studio3](./a4-standard-v3_prerelease.studio3), a template for `a4` paper
 * [BELEREN-BOLD.TTF](./BELEREN-BOLD.TTF), Beleren font
 * [BELERENSMALLCAPS-BOLD.TTF](./BELERENSMALLCAPS-BOLD.TTF), Beleren small caps font
 
@@ -65,7 +65,7 @@ On your cutting machine, install the heat pen on the powered tool carriage.
 
 ### Open design template
 
-Open [letter_standard_v4_prerelease.studio3](./letter_standard_v4_prerelease.studio3) or [a4_standard_v3_prerelease.studio3](./a4_standard_v3_prerelease.studio3).
+Open [letter-standard-v4_prerelease.studio3](./letter-standard-v4_prerelease.studio3) or [a4-standard-v3_prerelease.studio3](./a4-standard-v3_prerelease.studio3).
 
 ![Design template](../../hugo/static/images/prerelease_template.png)
 

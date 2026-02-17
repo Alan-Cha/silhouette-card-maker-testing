@@ -69,7 +69,7 @@ Create a new entry in `layouts.json`.
 +                       205,
 +                       1296
 +                   ],
-+                   "template": "letter_domino_v1"
++                   "template": "letter-domino-v1"
 +               }
             }
         }
