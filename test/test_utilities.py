@@ -685,59 +685,152 @@ class TestCropAndScaleImage:
 class TestDrawCardWithBleed:
     """Tests for draw_card_with_bleed() function."""
 
+    RED = (255, 0, 0)
+    WHITE = (255, 255, 255)
+
     def test_card_placed_at_position(self):
-        """Card should be pasted at the specified position."""
+        """Card should be pasted at the specified position.
+
+            10        15        24        29
+        10  +-------- +-------- +--------+
+            | corner  | top     | corner |
+        15  +-------- CCCCCCCCCC --------+
+            | left    | card    | right  |
+        24  +-------- CCCCCCCCCC --------+
+            | corner  | bottom  | corner |
+        29  +-------- +-------- +--------+
+
+        C = card area, surrounding = bleed, outside = empty
+        """
         card = Image.new('RGB', (10, 10), color='red')
         base = Image.new('RGB', (40, 40), color='white')
         draw_card_with_bleed(card, base, 15, 15, (5, 5))
-        assert base.getpixel((15, 15)) == (255, 0, 0)
-        assert base.getpixel((0, 0)) == (255, 255, 255)
+        # Card area
+        assert base.getpixel((15, 15)) == self.RED
+        assert base.getpixel((24, 24)) == self.RED
+        # Empty space (outside card and bleed)
+        assert base.getpixel((0, 0)) == self.WHITE
+        assert base.getpixel((39, 39)) == self.WHITE
 
     def test_edge_bleed_extends(self):
-        """Edge bleed should extend the card's border pixels outward."""
+        """Edge bleed should extend the card's border pixels outward.
+
+            10        15        24        29
+        10  +-------- +-------- +--------+
+            | corner  |*top*    | corner |
+        15  +-------- CCCCCCCCCC --------+
+            |*left*   | card    |*right* |
+        24  +-------- CCCCCCCCCC --------+
+            | corner  |*bottom* | corner |
+        29  +-------- +-------- +--------+
+
+        *edge* = edge bleed regions checked in this test
+        Pixels at x/y = 9 and 30 (just outside) should be empty.
+        """
         card = Image.new('RGB', (10, 10), color='red')
         base = Image.new('RGB', (40, 40), color='white')
         draw_card_with_bleed(card, base, 15, 15, (5, 5))
         # Top bleed: top row extended upward
-        assert base.getpixel((15, 14)) == (255, 0, 0)
-        assert base.getpixel((15, 10)) == (255, 0, 0)
+        assert base.getpixel((15, 14)) == self.RED
+        assert base.getpixel((15, 10)) == self.RED
         # Left bleed: left column extended leftward
-        assert base.getpixel((14, 15)) == (255, 0, 0)
-        assert base.getpixel((10, 15)) == (255, 0, 0)
+        assert base.getpixel((14, 15)) == self.RED
+        assert base.getpixel((10, 15)) == self.RED
         # Bottom bleed
-        assert base.getpixel((15, 25)) == (255, 0, 0)
+        assert base.getpixel((15, 25)) == self.RED
+        assert base.getpixel((15, 29)) == self.RED
         # Right bleed
-        assert base.getpixel((25, 15)) == (255, 0, 0)
+        assert base.getpixel((25, 15)) == self.RED
+        assert base.getpixel((29, 15)) == self.RED
+        # Beyond bleed should remain empty
+        assert base.getpixel((15, 9)) == self.WHITE
+        assert base.getpixel((9, 15)) == self.WHITE
+        assert base.getpixel((15, 30)) == self.WHITE
+        assert base.getpixel((30, 15)) == self.WHITE
 
     def test_corner_bleed_fills(self):
-        """Corner bleed regions should be filled with corner pixel color."""
+        """Corner bleed regions should be filled with corner pixel color.
+
+            10        15        24        29
+        10  *TL*      +-------- +      *TR*
+            |         | top     |         |
+        15  +-------- CCCCCCCCCC --------+
+            | left    | card    | right  |
+        24  +-------- CCCCCCCCCC --------+
+            |         | bottom  |         |
+        29  *BL*      +-------- +      *BR*
+
+        *XX* = corner bleed regions checked in this test
+        Pixels at x/y = 9 and 30 (just outside) should be empty.
+        """
         card = Image.new('RGB', (10, 10), color='red')
         base = Image.new('RGB', (40, 40), color='white')
         draw_card_with_bleed(card, base, 15, 15, (5, 5))
         # Top-left corner bleed region
-        assert base.getpixel((10, 10)) == (255, 0, 0)
-        assert base.getpixel((14, 14)) == (255, 0, 0)
+        assert base.getpixel((10, 10)) == self.RED
+        assert base.getpixel((14, 14)) == self.RED
+        # Top-right corner bleed region
+        assert base.getpixel((25, 10)) == self.RED
+        assert base.getpixel((29, 14)) == self.RED
+        # Bottom-left corner bleed region
+        assert base.getpixel((10, 25)) == self.RED
+        assert base.getpixel((14, 29)) == self.RED
         # Bottom-right corner bleed region
-        assert base.getpixel((25, 25)) == (255, 0, 0)
-        assert base.getpixel((29, 29)) == (255, 0, 0)
+        assert base.getpixel((25, 25)) == self.RED
+        assert base.getpixel((29, 29)) == self.RED
+        # Outside corner bleed should remain empty
+        assert base.getpixel((9, 9)) == self.WHITE
+        assert base.getpixel((30, 9)) == self.WHITE
+        assert base.getpixel((9, 30)) == self.WHITE
+        assert base.getpixel((30, 30)) == self.WHITE
 
     def test_zero_bleed(self):
-        """Zero bleed should just place the card with no bleed extension."""
+        """Zero bleed should just place the card with no bleed extension.
+
+        15        24
+        CCCCCCCCCC
+        C card   C
+        CCCCCCCCCC
+
+        No bleed regions — pixels at x=14, x=25, y=14, y=25
+        should all be empty.
+        """
         card = Image.new('RGB', (10, 10), color='red')
         base = Image.new('RGB', (40, 40), color='white')
         draw_card_with_bleed(card, base, 15, 15, (0, 0))
-        assert base.getpixel((15, 15)) == (255, 0, 0)
-        assert base.getpixel((24, 24)) == (255, 0, 0)
-        # Adjacent pixels outside card should remain white
-        assert base.getpixel((14, 15)) == (255, 255, 255)
-        assert base.getpixel((15, 14)) == (255, 255, 255)
+        # Card area
+        assert base.getpixel((15, 15)) == self.RED
+        assert base.getpixel((24, 24)) == self.RED
+        # Adjacent pixels outside card should remain empty (no bleed)
+        assert base.getpixel((14, 15)) == self.WHITE
+        assert base.getpixel((15, 14)) == self.WHITE
+        assert base.getpixel((25, 15)) == self.WHITE
+        assert base.getpixel((15, 25)) == self.WHITE
 
 
 class TestDrawCardLayout:
     """Tests for draw_card_layout() function."""
 
+    RED = (255, 0, 0)
+    BLUE = (0, 0, 255)
+    WHITE = (255, 255, 255)
+
     def test_single_card_placed(self):
-        """Single card in 1x1 layout should be placed at the layout position."""
+        """Single card in 1x1 layout should be placed at the layout position.
+
+        Base 300x400, card 100x140 at (50,50):
+
+           0    50       149          299
+        0  +----+--------+-----------+
+           |    |        |           |
+        50 | .. RRRRRRRRRR ......... |
+           |    R  card  R   empty   |
+       189 | .. RRRRRRRRRR ......... |
+           |    |        |           |
+       399 +----+--------+-----------+
+
+        R = red card, . = empty (white)
+        """
         card = Image.new('RGB', (100, 140), color='red')
         back = Image.new('RGB', (100, 140), color='blue')
         base = Image.new('RGB', (300, 400), color='white')
@@ -754,13 +847,24 @@ class TestDrawCardLayout:
             ppi_ratio=1.0, extend_corners=0,
             flip=False, fit=FitMode.STRETCH
         )
-        assert base.getpixel((50, 50)) == (255, 0, 0)
-        assert base.getpixel((100, 100)) == (255, 0, 0)
+        assert base.getpixel((50, 50)) == self.RED
+        assert base.getpixel((100, 100)) == self.RED
         # Outside card area should remain white
         assert base.getpixel((0, 0)) == (255, 255, 255)
 
     def test_none_card_skipped(self):
-        """None entries in card list should leave base image unchanged."""
+        """None entries in card list should leave base image unchanged.
+
+        Base 300x400, card_images=[None]:
+
+        0                          299
+        +==========================+
+        |                          |
+        |    entirely empty        |
+        |    (no card drawn)       |
+        |                          |
+        +==========================+
+        """
         back = Image.new('RGB', (100, 140), color='blue')
         base = Image.new('RGB', (300, 400), color='white')
         original_data = list(base.tobytes())
@@ -780,7 +884,20 @@ class TestDrawCardLayout:
         assert list(base.tobytes()) == original_data
 
     def test_flip_reverses_row_order(self):
-        """Flip should place first card at bottom row and second at top."""
+        """Flip should place first card at bottom row and second at top.
+
+        Base 300x500, 2 rows x 1 col, flip=True:
+
+        Normal order:        Flipped order:
+
+          50  +--------+       50  +--------+
+              | red    |           | blue   |
+         189  +--------+      189  +--------+
+              |        |           |        |
+         250  +--------+      250  +--------+
+              | blue   |           | red    |
+         389  +--------+      389  +--------+
+        """
         red_card = Image.new('RGB', (100, 140), color='red')
         blue_card = Image.new('RGB', (100, 140), color='blue')
         back = Image.new('RGB', (100, 140), color='green')
@@ -800,15 +917,18 @@ class TestDrawCardLayout:
         )
         # With flip: card 0 (red) goes to row 1 (y=250), card 1 (blue) to row 0 (y=50)
         # Images are rotated 180 degrees, but still the same color
-        assert base.getpixel((50, 250)) == (255, 0, 0)
-        assert base.getpixel((50, 50)) == (0, 0, 255)
+        assert base.getpixel((50, 250)) == self.RED
+        assert base.getpixel((50, 50)) == self.BLUE
 
 
 class TestAddFrontBackPages:
     """Tests for add_front_back_pages() function."""
 
     def test_appends_front_and_back(self):
-        """With only_fronts=False, should append both front and back pages."""
+        """With only_fronts=False, should append both front and back pages.
+
+        pages[] -> [front, back]
+        """
         front = Image.new('RGB', (300, 400), color='white')
         back = Image.new('RGB', (300, 400), color='white')
         pages = []
@@ -824,7 +944,10 @@ class TestAddFrontBackPages:
         assert pages[1] is back
 
     def test_only_fronts_appends_one(self):
-        """With only_fronts=True, should append only the front page."""
+        """With only_fronts=True, should append only the front page.
+
+        pages[] -> [front]
+        """
         front = Image.new('RGB', (300, 400), color='white')
         back = Image.new('RGB', (300, 400), color='white')
         pages = []
@@ -839,7 +962,11 @@ class TestAddFrontBackPages:
         assert pages[0] is front
 
     def test_sheet_numbering_increments(self):
-        """Sheet number should increment based on existing pages list size."""
+        """Sheet number should increment based on existing pages list size.
+
+        Call 1: pages[] -> [front1, back1]
+        Call 2: pages[] -> [front1, back1, front2, back2]
+        """
         front1 = Image.new('RGB', (300, 400), color='white')
         back1 = Image.new('RGB', (300, 400), color='white')
         front2 = Image.new('RGB', (300, 400), color='white')
@@ -861,7 +988,10 @@ class TestAddFrontBackPages:
         assert len(pages) == 4
 
     def test_name_label(self):
-        """Providing a name should not raise (label includes name)."""
+        """Providing a name should not raise (label includes name).
+
+        pages[] -> [front, back]  (with name='my_deck')
+        """
         front = Image.new('RGB', (300, 400), color='white')
         back = Image.new('RGB', (300, 400), color='white')
         pages = []
