@@ -95,7 +95,7 @@ class PaperSize(str, Enum):
     TABLOID = "tabloid"
     A4 = "a4"
     A3 = "a3"
-    ARCHB = "archb"
+    ARCH_B = "arch_b"
 ```
 
 ### Update Assets
