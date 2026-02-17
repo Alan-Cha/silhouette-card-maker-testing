@@ -29,7 +29,7 @@ class PaperSize(str, Enum):
     ANSI_B = "ansi_b"
     A4 = "a4"
     A3 = "a3"
-    ARCHB = "archb"
+    ARCH_B = "arch_b"
 
 
 class Registration(str, Enum):

@@ -36,7 +36,7 @@ python tools/generate_studio3.py --list
 
 ### Options:
 
-- `--paper_size`: letter, tabloid, a4, a3, archb
+- `--paper_size`: letter, tabloid, a4, a3, arch_b
 - `--card_size`: standard, poker, bridge, tarot, etc.
 - `--output`: Output file path (.dxf or .studio3)
 - `--corner_radius`: Corner radius in mm (default: 3.0)

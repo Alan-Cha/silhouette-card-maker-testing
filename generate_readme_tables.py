@@ -40,7 +40,7 @@ def generate_tables():
     paper_sizes = data["paper_sizes"]
     layouts = data["layouts"]
 
-    paper_order = ["letter", "tabloid", "a4", "a3", "archb"]
+    paper_order = ["letter", "tabloid", "a4", "a3", "arch_b"]
 
     # Card size order for table 2: largest dimension first, then second dimension
     def card_size_sort_key(name):
