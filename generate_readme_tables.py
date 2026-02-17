@@ -103,13 +103,19 @@ def generate_tables():
 
         aspect = min(w_val, h_val) / max(w_val, h_val)
 
-        print(f"| `{card}` | {in_str} | {mm_str} | {aspect:.4f} | |")
+        aliases = info.get("aliases", [])
+        notes = ""
+        if aliases:
+            alias_bullets = " ".join(f"- `{a}`" for a in aliases)
+            notes = alias_bullets
+
+        print(f"| `{card}` | {in_str} | {mm_str} | {aspect:.4f} | {notes} |")
 
     print()
 
     # Table 3: Paper sizes
-    print("| Paper size | Inches | Millimeters |")
-    print("| --- | --- | --- |")
+    print("| Paper size | Inches | Millimeters | Notes |")
+    print("| --- | --- | --- | --- |")
 
     for paper in paper_order:
         info = paper_sizes[paper]
@@ -134,7 +140,13 @@ def generate_tables():
         else:
             mm_str = f"**{mm_str}**"
 
-        print(f"| `{paper}` | {in_str} | {mm_str} |")
+        aliases = info.get("aliases", [])
+        notes = ""
+        if aliases:
+            alias_bullets = " ".join(f"- `{a}`" for a in aliases)
+            notes = alias_bullets
+
+        print(f"| `{paper}` | {in_str} | {mm_str} | {notes} |")
 
 
 if __name__ == "__main__":

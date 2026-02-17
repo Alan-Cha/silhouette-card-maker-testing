@@ -56,6 +56,7 @@ class CardSizeDef(BaseModel):
     width: str
     height: str
     radius: str
+    aliases: Optional[List[str]] = None
 
 class SilhouetteSettings(BaseModel):
     inset: str
@@ -73,6 +74,7 @@ class CardLayoutSize(BaseModel):
 class PaperSizeDef(BaseModel):
     width: str
     height: str
+    aliases: Optional[List[str]] = None
 
     @model_validator(mode='after')
     def width_gte_height(self) -> 'PaperSizeDef':
@@ -101,6 +103,24 @@ def load_layout_config() -> LayoutConfig:
     """Load and validate layouts.json from the assets directory."""
     with open(layouts_path, 'r') as f:
         return LayoutConfig(**json.load(f))
+
+
+def resolve_card_size_alias(layout_config: LayoutConfig, card_size: str) -> str:
+    """Resolve a card size alias to its canonical name. Returns the original if not an alias."""
+    for name, card_def in layout_config.card_sizes.items():
+        if card_def.aliases and card_size in card_def.aliases:
+            print(f'Card size "{card_size}" is an alias of "{name}". Using "{name}" card size and cutting template.')
+            return name
+    return card_size
+
+
+def resolve_paper_size_alias(layout_config: LayoutConfig, paper_size: str) -> str:
+    """Resolve a paper size alias to its canonical name. Returns the original if not an alias."""
+    for name, paper_def in layout_config.paper_sizes.items():
+        if paper_def.aliases and paper_size in paper_def.aliases:
+            print(f'Paper size "{paper_size}" is an alias of "{name}". Using "{name}" paper size and cutting template.')
+            return name
+    return paper_size
 
 
 def template_name(paper_size: str, card_size: str, version: int) -> str:
@@ -613,6 +633,10 @@ def generate_pdf(
             raise Exception(f'Cannot use "--only_fronts" with double-sided cards. Remove cards from double-side image directory "{ds_dir_path}".')
 
     layout_config = load_layout_config()
+
+    # Resolve aliases
+    card_size = resolve_card_size_alias(layout_config, card_size)
+    paper_size = resolve_paper_size_alias(layout_config, paper_size)
 
     # Validate card size
     if card_size not in layout_config.card_sizes:
