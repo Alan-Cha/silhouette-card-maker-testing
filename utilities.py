@@ -510,12 +510,9 @@ def draw_outline(
                 width=1,
             )
 
-def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, name: str):
-    # Add template version number to the back
-    draw = ImageDraw.Draw(front_page)
+def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, name: str, orientation: Orientation, label_margin_px: int):
     font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 40 * ppi_ratio)
 
-    # "Raw" specified location
     num_sheet = len(pages) + 1
     if not only_fronts:
         num_sheet = int(len(pages) / 2) + 1
@@ -524,7 +521,31 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
     if name is not None:
         label = f'name: {name}, {label}'
 
-    draw.text((math.floor((page_width / 2) * ppi_ratio), math.floor((page_height - 140) * ppi_ratio)), label, fill = (0, 0, 0), anchor="ma", font=font)
+    scaled_margin = math.floor(label_margin_px * ppi_ratio)
+
+    # Label goes on the short side of the paper, opposite the top-left black square.
+    # Landscape: short sides are left/right; black square top-left → label on RIGHT.
+    # Portrait: short sides are top/bottom; black square top-left → label on BOTTOM.
+    if orientation == Orientation.LANDSCAPE:
+        # Right side: rotate page, draw horizontal text, rotate back
+        front_page = front_page.rotate(-90, expand=True)
+        draw = ImageDraw.Draw(front_page)
+        label_x = math.floor((page_height / 2) * ppi_ratio)
+        label_y = math.floor(page_width * ppi_ratio) - scaled_margin
+        draw.text((label_x, label_y), label, fill=(0, 0, 0), anchor="mm", font=font)
+        front_page = front_page.rotate(90, expand=True)
+    else:
+        # Bottom side: horizontal text
+        draw = ImageDraw.Draw(front_page)
+        label_x = math.floor((page_width / 2) * ppi_ratio)
+        label_y = math.floor(page_height * ppi_ratio) - scaled_margin
+        draw.text((label_x, label_y), label, fill=(0, 0, 0), anchor="mm", font=font)
+
+    # Rotate portrait pages to landscape so the generated PDF is always landscape.
+    # This ensures offset_pdf.py works regardless of orientation detection.
+    if orientation == Orientation.PORTRAIT:
+        front_page = front_page.rotate(-90, expand=True)
+        back_page = back_page.rotate(-90, expand=True)
 
     # Add a back page for every front page template
     pages.append(front_page)
@@ -683,6 +704,10 @@ def generate_pdf(
     # Convert corner radius to pixels for outline drawing
     radius_px = size_convert.size_to_pixel(card_size_def.radius, layout_config.ppi)
 
+    # Place label at the midpoint of the inset (halfway between paper edge and inset boundary)
+    inset_mm = size_convert.size_to_mm(silhouette.inset)
+    label_margin_px = size_convert.size_to_pixel(f"{inset_mm / 2}mm", layout_config.ppi)
+
     num_rows = len(y_pos)
     num_cols = len(x_pos)
     num_cards = num_rows * num_cols
@@ -838,13 +863,7 @@ def generate_pdf(
                 draw_outline(front_page, x_pos, y_pos, card_width_px, card_height_px, radius_px, ppi_ratio)
                 draw_outline(back_page, x_pos, y_pos, card_width_px, card_height_px, radius_px, ppi_ratio)
 
-            # Rotate back to landscape so the generated PDF is always landscape.
-            # This ensures offset_pdf.py works regardless of orientation detection.
-            if orientation == Orientation.PORTRAIT:
-                front_page = front_page.rotate(-90, expand=True)
-                back_page = back_page.rotate(-90, expand=True)
-
-            # Add the front and back layouts
+            # Add the front and back layouts (also handles portrait→landscape rotation)
             add_front_back_pages(
                 front_page,
                 back_page,
@@ -854,7 +873,9 @@ def generate_pdf(
                 ppi_ratio,
                 template,
                 only_fronts,
-                name
+                name,
+                orientation,
+                label_margin_px
             )
 
         if len(pages) == 0:
