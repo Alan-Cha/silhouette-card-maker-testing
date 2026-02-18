@@ -51,7 +51,7 @@ def cli(
     quality,
     skip,
     load_offset,
-    name,
+    label,
     show_outline
 ):
     generate_pdf(
@@ -72,7 +72,7 @@ def cli(
         quality,
         skip,
         load_offset,
-        name,
+        label,
         show_outline
     )
 
