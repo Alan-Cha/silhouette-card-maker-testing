@@ -40,7 +40,9 @@
             "width": "85mm",
             "height": "55mm",
             "radius": "3mm",
-            "aliases": ["photo"]
+            "aliases": [
+                "photo"
+            ]
         },
         "euro_mini": {
             "width": "44mm",
@@ -76,7 +78,9 @@
             "width": "63mm",
             "height": "88mm",
             "radius": "3mm",
-            "aliases": ["euro_poker"]
+            "aliases": [
+                "euro_poker"
+            ]
         },
         "standard_double": {
             "width": "88mm",
@@ -93,12 +97,16 @@
         "letter": {
             "width": "11in",
             "height": "8.5in",
-            "aliases": ["ansi_a"]
+            "aliases": [
+                "ansi_a"
+            ]
         },
         "tabloid": {
             "width": "17in",
             "height": "11in",
-            "aliases": ["ansi_b"]
+            "aliases": [
+                "ansi_b"
+            ]
         },
         "a4": {
             "width": "297mm",

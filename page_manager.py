@@ -437,9 +437,6 @@ def generate_layout(
     )
     max_length_mm = round(max_length_px * 25.4 / ppi, 2)
 
-    # Cap at the absolute maximum registration mark length
-    max_length_mm = min(max_length_mm, MAX_REG_LENGTH_MM)
-
     return CardLayout(
         card_width_px=card_width_px,
         card_height_px=card_height_px,
