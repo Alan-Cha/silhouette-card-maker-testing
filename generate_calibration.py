@@ -3,15 +3,14 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 import size_convert
-from utilities import PaperSize, load_layout_config
+from utilities import load_layout_config
 
 # Specify directory locations
 asset_directory = 'assets'
 
 layout_config = load_layout_config()
 
-for paper_size in PaperSize:
-    paper_def = layout_config.paper_sizes[paper_size.value]
+for paper_size, paper_def in layout_config.paper_sizes.items():
     print_width = size_convert.size_to_pixel(paper_def.width, layout_config.ppi)
     print_height = size_convert.size_to_pixel(paper_def.height, layout_config.ppi)
 
@@ -84,5 +83,5 @@ for paper_size in PaperSize:
                 back_draw.text((back_element_x + test_half_size, back_element_y + test_half_size + 30), f'({x_index - matrix_half_size_x}, {y_index - matrix_half_size_y})', fill="red", anchor="mm", font=coord_font)
 
         card_list = [front_image, back_image]
-        pdf_path = os.path.join("calibration", f"{paper_size.value}_calibration.pdf")
+        pdf_path = os.path.join("calibration", f"{paper_size}_calibration.pdf")
         card_list[0].save(pdf_path, save_all=True, append_images=card_list[1:], resolution=300, speed=0, subsampling=0, quality=100)
