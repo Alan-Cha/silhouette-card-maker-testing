@@ -82,39 +82,23 @@ def generate_single_dxf(
 
 
 @click.command()
-@click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), help="Paper size. Cannot be combined with --paper_length/--paper_width.")
 @click.option("--card_size", type=click.Choice([c.value for c in CardSize], case_sensitive=False), help="Card size. Cannot be combined with --card_length/--card_width.")
+@click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), help="Paper size. Cannot be combined with --paper_length/--paper_width.")
 @click.option("--card_length", type=str, default=None, help="Card length (height) as a size string (e.g. '88mm', '3.5in'). Requires --card_width. Cannot be combined with --card_size.")
 @click.option("--card_width", type=str, default=None, help="Card width as a size string (e.g. '63mm', '2.5in'). Requires --card_length. Cannot be combined with --card_size.")
 @click.option("--card_radius", type=str, default="3mm", show_default=True, help="Card corner radius as a size string (e.g. '3mm'). Used only with --card_length/--card_width.")
+@click.option("--card_name", type=str, default=None, help="Override the card label used for the output filename and --save.")
 @click.option("--paper_length", type=str, default=None, help="Paper length (longer dimension) as a size string (e.g. '11in', '297mm'). Requires --paper_width. Cannot be combined with --paper_size.")
 @click.option("--paper_width", type=str, default=None, help="Paper width (shorter dimension) as a size string (e.g. '8.5in', '210mm'). Requires --paper_length. Cannot be combined with --paper_size.")
+@click.option("--paper_name", type=str, default=None, help="Override the paper label used for the output filename and --save.")
+@click.option("--save", "save", is_flag=True, help="Save new card/paper sizes and layout combination to assets/layouts.json.")
 @click.option("--all", "generate_all", is_flag=True, help="Generate DXF files for all paper/card combinations defined in layouts.json.")
 @click.option("--all_optimize", "optimize_all", is_flag=True, help="Generate DXF files for all combinations, optimizing orientation for maximum cards. Updates layouts.json if a better orientation is found.")
 @click.option("--new", "generate_new", is_flag=True, help="Generate DXF files only for combinations whose versioned file doesn't exist yet.")
-@click.option("--list", "list_sizes", is_flag=True, help="List available paper/card size combinations and exit.")
 @click.option("--output_dir", type=click.Path(), default=str(OUTPUT_DIR), show_default=True, help="Output directory for DXF files.")
-def cli(paper_size, card_size, card_length, card_width, card_radius, paper_length, paper_width, generate_all, generate_new, optimize_all, list_sizes, output_dir):
+def cli(paper_size, card_size, card_length, card_width, card_radius, paper_length, paper_width, card_name, paper_name, save, generate_all, generate_new, optimize_all, output_dir):
     """Generate DXF cutting templates from layouts.json."""
     config = load_layout_config()
-
-    if list_sizes:
-        print("Available card sizes:")
-        for cs, cs_def in config.card_sizes.items():
-            print(f"  {cs}: {cs_def.width} x {cs_def.height}")
-        print()
-        print("Available paper sizes:")
-        for ps, ps_def in config.paper_sizes.items():
-            print(f"  {ps}: {ps_def.width} x {ps_def.height}")
-        print()
-        print("Defined layouts (paper + card -> orientation, version, grid):")
-        for ps, cards in config.layouts.items():
-            for cs, layout in cards.items():
-                grid = ""
-                if layout.num_cols is not None and layout.num_rows is not None:
-                    grid = f", {layout.num_cols}x{layout.num_rows}"
-                print(f"  {ps} + {cs}: {layout.orientation.value}, v{layout.version}{grid}")
-        return
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -130,6 +114,7 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
         generated = 0
         skipped = 0
         errors = 0
+        error_list = []
         print(f"Generating DXF files to: {out}")
         print()
 
@@ -151,7 +136,11 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
                     generated += 1
                 except Exception as e:
                     print(f"  Error: {ps} + {cs}: {e}")
+                    error_list.append((f"{ps} + {cs}", e))
                     errors += 1
+
+        if error_list:
+            print(f'Errors: {error_list}')
 
         with open(LAYOUTS_PATH, 'w') as f:
             json.dump(raw_config, f, indent=4)
@@ -221,17 +210,24 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
             resolved_paper_height = paper_length
         paper_label = f"{paper_width}x{paper_length}"
 
+    # Apply name overrides
+    if card_name is not None:
+        card_label = card_name
+    if paper_name is not None:
+        paper_label = paper_name
+
     # Determine orientation and output name
     if has_card_size and has_paper_size:
         if paper_size not in config.layouts or card_size not in config.layouts.get(paper_size, {}):
             raise click.UsageError(f"No layout defined for {paper_size} + {card_size}. Check layouts.json or use --list.")
         layout_def = config.layouts[paper_size][card_size]
         orientation = layout_def.orientation
-        name = template_name(paper_size, card_size, layout_def.version)
+        version = layout_def.version
     else:
         orientation = Orientation.LANDSCAPE
-        name = f"{paper_label}-{card_label}"
+        version = 1
 
+    name = template_name(paper_label, card_label, version)
     output_file = out / f"{name}.dxf"
 
     silhouette = config.silhouette
@@ -265,6 +261,50 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
 
     num_cards = num_cols * num_rows
     print(f"  {paper_label} + {card_label}: {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_file}")
+
+    if save:
+        with open(LAYOUTS_PATH, 'r') as f:
+            raw_config = json.load(f)
+
+        changed = False
+
+        if card_label not in raw_config["card_sizes"]:
+            raw_config["card_sizes"][card_label] = {
+                "width": resolved_card_width,
+                "height": resolved_card_height,
+                "radius": resolved_card_radius,
+            }
+            print(f"  Saved new card size '{card_label}': {resolved_card_width} x {resolved_card_height}, radius {resolved_card_radius}")
+            changed = True
+
+        if paper_label not in raw_config["paper_sizes"]:
+            raw_config["paper_sizes"][paper_label] = {
+                "width": resolved_paper_width,
+                "height": resolved_paper_height,
+            }
+            print(f"  Saved new paper size '{paper_label}': {resolved_paper_width} x {resolved_paper_height}")
+            changed = True
+
+        if paper_label not in raw_config["layouts"] or card_label not in raw_config["layouts"].get(paper_label, {}):
+            if paper_label not in raw_config["layouts"]:
+                raw_config["layouts"][paper_label] = {}
+            raw_config["layouts"][paper_label][card_label] = {
+                "orientation": orientation.value,
+                "version": version,
+                "num_rows": num_rows,
+                "num_cols": num_cols,
+                "max_length_mm": computed.max_length_mm,
+            }
+            print(f"  Saved new layout '{paper_label}' + '{card_label}'")
+            changed = True
+
+        if changed:
+            with open(LAYOUTS_PATH, 'w') as f:
+                json.dump(raw_config, f, indent=4)
+                f.write('\n')
+        else:
+            print("  No new entries to save.")
+
     print("Done!")
 
 
@@ -273,7 +313,7 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
 
     Iterates over every paper_size × card_size combination from layouts.json.
     For existing layouts, re-optimizes orientation and bumps the version if
-    it changes.  For missing combinations, creates a new layout entry at v1.
+    it changes. For missing combinations, creates a new layout entry at v1.
     """
     with open(LAYOUTS_PATH, 'r') as f:
         raw_config = json.load(f)
@@ -282,6 +322,7 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
     added = 0
     errors = 0
     updated = 0
+    error_list = []
     print(f"Optimizing orientations and generating DXF files to: {out}")
     print()
 
@@ -376,7 +417,11 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
 
             except Exception as e:
                 print(f"  Error: {ps} + {cs}: {e}")
+                error_list.append((f"{ps} + {cs}", e))
                 errors += 1
+
+    if error_list:
+        print(f'Errors: {error_list}')
 
     with open(LAYOUTS_PATH, 'w') as f:
         json.dump(raw_config, f, indent=4)
