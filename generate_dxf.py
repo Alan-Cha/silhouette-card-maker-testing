@@ -82,8 +82,12 @@ def generate_single_dxf(
 
 
 @click.command()
+
+# Predefined paper/card sizes from layouts.json
 @click.option("--card_size", type=click.Choice([c.value for c in CardSize], case_sensitive=False), help="Card size. Cannot be combined with --card_length/--card_width.")
 @click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), help="Paper size. Cannot be combined with --paper_length/--paper_width.")
+
+# For defining paper/card sizes directly instead of using predefined ones from layouts.json
 @click.option("--card_length", type=str, default=None, help="Card length (height) as a size string (e.g. '88mm', '3.5in'). Requires --card_width. Cannot be combined with --card_size.")
 @click.option("--card_width", type=str, default=None, help="Card width as a size string (e.g. '63mm', '2.5in'). Requires --card_length. Cannot be combined with --card_size.")
 @click.option("--card_radius", type=str, default="3mm", show_default=True, help="Card corner radius as a size string (e.g. '3mm'). Used only with --card_length/--card_width.")
@@ -92,9 +96,12 @@ def generate_single_dxf(
 @click.option("--paper_width", type=str, default=None, help="Paper width (shorter dimension) as a size string (e.g. '8.5in', '210mm'). Requires --paper_length. Cannot be combined with --paper_size.")
 @click.option("--paper_name", type=str, default=None, help="Override the paper label used for the output filename and --save.")
 @click.option("--save", "save", is_flag=True, help="Save new card/paper sizes and layout combination to assets/layouts.json.")
+
+# Batch generation options
 @click.option("--all", "generate_all", is_flag=True, help="Generate DXF files for all paper/card combinations defined in layouts.json.")
 @click.option("--all_optimize", "optimize_all", is_flag=True, help="Generate DXF files for all combinations, optimizing orientation for maximum cards. Updates layouts.json if a better orientation is found.")
-@click.option("--new", "generate_new", is_flag=True, help="Generate DXF files only for combinations whose versioned file doesn't exist yet.")
+@click.option("--new", "generate_new", is_flag=True, help="Generate DXF files only for new paper and card combinations.")
+
 @click.option("--output_dir", type=click.Path(), default=str(OUTPUT_DIR), show_default=True, help="Output directory for DXF files.")
 def cli(paper_size, card_size, card_length, card_width, card_radius, paper_length, paper_width, card_name, paper_name, save, generate_all, generate_new, optimize_all, output_dir):
     """Generate DXF cutting templates from layouts.json."""
