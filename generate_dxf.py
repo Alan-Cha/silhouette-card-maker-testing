@@ -19,6 +19,7 @@ import click
 
 import page_manager
 import dxf_manager
+import size_convert
 from enums import CardSize, PaperSize, Orientation
 from utilities import LayoutConfig, load_layout_config, template_name
 
@@ -81,14 +82,19 @@ def generate_single_dxf(
 
 
 @click.command()
-@click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), help="Paper size.")
-@click.option("--card_size", type=click.Choice([c.value for c in CardSize], case_sensitive=False), help="Card size.")
+@click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), help="Paper size. Cannot be combined with --paper_length/--paper_width.")
+@click.option("--card_size", type=click.Choice([c.value for c in CardSize], case_sensitive=False), help="Card size. Cannot be combined with --card_length/--card_width.")
+@click.option("--card_length", type=str, default=None, help="Card length (height) as a size string (e.g. '88mm', '3.5in'). Requires --card_width. Cannot be combined with --card_size.")
+@click.option("--card_width", type=str, default=None, help="Card width as a size string (e.g. '63mm', '2.5in'). Requires --card_length. Cannot be combined with --card_size.")
+@click.option("--card_radius", type=str, default="3mm", show_default=True, help="Card corner radius as a size string (e.g. '3mm'). Used only with --card_length/--card_width.")
+@click.option("--paper_length", type=str, default=None, help="Paper length (longer dimension) as a size string (e.g. '11in', '297mm'). Requires --paper_width. Cannot be combined with --paper_size.")
+@click.option("--paper_width", type=str, default=None, help="Paper width (shorter dimension) as a size string (e.g. '8.5in', '210mm'). Requires --paper_length. Cannot be combined with --paper_size.")
 @click.option("--all", "generate_all", is_flag=True, help="Generate DXF files for all paper/card combinations defined in layouts.json.")
-@click.option("--new", "generate_new", is_flag=True, help="Generate DXF files only for combinations whose versioned file doesn't exist yet.")
 @click.option("--all_optimize", "optimize_all", is_flag=True, help="Generate DXF files for all combinations, optimizing orientation for maximum cards. Updates layouts.json if a better orientation is found.")
+@click.option("--new", "generate_new", is_flag=True, help="Generate DXF files only for combinations whose versioned file doesn't exist yet.")
 @click.option("--list", "list_sizes", is_flag=True, help="List available paper/card size combinations and exit.")
 @click.option("--output_dir", type=click.Path(), default=str(OUTPUT_DIR), show_default=True, help="Output directory for DXF files.")
-def cli(paper_size, card_size, generate_all, generate_new, optimize_all, list_sizes, output_dir):
+def cli(paper_size, card_size, card_length, card_width, card_radius, paper_length, paper_width, generate_all, generate_new, optimize_all, list_sizes, output_dir):
     """Generate DXF cutting templates from layouts.json."""
     config = load_layout_config()
 
@@ -158,13 +164,107 @@ def cli(paper_size, card_size, generate_all, generate_new, optimize_all, list_si
         print(summary)
         return
 
-    if not paper_size or not card_size:
-        raise click.UsageError("Provide --paper_size and --card_size, or use --all.")
+    # Validate card dimension options
+    has_card_size = card_size is not None
+    has_card_dims = card_length is not None or card_width is not None
 
-    if paper_size not in config.layouts or card_size not in config.layouts.get(paper_size, {}):
-        raise click.UsageError(f"No layout defined for {paper_size} + {card_size}. Check layouts.json or use --list.")
+    if has_card_size and has_card_dims:
+        raise click.UsageError("Cannot use --card_size together with --card_length or --card_width.")
+    if card_length is not None and card_width is None:
+        raise click.UsageError("--card_length requires --card_width.")
+    if card_width is not None and card_length is None:
+        raise click.UsageError("--card_width requires --card_length.")
 
-    generate_single_dxf(card_size, paper_size, config, out)
+    # Validate paper dimension options
+    has_paper_size = paper_size is not None
+    has_paper_dims = paper_length is not None or paper_width is not None
+
+    if has_paper_size and has_paper_dims:
+        raise click.UsageError("Cannot use --paper_size together with --paper_length or --paper_width.")
+    if paper_length is not None and paper_width is None:
+        raise click.UsageError("--paper_length requires --paper_width.")
+    if paper_width is not None and paper_length is None:
+        raise click.UsageError("--paper_width requires --paper_length.")
+
+    if not has_card_size and not has_card_dims:
+        raise click.UsageError("Provide --card_size or (--card_length and --card_width), or use --all.")
+    if not has_paper_size and not has_paper_dims:
+        raise click.UsageError("Provide --paper_size or (--paper_length and --paper_width), or use --all.")
+
+    # Resolve card parameters
+    if has_card_size:
+        card_def = config.card_sizes[card_size]
+        resolved_card_width = card_def.width
+        resolved_card_height = card_def.height
+        resolved_card_radius = card_def.radius
+        card_label = card_size
+    else:
+        resolved_card_width = card_width
+        resolved_card_height = card_length
+        resolved_card_radius = card_radius
+        card_label = f"{card_width}x{card_length}"
+
+    # Resolve paper parameters (stored as landscape: longer dim = width)
+    if has_paper_size:
+        paper_def = config.paper_sizes[paper_size]
+        resolved_paper_width = paper_def.width
+        resolved_paper_height = paper_def.height
+        paper_label = paper_size
+    else:
+        pl_mm = size_convert.size_to_mm(paper_length)
+        pw_mm = size_convert.size_to_mm(paper_width)
+        if pl_mm >= pw_mm:
+            resolved_paper_width = paper_length
+            resolved_paper_height = paper_width
+        else:
+            resolved_paper_width = paper_width
+            resolved_paper_height = paper_length
+        paper_label = f"{paper_width}x{paper_length}"
+
+    # Determine orientation and output name
+    if has_card_size and has_paper_size:
+        if paper_size not in config.layouts or card_size not in config.layouts.get(paper_size, {}):
+            raise click.UsageError(f"No layout defined for {paper_size} + {card_size}. Check layouts.json or use --list.")
+        layout_def = config.layouts[paper_size][card_size]
+        orientation = layout_def.orientation
+        name = template_name(paper_size, card_size, layout_def.version)
+    else:
+        orientation = Orientation.LANDSCAPE
+        name = f"{paper_label}-{card_label}"
+
+    output_file = out / f"{name}.dxf"
+
+    silhouette = config.silhouette
+    ppi = config.ppi
+
+    computed = page_manager.generate_layout(
+        orientation=orientation,
+        card_width=resolved_card_width,
+        card_height=resolved_card_height,
+        paper_width=resolved_paper_width,
+        paper_height=resolved_paper_height,
+        inset=silhouette.inset,
+        length=silhouette.length,
+        ppi=ppi,
+    )
+
+    x_pos = computed.x_pos
+    y_pos = computed.y_pos
+    num_cols = len(x_pos)
+    num_rows = len(y_pos)
+
+    dxf_manager.generate_dxf(
+        resolved_card_width,
+        resolved_card_height,
+        resolved_card_radius,
+        x_pos,
+        y_pos,
+        ppi,
+        output_path=str(output_file),
+    )
+
+    num_cards = num_cols * num_rows
+    print(f"  {paper_label} + {card_label}: {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_file}")
     print("Done!")
 
 
