@@ -939,7 +939,10 @@ def offset_images(images: List[Image.Image], x_offset: int, y_offset: int, ppi: 
     add_offset = False
     for image in images:
         if add_offset:
-            result = ImageChops.offset(image, math.floor(x_offset * ppi / 300), math.floor(y_offset * ppi / 300))
+            # The back page is rotated 180° in the PDF (long-side flip).
+            # In orientation-relative terms: +X = right, -X = left, +Y = up, -Y = down.
+            # Negating x_offset compensates for the 180° x-axis flip.
+            result = ImageChops.offset(image, math.floor(-x_offset * ppi / 300), math.floor(y_offset * ppi / 300))
             # Apply angle rotation if specified
             # Negative angle because PIL rotates counter-clockwise, but we want positive = clockwise
             if angle_offset != 0.0:

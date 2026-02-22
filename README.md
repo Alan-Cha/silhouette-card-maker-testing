@@ -326,15 +326,15 @@ The front page is a simple grid of squares.
 The back page is the same grid of squares, except each square has a slight offset. The following grid illustrates the applied offsets.
 
 ```
-| (-2, -2) | (-1, -2) | ( 0, -2) | ( 1, -2) | ( 2, -2) |
---------------------------------------------------------
-| (-2, -1) | (-1, -1) | ( 0, -1) | ( 1, -1) | ( 2, -1) |
---------------------------------------------------------
-| (-2,  0) | (-1,  0) |  Center  | ( 1,  0) | ( 2,  0) |
+| (-2,  2) | (-1,  2) | ( 0,  2) | ( 1,  2) | ( 2,  2) |
 --------------------------------------------------------
 | (-2,  1) | (-1,  1) | ( 0,  1) | ( 1,  1) | ( 2,  1) |
 --------------------------------------------------------
-| (-2,  2) | (-1,  2) | ( 0,  2) | ( 1,  2) | ( 2,  2) |
+| (-2,  0) | (-1,  0) |  Center  | ( 1,  0) | ( 2,  0) |
+--------------------------------------------------------
+| (-2, -1) | (-1, -1) | ( 0, -1) | ( 1, -1) | ( 2, -1) |
+--------------------------------------------------------
+| (-2, -2) | (-1, -2) | ( 0, -2) | ( 1, -2) | ( 2, -2) |
 ```
 
 To determine the required offset, print out `<paper size>_calibration.pdf` with the card stock you plan to use.
@@ -343,7 +343,7 @@ Shine a strong light on the front so you can see the shadows on the back. Determ
 
 Create and start your virtual Python environment and install Python dependencies if you have not done so already. See [here](#basic-usage) for more information.
 
-Run the script with your offset. This will move all your back sheets in the direction of your offset.
+Run the script with your offset. This will move all your back sheets in the direction of your offset. A positive x value will move the back page to the right and a positive y value moves the back page up, relative to the back page's orientation.
 ```sh
 python offset_pdf.py --x_offset -5 --y_offset 10
 ```
@@ -405,14 +405,15 @@ python create_pdf.py --load_offset
 Usage: offset_pdf.py [OPTIONS]
 
 Options:
-  --pdf_path TEXT         The path of the input PDF.
-  --output_pdf_path TEXT  The desired path of the offset PDF.
-  -x, --x_offset INTEGER  The desired offset in the x-axis.
-  -y, --y_offset INTEGER  The desired offset in the y-axis.
-  -a, --angle FLOAT       The desired angle offset in degrees (positive =
-                          clockwise).
-  -s, --save              Save the offset values.
-  --ppi INTEGER RANGE     Pixels per inch (PPI) when creating PDF.  [default:
-                          300; x>=0]
+  --pdf_path TEXT         Path of the input PDF.
+  --output_pdf_path TEXT  Desired path of the offset PDF.
+  -x, --x_offset INTEGER  X-axis offset, relative to back page orientation
+                          (positive = right, negative = left).
+  -y, --y_offset INTEGER  Y-axis offset, relative to back page orientation
+                          (positive = up, negative = down).
+  -a, --angle FLOAT       Angle offset in degrees (positive = clockwise).
+  -s, --save              Save offset values.
+  --ppi INTEGER RANGE     Pixels per inch (PPI) when generating offset PDF.
+                          [default: 300; x>=0]
   --help                  Show this message and exit.
 ```
