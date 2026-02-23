@@ -2,7 +2,7 @@ import os
 import re
 
 import click
-from utilities import Registration, CardSize, PaperSize, FitMode, generate_pdf
+from utilities import Registration, FitMode, generate_pdf, load_layout_config, get_all_card_size_names, get_all_paper_size_names
 
 front_directory = os.path.join('game', 'front')
 back_directory = os.path.join('game', 'back')
@@ -11,14 +11,18 @@ output_directory = os.path.join('game', 'output')
 
 default_output_path = os.path.join(output_directory, 'game.pdf')
 
+layout_config = load_layout_config()
+card_size_choices = get_all_card_size_names(layout_config)
+paper_size_choices = get_all_paper_size_names(layout_config)
+
 @click.command()
 @click.option("--front_dir_path", default=front_directory, show_default=True, help="The path to the directory containing the card fronts.")
 @click.option("--back_dir_path", default=back_directory, show_default=True, help="The path to the directory containing one or more card backs.")
 @click.option("--double_sided_dir_path", default=double_sided_directory, show_default=True, help="The path to the directory containing card backs for double-sided cards.")
 @click.option("--output_path", default=default_output_path, show_default=True, help="The desired path to the output PDF.")
 @click.option("--output_images", default=False, is_flag=True, help="Create images instead of a PDF.")
-@click.option("--card_size", default=CardSize.STANDARD.value, type=click.Choice([t.value for t in CardSize], case_sensitive=False), show_default=True, help="The desired card size.")
-@click.option("--paper_size", default=PaperSize.LETTER.value, type=click.Choice([t.value for t in PaperSize], case_sensitive=False), show_default=True, help="The desired paper size.")
+@click.option("--card_size", default="standard", type=click.Choice(card_size_choices, case_sensitive=False), show_default=True, help="The desired card size.")
+@click.option("--paper_size", default="letter", type=click.Choice(paper_size_choices, case_sensitive=False), show_default=True, help="The desired paper size.")
 @click.option("--registration", default=Registration.THREE.value, type=click.Choice([t.value for t in Registration], case_sensitive=False), show_default=True, help="The desired registration.")
 @click.option("--only_fronts", default=False, is_flag=True, help="Only use the card fronts, exclude the card backs.")
 @click.option("--fit", default=FitMode.STRETCH.value, type=click.Choice([t.value for t in FitMode], case_sensitive=False), show_default=True, help="How to fit images to card size. 'stretch' allows distortion, 'crop' preserves aspect ratio by center-cropping.")
