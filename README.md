@@ -83,12 +83,12 @@ The table below shows each card size, sorted by size.
 | `standard` | 2.48 x 3.465 | **63 x 88** | 0.7159 | <ul><li>AKA `euro_poker`</li><li>**Magic: the Gathering**</li><li>**Pokémon**</li><li>**Lorcana**</li><li>**One Piece**</li><li>**Riftbound**</li><li>Most other TCGs</li></ui> |
 | `japanese` | 2.323 x 3.386 | **59 x 86** | 0.6860 |  |
 | `credit` | **2.125 x 3.375** | 53.975 x 85.725 | 0.6296 | Credit cards <ul><li>CR80</li><li>ISO/IEC 7810</li></ul> |
-| `euro_business` | 2.165 x 3.346 | **55 x 85** | 0.6471 | <ul><li>`photo`</li><li>EU business cards</li><li>K-pop photocards</li></ul> |
+| `euro_business` | 2.165 x 3.346 | **55 x 85** | 0.6471 | <ul><li>AKA `photo`</li><li>EU business cards</li><li>K-pop photocards</li></ul> |
 | `catan` | 2.126 x 3.15 | **54 x 80** | 0.6750 |  |
 | `70mm_square` | 2.756 x 2.756 | **70 x 70** | 1.0000 |  |
-| `euro_mini` | 1.732 x 2.677 | **44 x 68** | 0.6471 | <ul><li>`mini_euro`</li></ul> |
+| `euro_mini` | 1.732 x 2.677 | **44 x 68** | 0.6471 | <ul><li>AKA `mini_euro`</li></ul> |
 | `mini` | **1.75 x 2.5** | 44.45 x 63.5 | 0.7000 |  |
-| `american_mini` | 1.614 x 2.48 | **41 x 63** | 0.6508 | <ul><li>`mini_american`</li></ul> |   
+| `american_mini` | 1.614 x 2.48 | **41 x 63** | 0.6508 | <ul><li>AKA `mini_american`</li></ul> |   
 | `bridge_square` | **2.25 x 2.25** | 57.15 x 57.15 | 1.0000 |  |
 | `domino_square` | **1.75 x 1.75** | 44.45 x 44.45 | 1.0000 |  |
 | `micro` | **1.25 x 1.75** | 31.75 x 44.45 | 0.7143 |  |
