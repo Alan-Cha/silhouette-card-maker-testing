@@ -23,10 +23,10 @@ def to_mm(value, unit):
 
 
 def format_number(n):
-    rounded = round(n, 2)
+    rounded = round(n, 3)
     if rounded == int(rounded):
         return str(int(rounded))
-    return f"{rounded:.2f}".rstrip("0").rstrip(".")
+    return f"{rounded:.3f}".rstrip("0").rstrip(".")
 
 
 def generate_tables():
@@ -53,7 +53,7 @@ def generate_tables():
         short_side = min(w_mm, h_mm)
         return (-long_side, -short_side, name)
 
-    card_order_alpha = sorted(card_sizes.keys())
+    card_order_alpha = sorted(card_sizes.keys(), key=lambda n: (n[0].isdigit(), n))
     card_order_by_size = sorted(card_sizes.keys(), key=card_size_sort_key)
 
     # Table 1: Layouts (alphabetical)
