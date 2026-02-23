@@ -71,7 +71,7 @@ The table below shows all possible paper and card size combinations and the layo
 
 The table below shows each card size, sorted by size.
 
-| Card size | Inches | Millimeters | Aspect Ratio | Notes |
+| Card size | Inches | Millimeters | Ratio | Notes |
 | --- | --- | --- | --- | --- |
 | `jumbo` | **3.5 x 5.5** | 88.9 x 139.7 | 0.6364 |  |
 | `standard_double` | 3.465 x 4.961 | **88 x 126** | 0.6984 | Magic: The Gathering oversized <ul><li>Planechase</li> <li>Archenemy</li> <li>Commander</li></ui> |
@@ -80,15 +80,15 @@ The table below shows each card size, sorted by size.
 | `bridge` | **2.25 x 3.5** | 57.15 x 88.9 | 0.6429 |  |
 | `business` | **2 x 3.5** | 50.8 x 88.9 | 0.5714 | Business cards |
 | `domino` | **1.75 x 3.5** | 44.45 x 88.9 | 0.5000 |  |
-| `standard` | 2.48 x 3.465 | **63 x 88** | 0.7159 | <ul><li>AKA `euro_poker`</li><li>**Magic: the Gathering**</li><li>**Pokémon**</li><li>**Lorcana**</li><li>**One Piece**</li><li>**Riftbound**</li><li>Most other TCGs</li></ui> |
+| `standard` | 2.48 x 3.465 | **63 x 88** | 0.7159 | AKA `euro_poker`<br>Most standard TCGs<ul><li>**Magic: the Gathering**</li><li>**Pokémon**</li><li>**Lorcana**</li><li>**One Piece**</li><li>**Riftbound**</li></ui> |
 | `japanese` | 2.323 x 3.386 | **59 x 86** | 0.6860 |  |
 | `credit` | **2.125 x 3.375** | 53.975 x 85.725 | 0.6296 | Credit cards <ul><li>CR80</li><li>ISO/IEC 7810</li></ul> |
-| `euro_business` | 2.165 x 3.346 | **55 x 85** | 0.6471 | <ul><li>AKA `photo`</li><li>EU business cards</li><li>K-pop photocards</li></ul> |
+| `euro_business` | 2.165 x 3.346 | **55 x 85** | 0.6471 | AKA `photo`<br>EU business cards<br>K-pop photocards |
 | `catan` | 2.126 x 3.15 | **54 x 80** | 0.6750 |  |
 | `70mm_square` | 2.756 x 2.756 | **70 x 70** | 1.0000 |  |
-| `euro_mini` | 1.732 x 2.677 | **44 x 68** | 0.6471 | <ul><li>AKA `mini_euro`</li></ul> |
+| `euro_mini` | 1.732 x 2.677 | **44 x 68** | 0.6471 | AKA `mini_euro` |
 | `mini` | **1.75 x 2.5** | 44.45 x 63.5 | 0.7000 |  |
-| `american_mini` | 1.614 x 2.48 | **41 x 63** | 0.6508 | <ul><li>AKA `mini_american`</li></ul> |   
+| `american_mini` | 1.614 x 2.48 | **41 x 63** | 0.6508 | AKA `mini_american` |
 | `bridge_square` | **2.25 x 2.25** | 57.15 x 57.15 | 1.0000 |  |
 | `domino_square` | **1.75 x 1.75** | 44.45 x 44.45 | 1.0000 |  |
 | `micro` | **1.25 x 1.75** | 31.75 x 44.45 | 0.7143 |  |
@@ -97,8 +97,8 @@ The table below shows each paper size, sorted by size and standard.
 
 | Paper size | Inches | Millimeters | Notes |
 | --- | --- | --- | --- |
-| `letter` | **8.5 x 11** | 215.9 x 279.4 | <ul><li>AKA `ansi_a`</li></ul> |
-| `tabloid` | **11 x 17** | 279.4 x 431.8 | <ul><li>AKA `ansi_b`</li></ul> |
+| `letter` | **8.5 x 11** | 215.9 x 279.4 | AKA `ansi_a` |
+| `tabloid` | **11 x 17** | 279.4 x 431.8 | AKA `ansi_b` |
 | `a4` | 8.268 x 11.693 | **210 x 297** |  |
 | `a3` | 11.693 x 16.535 | **297 x 420** |  |
 | `arch_b` | **12 x 18** | 304.8 x 457.2 |  |
