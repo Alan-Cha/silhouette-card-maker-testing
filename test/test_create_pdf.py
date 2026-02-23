@@ -51,16 +51,16 @@ def assert_images_match(actual_dir, expected_dir, max_diff_fraction=0.005):
     )
 
     for filename in actual_files:
-        actual_img = Image.open(os.path.join(actual_dir, filename))
-        expected_img = Image.open(os.path.join(expected_dir, filename))
+        with Image.open(os.path.join(actual_dir, filename)) as actual_img, \
+             Image.open(os.path.join(expected_dir, filename)) as expected_img:
 
-        assert actual_img.size == expected_img.size, (
-            f"{filename}: size mismatch {actual_img.size} != {expected_img.size}"
-        )
+            assert actual_img.size == expected_img.size, (
+                f"{filename}: size mismatch {actual_img.size} != {expected_img.size}"
+            )
 
-        # Convert both to same mode for comparison
-        actual_rgb = actual_img.convert('RGB')
-        expected_rgb = expected_img.convert('RGB')
+            # Convert both to same mode for comparison
+            actual_rgb = actual_img.convert('RGB')
+            expected_rgb = expected_img.convert('RGB')
 
         diff = ImageChops.difference(actual_rgb, expected_rgb)
         if diff.getbbox() is not None:
