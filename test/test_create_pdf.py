@@ -1,14 +1,41 @@
+"""
+Tests for create_pdf.py CLI.
+
+Smoke test verifies the CLI runs end-to-end on local fixtures.
+Output image tests render pages to PNG and do pixel-level comparison
+against pre-generated expected images (see test/generate_expected_images.py).
+"""
 import os
-import pytest
 import tempfile
 from click.testing import CliRunner
 from PIL import Image, ImageChops
 from create_pdf import cli
 
-IMAGES_DIR = os.path.join('test', 'images')
-BACK_DIR = os.path.join('test', 'basic', 'back')
-EXPECTED_DIR = os.path.join('test', 'images_expected')
+# Shared test fixture paths
+IMAGES_DIR = os.path.join('test', 'images')       # card images used as input
+BACK_DIR = os.path.join('test', 'basic', 'back')  # back image for all tests
+EXPECTED_DIR = os.path.join('test', 'images_expected')  # pre-generated reference PNGs
 
+
+# --- Smoke Test ---
+
+def test_basic_create_pdf():
+    """Verify the CLI runs without error and produces a PDF."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as output_dir:
+        output_path = os.path.join(output_dir, 'game.pdf')
+        result = runner.invoke(cli, [
+            '--front_dir_path', 'test/basic/front',
+            '--back_dir_path', 'test/basic/back',
+            '--output_path', output_path,
+        ])
+        assert result.exit_code == 0
+        assert os.path.exists(output_path)
+
+
+# --- Output Image Tests ---
+# These tests invoke the CLI with --output_images, rendering each PDF page to
+# PNG, then compare pixel-by-pixel against the expected images in EXPECTED_DIR.
 
 def assert_images_match(actual_dir, expected_dir, max_diff_fraction=0.005):
     """Compare all PNG files in actual_dir against expected_dir pixel-by-pixel.
@@ -81,13 +108,6 @@ def run_output_images_test(test_name, extra_args=None):
             )
 
             assert_images_match(output_dir, expected_dir)
-
-
-def test_basic_create_pdf():
-    runner = CliRunner()
-    result = runner.invoke(cli, "--front_dir_path test/basic/front --back_dir_path test/basic/back --output_path test/basic/output/game.pdf")
-    assert result.exit_code == 0
-    assert os.path.exists("test/basic/output/game.pdf")
 
 
 def test_output_images_default():
