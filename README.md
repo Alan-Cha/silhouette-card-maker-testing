@@ -74,16 +74,16 @@ The table below shows each card size, sorted by size.
 | Card size | Inches | Millimeters | Aspect Ratio | Notes |
 | --- | --- | --- | --- | --- |
 | `jumbo` | **3.5 x 5.5** | 88.9 x 139.7 | 0.6364 |  |
-| `standard_double` | 3.465 x 4.961 | **88 x 126** | 0.6984 | <ul><li>MTG Planechase</li> <li>MTG Archenemy</li> <li>MTG Commander</li></ui> |
+| `standard_double` | 3.465 x 4.961 | **88 x 126** | 0.6984 | * MTG Planechase<br>* MTG Archenemy<br>* MTG Commander |
 | `tarot` | **2.75 x 4.75** | 69.85 x 120.65 | 0.5789 |  |
 | `poker` | **2.5 x 3.5** | 63.5 x 88.9 | 0.7143 |  |
 | `bridge` | **2.25 x 3.5** | 57.15 x 88.9 | 0.6429 |  |
 | `business` | **2 x 3.5** | 50.8 x 88.9 | 0.5714 | Business cards |
 | `domino` | **1.75 x 3.5** | 44.45 x 88.9 | 0.5000 |  |
-| `standard` | 2.48 x 3.465 | **63 x 88** | 0.7159 | <ul><li>`euro_poker`</li><li>**Magic: the Gathering**</li><li>**Pokémon**</li><li>**Lorcana**</li><li>**One Piece**</li><li>**Riftbound**</li><li>Most other TCGs</li></ui> |
+| `standard` | 2.48 x 3.465 | **63 x 88** | 0.7159 | • `euro_poker`<br>• **Magic: the Gathering**<br>• **Pokémon**<br>• **Lorcana**<br>• **One Piece**<br>• **Riftbound**<br>• Most other TCGs |
 | `japanese` | 2.323 x 3.386 | **59 x 86** | 0.6860 |  |
-| `credit` | **2.125 x 3.375** | 53.975 x 85.725 | 0.6296 | Credit cards <ul><li>CR80</li><li>ISO/IEC 7810</li></ul> |
-| `euro_business` | 2.165 x 3.346 | **55 x 85** | 0.6471 | <ul><li>`photo`</li><li>EU business cards</li><li>K-pop photocards</li></ul> |
+| `credit` | **2.125 x 3.375** | 53.975 x 85.725 | 0.6296 | Credit cards<br>• CR80<br>• ISO/IEC 7810 |
+| `euro_business` | 2.165 x 3.346 | **55 x 85** | 0.6471 | • `photo`<br>• EU business cards<br>• K-pop photocards |
 | `catan` | 2.126 x 3.15 | **54 x 80** | 0.6750 |  |
 | `70mm_square` | 2.756 x 2.756 | **70 x 70** | 1.0000 |  |
 | `euro_mini` | 1.732 x 2.677 | **44 x 68** | 0.6471 | - `mini_euro` |
