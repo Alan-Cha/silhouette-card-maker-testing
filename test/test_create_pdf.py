@@ -10,8 +10,14 @@ BACK_DIR = os.path.join('test', 'basic', 'back')
 EXPECTED_DIR = os.path.join('test', 'images_expected')
 
 
-def assert_images_match(actual_dir, expected_dir):
-    """Compare all PNG files in actual_dir against expected_dir pixel-by-pixel."""
+def assert_images_match(actual_dir, expected_dir, max_diff_fraction=0.005):
+    """Compare all PNG files in actual_dir against expected_dir pixel-by-pixel.
+
+    max_diff_fraction: fraction of pixels allowed to differ (default 0.5%).
+    A small tolerance is needed because JPEG decompression and image resampling
+    can produce slightly different pixel values across platforms (e.g. Windows
+    vs Linux libjpeg), even when the layout logic is identical.
+    """
     actual_files = sorted(f for f in os.listdir(actual_dir) if f.endswith('.png'))
     expected_files = sorted(f for f in os.listdir(expected_dir) if f.endswith('.png'))
 
@@ -36,10 +42,13 @@ def assert_images_match(actual_dir, expected_dir):
             # Calculate how many pixels differ
             diff_pixels = sum(1 for px in diff.getdata() if px != (0, 0, 0))
             total_pixels = actual_rgb.size[0] * actual_rgb.size[1]
-            raise AssertionError(
-                f"{filename}: images differ. "
-                f"{diff_pixels}/{total_pixels} pixels differ."
-            )
+            diff_fraction = diff_pixels / total_pixels
+            if diff_fraction > max_diff_fraction:
+                raise AssertionError(
+                    f"{filename}: images differ. "
+                    f"{diff_pixels}/{total_pixels} pixels differ "
+                    f"({diff_fraction:.2%} > {max_diff_fraction:.2%} tolerance)."
+                )
 
 
 def run_output_images_test(test_name, extra_args=None):
