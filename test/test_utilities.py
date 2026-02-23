@@ -475,8 +475,10 @@ class TestOffsetImages:
         assert len(result) == 3
         assert result[0] is img1  # Front page unchanged
         assert result[2] is img3  # Front page unchanged
-        # Back page offset by 10px at 300 PPI: white pixel moves (0,0) -> (10,10)
-        assert result[1].getpixel((10, 10)) == (255, 255, 255)
+        # Back page: x_offset is negated to compensate for 180° flip, y_offset is unchanged.
+        # floor(-10 * 300/300) = -10, floor(10 * 300/300) = 10
+        # White pixel moves (0,0) -> (-10, 10) which wraps to (90, 10) in a 100x100 image.
+        assert result[1].getpixel((90, 10)) == (255, 255, 255)
         assert result[1].getpixel((0, 0)) == (0, 0, 0)
 
     def test_ppi_scaling(self):
@@ -489,13 +491,13 @@ class TestOffsetImages:
         img_back_b = Image.new('RGB', (100, 100), color='black')
         img_back_b.putpixel((0, 0), (255, 255, 255))
 
-        # At 300 PPI, offset of 30 = floor(30 * 300/300) = 30 pixels
+        # x_offset is negated: floor(-30 * 300/300) = -30 pixels → wraps to 70 in 100px image
         result_300 = offset_images([img_front.copy(), img_back_a], 30, 0, 300)
-        # At 600 PPI, offset of 30 = floor(30 * 600/300) = 60 pixels
+        # x_offset is negated: floor(-30 * 600/300) = -60 pixels → wraps to 40 in 100px image
         result_600 = offset_images([img_front.copy(), img_back_b], 30, 0, 600)
 
-        assert result_300[1].getpixel((30, 0)) == (255, 255, 255)
-        assert result_600[1].getpixel((60, 0)) == (255, 255, 255)
+        assert result_300[1].getpixel((70, 0)) == (255, 255, 255)
+        assert result_600[1].getpixel((40, 0)) == (255, 255, 255)
 
 
 class TestOffsetDataSaveLoad:
