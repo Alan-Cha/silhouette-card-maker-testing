@@ -132,7 +132,7 @@ class TestSwudbJsonFormat:
         assert len(parsed_cards) >= 4
 
 
-# --- Unit Tests for Data Corrections ---
+# --- Integration Tests for Data Corrections ---
 
 @pytest.mark.integration
 class TestDataCorrections:

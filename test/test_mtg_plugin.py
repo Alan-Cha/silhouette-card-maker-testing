@@ -21,10 +21,14 @@ from plugins.mtg.deck_formats import (
 from plugins.mtg.scryfall import request_scryfall, get_handle_card
 from plugins.mtg.patterns import MOXFIELD_PATTERN, DECKSTATS_PATTERN
 
+# --- Unit Tests for Deck Format Parsing ---
+
 class TestDeckFormatParsing:
-    def test_star_symbol_in_collector_number():
+    """Test regex pattern matching for special deck format cases."""
+
+    def test_star_symbol_in_collector_number(self):
+        """Test that Moxfield star symbol in collector numbers is matched."""
         # Moxfield exports can include ★ in collector numbers for special versions
-        # e.g. "1 Sol Ring (SLD) 123★"
         line = "1 Sol Ring (SLD) 123★"
         match = MOXFIELD_PATTERN.match(line)
 
@@ -35,7 +39,8 @@ class TestDeckFormatParsing:
         assert match.group(4) == "123★"
 
 
-    def test_collector_number_with_dash():
+    def test_collector_number_with_dash(self):
+        """Test that collector numbers with dashes are matched."""
         # Collector numbers like "123-456" should also be captured
         line = "1 Some Card (SET) 123-456"
         match = MOXFIELD_PATTERN.match(line)
@@ -44,7 +49,8 @@ class TestDeckFormatParsing:
         assert match.group(4) == "123-456"
 
 
-    def test_quantity_with_x():
+    def test_quantity_with_x(self):
+        """Test that quantities with "x" suffix are matched."""
         # Moxfield format can include "x" after quantity (e.g. "4x")
         line = "4x Lightning Bolt (2XM) 117"
         match = MOXFIELD_PATTERN.match(line)
@@ -56,7 +62,8 @@ class TestDeckFormatParsing:
         assert match.group(4) == "117"
 
 
-    def test_deckstats_star_symbol_in_collector_number():
+    def test_deckstats_star_symbol_in_collector_number(self):
+        """Test that Deckstats star symbol in collector numbers is matched."""
         # Deckstats can include ★ in collector numbers
         # e.g. "1 [SLD#1494★] Sol Ring"
         line = "1 [SLD#1494★] Sol Ring"
@@ -67,8 +74,6 @@ class TestDeckFormatParsing:
         assert match.group(2) == "SLD"
         assert match.group(3) == "1494★"
         assert match.group(4) == "Sol Ring"
-
-# --- Unit Tests for Deck Format Parsing ---
 
 class TestSimpleFormat:
     """Test the simple card name list format."""

@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Callable
 from re import compile
 import os
-from api import get_astra_deck
+from plugins.echoes_of_astra.api import get_astra_deck
 
 def parse_astra(deck_text: str, handle_card: Callable) -> None:
     SHARE_URL_PATTERN = compile(r'https\:\/\/www\.astra-builder\.com\/\w+\/create\?deck=(\d+)')

@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Callable, Tuple
-from curiosa import get_curiosa_decklist
+from plugins.sorcery_contested_realm.curiosa import get_curiosa_decklist
 
 card_data_tuple = Tuple[str, int, str] # Name, Quantity, Image URL
 

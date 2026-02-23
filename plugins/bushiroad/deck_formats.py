@@ -3,7 +3,7 @@ from typing import Callable
 from re import compile
 import os
 
-from bushiroad import fetch_decklist, resolve_image_url
+from plugins.bushiroad.bushiroad import fetch_decklist, resolve_image_url
 
 def parse_bushiroad_url(deck_text: str, handle_card: Callable) -> None:
     DECKLOG_URL_PATTERN = compile(r'https?://decklog(?:-en)?\.bushiroad\.com/view/(\w+)\s*')

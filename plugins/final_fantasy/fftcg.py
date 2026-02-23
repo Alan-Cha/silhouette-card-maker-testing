@@ -7,7 +7,9 @@ FFTCG_CARD_API_URL = 'https://fftcg.square-enix-games.com/na/get-cards'
 def get_card_art_from_fftcg(card_name: str, serial_code: str, category: str = '') -> str:
     card_payload = {
         'language': 'en',
-        'text': card_name,
+        # When a serial code is provided, search by code only — combining name and
+        # code with exactmatch returns no results from the FFTCG API.
+        'text': '' if serial_code else card_name,
         'type': [],
         'element': [],
         'cost': [],

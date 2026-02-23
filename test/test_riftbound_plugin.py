@@ -109,3 +109,20 @@ class TestFullFetchWorkflow:
         for f in files:
             file_path = os.path.join(front_dir, f)
             assert os.path.getsize(file_path) > 0
+
+    def test_fetch_with_quantity(self, temp_dirs):
+        """Test fetching cards with quantity > 1."""
+        front_dir = temp_dirs
+
+        deck_text = "2 Seal of Unity"
+
+        handle_card = get_handle_card(ImageServer.PILTOVER, front_dir)
+        parse_deck(deck_text, DeckFormat.PILTOVER, handle_card)
+
+        # Should have 2 copies of the card
+        files = os.listdir(front_dir)
+        assert len(files) == 2
+
+        for f in files:
+            file_path = os.path.join(front_dir, f)
+            assert os.path.getsize(file_path) > 0
