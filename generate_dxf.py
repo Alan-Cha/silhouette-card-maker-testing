@@ -20,11 +20,15 @@ import click
 import page_manager
 import dxf_manager
 import size_convert
-from enums import CardSize, PaperSize, Orientation
-from utilities import LayoutConfig, load_layout_config, template_name
+from enums import Orientation
+from utilities import LayoutConfig, load_layout_config, template_name, resolve_card_size_alias, resolve_paper_size_alias, get_all_card_size_names, get_all_paper_size_names
 
 OUTPUT_DIR = Path("cutting_templates") / "dxf"
 LAYOUTS_PATH = Path("assets") / "layouts.json"
+
+layout_config = load_layout_config()
+card_size_choices = get_all_card_size_names(layout_config)
+paper_size_choices = get_all_paper_size_names(layout_config)
 
 
 def generate_single_dxf(
@@ -84,8 +88,8 @@ def generate_single_dxf(
 @click.command()
 
 # Predefined paper/card sizes from layouts.json
-@click.option("--card_size", type=click.Choice([c.value for c in CardSize], case_sensitive=False), help="Card size. Cannot be combined with --card_length/--card_width.")
-@click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), help="Paper size. Cannot be combined with --paper_length/--paper_width.")
+@click.option("--card_size", type=click.Choice(card_size_choices, case_sensitive=False), help="Card size. Cannot be combined with --card_length/--card_width.")
+@click.option("--paper_size", type=click.Choice(paper_size_choices, case_sensitive=False), help="Paper size. Cannot be combined with --paper_length/--paper_width.")
 
 # For defining paper/card sizes directly instead of using predefined ones from layouts.json
 @click.option("--card_length", type=str, default=None, help="Card length (height) as a size string (e.g. '88mm', '3.5in'). Requires --card_width. Cannot be combined with --card_size.")
@@ -186,6 +190,12 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
         raise click.UsageError("Provide --card_size or (--card_length and --card_width), or use --all.")
     if not has_paper_size and not has_paper_dims:
         raise click.UsageError("Provide --paper_size or (--paper_length and --paper_width), or use --all.")
+
+    # Resolve aliases
+    if has_card_size:
+        card_size = resolve_card_size_alias(config, card_size)
+    if has_paper_size:
+        paper_size = resolve_paper_size_alias(config, paper_size)
 
     # Resolve card parameters
     if has_card_size:
