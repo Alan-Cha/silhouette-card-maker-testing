@@ -124,21 +124,23 @@ def resolve_paper_size_alias(layout_config: LayoutConfig, paper_size: str) -> st
 
 
 def get_all_card_size_names(layout_config: LayoutConfig) -> List[str]:
-    """Return all valid card size names: canonical names and their aliases."""
+    """Return all valid card size names: canonical names and their aliases.
+    Sorted alphabetically, with names starting with a digit at the end."""
     names = list(layout_config.card_sizes.keys())
     for card_def in layout_config.card_sizes.values():
         if card_def.aliases:
             names.extend(card_def.aliases)
-    return names
+    return sorted(names, key=lambda n: (n[0].isdigit(), n))
 
 
 def get_all_paper_size_names(layout_config: LayoutConfig) -> List[str]:
-    """Return all valid paper size names: canonical names and their aliases."""
+    """Return all valid paper size names: canonical names and their aliases.
+    Sorted alphabetically, with names starting with a digit at the end."""
     names = list(layout_config.paper_sizes.keys())
     for paper_def in layout_config.paper_sizes.values():
         if paper_def.aliases:
             names.extend(paper_def.aliases)
-    return names
+    return sorted(names, key=lambda n: (n[0].isdigit(), n))
 
 
 def template_name(paper_size: str, card_size: str, version: int) -> str:
