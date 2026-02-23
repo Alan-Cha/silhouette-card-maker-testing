@@ -16,7 +16,7 @@ from pydantic import BaseModel, model_validator
 
 import page_manager
 import size_convert
-from enums import CardSize, PaperSize, Registration, Orientation
+from enums import Registration, Orientation
 
 # Specify directory locations
 asset_directory = 'assets'
@@ -121,6 +121,24 @@ def resolve_paper_size_alias(layout_config: LayoutConfig, paper_size: str) -> st
             print(f'Paper size "{paper_size}" is an alias of "{name}". Using "{name}" paper size and cutting template.')
             return name
     return paper_size
+
+
+def get_all_card_size_names(layout_config: LayoutConfig) -> List[str]:
+    """Return all valid card size names: canonical names and their aliases."""
+    names = list(layout_config.card_sizes.keys())
+    for card_def in layout_config.card_sizes.values():
+        if card_def.aliases:
+            names.extend(card_def.aliases)
+    return names
+
+
+def get_all_paper_size_names(layout_config: LayoutConfig) -> List[str]:
+    """Return all valid paper size names: canonical names and their aliases."""
+    names = list(layout_config.paper_sizes.keys())
+    for paper_def in layout_config.paper_sizes.values():
+        if paper_def.aliases:
+            names.extend(paper_def.aliases)
+    return names
 
 
 def template_name(paper_size: str, card_size: str, version: int) -> str:
@@ -590,8 +608,8 @@ def generate_pdf(
     ds_dir_path: str,
     output_path: str,
     output_images: bool,
-    card_size: CardSize,
-    paper_size: PaperSize,
+    card_size: str,
+    paper_size: str,
     registration: Registration,
     only_fronts: bool,
     fit: FitMode,

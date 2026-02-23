@@ -34,8 +34,8 @@ from enum import Enum
 
 import click
 
-from enums import PaperSize, Orientation
-from utilities import load_layout_config
+from enums import Orientation
+from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias
 import size_convert
 
 try:
@@ -719,6 +719,10 @@ CALIBRATION_ELEMENTS = [
 # CLI
 # =============================================================================
 
+layout_config = load_layout_config()
+paper_size_choices = get_all_paper_size_names(layout_config)
+
+
 @click.group()
 def cli():
     """Convert DXF files to Silhouette Studio .studio3 format with full automation."""
@@ -728,7 +732,7 @@ def cli():
 @cli.command()
 @click.argument("input_file", type=click.Path(exists=True))
 @click.argument("output_file", type=click.Path())
-@click.option("--paper_size", type=click.Choice([p.value for p in PaperSize], case_sensitive=False), default=PaperSize.LETTER.value, show_default=True, help="Paper size (from layouts.json).")
+@click.option("--paper_size", type=click.Choice(paper_size_choices, case_sensitive=False), default="letter", show_default=True, help="Paper size (from layouts.json).")
 @click.option("--orientation", type=click.Choice([o.value for o in Orientation], case_sensitive=False), default=Orientation.LANDSCAPE.value, show_default=True, help="Paper orientation.")
 @click.option("--no_center", is_flag=True, help="Don't center paths to page.")
 @click.option("--registration", is_flag=True, help="Enable registration marks.")
@@ -753,6 +757,7 @@ def convert(input_file, output_file, paper_size, orientation, no_center, registr
 
     # Look up page dimensions from layouts.json
     config = load_layout_config()
+    paper_size = resolve_paper_size_alias(config, paper_size)
     if paper_size not in config.paper_sizes:
         click.echo(f"Error: Unknown paper size '{paper_size}'. Available: {list(config.paper_sizes.keys())}")
         return
