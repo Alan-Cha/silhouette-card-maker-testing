@@ -7,14 +7,12 @@ against pre-generated expected images (see test/generate_expected_images.py).
 """
 import os
 import tempfile
+import pytest
 from click.testing import CliRunner
+import numpy as np
 from PIL import Image, ImageChops
 from create_pdf import cli
-
-# Shared test fixture paths
-IMAGES_DIR = os.path.join('test', 'images')       # card images used as input
-BACK_DIR = os.path.join('test', 'basic', 'back')  # back image for all tests
-EXPECTED_DIR = os.path.join('test', 'images_expected')  # pre-generated reference PNGs
+from image_cases import IMAGES_DIR, BACK_DIR, EXPECTED_DIR, TEST_CASES
 
 
 # --- Smoke Test ---
@@ -66,8 +64,8 @@ def assert_images_match(actual_dir, expected_dir, max_diff_fraction=0.005):
 
         diff = ImageChops.difference(actual_rgb, expected_rgb)
         if diff.getbbox() is not None:
-            # Calculate how many pixels differ
-            diff_pixels = sum(1 for px in diff.getdata() if px != (0, 0, 0))
+            # Calculate how many pixels differ (any channel non-zero)
+            diff_pixels = int(np.any(np.array(diff) != 0, axis=2).sum())
             total_pixels = actual_rgb.size[0] * actual_rgb.size[1]
             diff_fraction = diff_pixels / total_pixels
             if diff_fraction > max_diff_fraction:
@@ -110,33 +108,6 @@ def run_output_images_test(test_name, extra_args=None):
             assert_images_match(output_dir, expected_dir)
 
 
-def test_output_images_default():
-    run_output_images_test('default')
-
-
-def test_output_images_japanese():
-    run_output_images_test('japanese', ['--card_size', 'japanese'])
-
-
-def test_output_images_only_fronts():
-    run_output_images_test('only_fronts', ['--only_fronts'])
-
-
-def test_output_images_a4():
-    run_output_images_test('a4', ['--paper_size', 'a4'])
-
-
-def test_output_images_crop():
-    run_output_images_test('crop', ['--crop', '3mm'])
-
-
-def test_output_images_extend_corners():
-    run_output_images_test('extend_corners', ['--extend_corners', '5'])
-
-
-def test_output_images_fit_crop():
-    run_output_images_test('fit_crop', ['--fit', 'crop'])
-
-
-def test_output_images_skip():
-    run_output_images_test('skip', ['--skip', '0', '--skip', '4'])
+@pytest.mark.parametrize("test_name,extra_args", TEST_CASES, ids=[n for n, _ in TEST_CASES])
+def test_output_images(test_name, extra_args):
+    run_output_images_test(test_name, extra_args)

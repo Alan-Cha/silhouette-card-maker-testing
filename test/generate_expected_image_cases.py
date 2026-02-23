@@ -15,22 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from click.testing import CliRunner
 from create_pdf import cli
-
-IMAGES_DIR = os.path.join('test', 'images')
-BACK_DIR = os.path.join('test', 'basic', 'back')
-EXPECTED_DIR = os.path.join('test', 'images_expected')
-
-# Each test case: (name, extra_cli_args)
-TEST_CASES = [
-    ('default', []),
-    ('japanese', ['--card_size', 'japanese']),
-    ('only_fronts', ['--only_fronts']),
-    ('a4', ['--paper_size', 'a4']),
-    ('crop', ['--crop', '3mm']),
-    ('extend_corners', ['--extend_corners', '5']),
-    ('fit_crop', ['--fit', 'crop']),
-    ('skip', ['--skip', '0', '--skip', '4']),
-]
+from image_cases import IMAGES_DIR, BACK_DIR, EXPECTED_DIR, TEST_CASES
 
 
 def generate_expected_images():

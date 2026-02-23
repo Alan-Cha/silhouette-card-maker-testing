@@ -6,7 +6,7 @@ requires-python = ">=3.8"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
-pythonpath = ["."]
+pythonpath = [".", "test"]
 markers = [
     "unit: Unit tests that don't require network access",
     "integration: Integration tests that require network access",
