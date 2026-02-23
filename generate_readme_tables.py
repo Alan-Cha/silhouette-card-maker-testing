@@ -106,7 +106,7 @@ def generate_tables():
         aliases = info.get("aliases", [])
         notes = ""
         if aliases:
-            notes = "<ul>" + "".join(f"<li>AKA`{a}`</li>" for a in aliases) + "</ul>"
+            notes = "<br>".join(f"AKA `{a}`" for a in aliases)
 
         print(f"| `{card}` | {in_str} | {mm_str} | {aspect:.4f} | {notes} |")
 
@@ -142,7 +142,7 @@ def generate_tables():
         aliases = info.get("aliases", [])
         notes = ""
         if aliases:
-            notes = "<ul>" + "".join(f"<li>AKA `{a}`</li>" for a in aliases) + "</ul>"
+            notes = "<br>".join(f"AKA `{a}`" for a in aliases)
 
         print(f"| `{paper}` | {in_str} | {mm_str} | {notes} |")
 
