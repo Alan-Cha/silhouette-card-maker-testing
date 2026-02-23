@@ -1,7 +1,7 @@
 from os import path
 from re import compile, search, sub
 from enum import Enum
-import requests
+import cloudscraper
 from time import sleep
 
 PILTOVER_URL_TEMPLATE = 'https://cdn.piltoverarchive.com/cards/{card_number}.webp'
@@ -11,8 +11,9 @@ class ImageServer(str, Enum):
     PILTOVER = 'piltover_archive'
     RIFTMANA = 'riftmana'
 
-def request_api(query: str) -> requests.Response:
-    r = requests.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+def request_api(query: str) -> cloudscraper.CloudScraper:
+    scraper = cloudscraper.create_scraper()
+    r = scraper.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()

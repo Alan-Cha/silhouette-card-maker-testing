@@ -1,7 +1,7 @@
 from enum import Enum
 import os
 from typing import Callable
-from ashes import fetch_deck_data
+from plugins.ashes_reborn.ashes import fetch_deck_data
 from re import compile
 
 def parse_ashes(deck_text: str, handle_card: Callable):

@@ -115,7 +115,7 @@ class TestFabtcgAPI:
 
     def test_fabtcg_api_availability(self):
         """Test that FabTCG API is available and responding."""
-        response = request_fabtcg("https://api.fabdb.net/cards?q=sink+below")
+        response = request_fabtcg("https://cards.fabtcg.com/api/search/v1/cards/?name=sink+below")
         assert response.status_code == 200
 
 

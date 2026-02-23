@@ -151,8 +151,8 @@ class TestDigimonAPI:
     """Test Digimon API requests."""
 
     def test_digimon_api_availability(self):
-        """Test that Digimon API is available and responding."""
-        response = request_digimon("https://digimoncard.io/api-public/search.php?card=BT15-006")
+        """Test that the Digimon card image server is available and responding."""
+        response = request_digimon("https://world.digimoncard.com/images/cardlist/card/BT15-006.png")
         assert response.status_code == 200
 
 

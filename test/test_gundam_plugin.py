@@ -126,7 +126,7 @@ class TestGundamAPI:
     def test_gundam_api_availability(self):
         """Test that Gundam card images are available."""
         # Test with a known card number
-        response = request_bandai("https://www.gundam-tcg.com/assets/images/cardlist/en/ST01-001.png")
+        response = request_bandai("https://www.gundam-gcg.com/en/images/cards/card/ST01-001.webp")
         assert response.status_code == 200
 
 

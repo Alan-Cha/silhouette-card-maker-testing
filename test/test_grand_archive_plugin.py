@@ -91,7 +91,7 @@ class TestGatcgAPI:
 
     def test_gatcg_api_availability(self):
         """Test that Grand Archive API is available and responding."""
-        response = request_gatcg("https://api.gatcg.com/api/cards?search=incapacitate")
+        response = request_gatcg("https://api.gatcg.com/cards/incapacitate")
         assert response.status_code == 200
 
 

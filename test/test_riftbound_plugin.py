@@ -60,7 +60,7 @@ class TestRiftboundAPI:
 
     def test_piltover_archive_api_availability(self):
         """Test that Piltover Archive API is available and responding."""
-        response = request_api("https://piltoverarchive.com/api/v1/cards")
+        response = request_api("https://cdn.piltoverarchive.com/cards/OGN-265.webp")
         assert response.status_code == 200
 
 

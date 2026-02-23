@@ -152,7 +152,7 @@ class TestNetrunnerAPI:
 
     def test_nro_api_availability(self):
         """Test that NRO Proxy API is available and responding."""
-        response = request_api("https://proxy.nro.run/api/altarts")
+        response = request_api("https://api-preview.netrunnerdb.com/api/v3/public/cards/hedge_fund")
         assert response.status_code == 200
 
 

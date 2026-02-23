@@ -10,14 +10,14 @@ from xml.etree import ElementTree as ET
 
 from pyparsing import line
 
-from patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
+from plugins.mtg.patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 
 import cloudscraper
 import filetype
 import mtg_parser
 import requests
 
-from common import remove_nonalphanumeric
+from plugins.mtg.common import remove_nonalphanumeric
 
 card_data_tuple = Tuple[str, str, int, int]
 
