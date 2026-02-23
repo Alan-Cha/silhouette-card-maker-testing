@@ -21,14 +21,18 @@ paper_size_choices = get_all_paper_size_names(layout_config)
 @click.option("--double_sided_dir_path", default=double_sided_directory, show_default=True, help="The path to the directory containing card backs for double-sided cards.")
 @click.option("--output_path", default=default_output_path, show_default=True, help="The desired path to the output PDF.")
 @click.option("--output_images", default=False, is_flag=True, help="Create images instead of a PDF.")
+
 @click.option("--card_size", default="standard", type=click.Choice(card_size_choices, case_sensitive=False), show_default=True, help="The desired card size.")
 @click.option("--paper_size", default="letter", type=click.Choice(paper_size_choices, case_sensitive=False), show_default=True, help="The desired paper size.")
 @click.option("--registration", default=Registration.THREE.value, type=click.Choice([t.value for t in Registration], case_sensitive=False), show_default=True, help="The desired registration.")
+
 @click.option("--only_fronts", default=False, is_flag=True, help="Only use the card fronts, exclude the card backs.")
 @click.option("--fit", default=FitMode.STRETCH.value, type=click.Choice([t.value for t in FitMode], case_sensitive=False), show_default=True, help="How to fit images to card size. 'stretch' allows distortion, 'crop' preserves aspect ratio by center-cropping.")
+
 @click.option("--crop", help="Crop the outer portion of front and double-sided images. Examples: 3mm, 0.125in, 6.5.")
 @click.option("--crop_backs", help="Crop the outer portion of back images. Examples: 3mm, 0.125in, 6.5.")
 @click.option("--extend_corners", default=0, type=click.IntRange(min=0), show_default=True, help="Reduce artifacts produced by rounded corners in card images.")
+
 @click.option("--ppi", default=300, type=click.IntRange(min=0), show_default=True, help="Pixels per inch (PPI) when creating PDF.")
 @click.option("--quality", default=75, type=click.IntRange(min=0, max=100), show_default=True, help="File compression. A higher value corresponds to better quality and larger file size.")
 @click.option("--load_offset", default=False, is_flag=True, help="Apply saved offsets. See `offset_pdf.py` for more information.")
