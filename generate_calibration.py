@@ -10,6 +10,7 @@ front and back dot positions to measure and correct printer misalignment.
 
 import math
 import os
+import re
 from PIL import Image, ImageDraw, ImageFont
 
 import size_convert
@@ -116,4 +117,13 @@ for paper_size, paper_def in layout_config.paper_sizes.items():
         card_list = [front_image, back_image.rotate(180)]
         pdf_path = os.path.join("calibration", f"{paper_size}-calibration.pdf")
         card_list[0].save(pdf_path, save_all=True, append_images=card_list[1:], resolution=300, speed=0, subsampling=0, quality=100)
+
+        # Replace auto-generated timestamps with a fixed placeholder so the PDF
+        # doesn't show as modified in git when regenerated with identical content.
+        with open(pdf_path, 'rb') as f:
+            pdf_bytes = f.read()
+        pdf_bytes = re.sub(rb'D:\d{14}Z', b'D:20000101000000Z', pdf_bytes)
+        with open(pdf_path, 'wb') as f:
+            f.write(pdf_bytes)
+
         print(f'Calibration PDF: {pdf_path}')
