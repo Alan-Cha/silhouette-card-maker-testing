@@ -6,6 +6,14 @@
         "length": "6.5mm"
     },
     "card_sizes": {
+        "american_mini": {
+            "width": "41mm",
+            "height": "63mm",
+            "radius": "3mm",
+            "aliases": [
+                "mini_american"
+            ]
+        },
         "bridge": {
             "width": "2.25in",
             "height": "3.5in",
@@ -14,6 +22,11 @@
         "bridge_square": {
             "width": "2.25in",
             "height": "2.25in",
+            "radius": "3mm"
+        },
+        "catan": {
+            "width": "54mm",
+            "height": "80mm",
             "radius": "3mm"
         },
         "business": {
@@ -47,7 +60,10 @@
         "euro_mini": {
             "width": "44mm",
             "height": "68mm",
-            "radius": "3mm"
+            "radius": "3mm",
+            "aliases": [
+                "mini_euro"
+            ]
         },
         "japanese": {
             "width": "59mm",
@@ -90,6 +106,11 @@
         "tarot": {
             "width": "2.75in",
             "height": "4.75in",
+            "radius": "3mm"
+        },
+        "70mm_square": {
+            "width": "70mm",
+            "height": "70mm",
             "radius": "3mm"
         }
     },
@@ -234,6 +255,27 @@
                 "num_rows": 2,
                 "num_cols": 2,
                 "max_length_mm": 26.16
+            },
+            "american_mini": {
+                "orientation": "portrait",
+                "version": 1,
+                "num_rows": 4,
+                "num_cols": 4,
+                "max_length_mm": 12.78
+            },
+            "catan": {
+                "orientation": "portrait",
+                "version": 1,
+                "num_rows": 3,
+                "num_cols": 3,
+                "max_length_mm": 14.39
+            },
+            "70mm_square": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 2,
+                "num_cols": 3,
+                "max_length_mm": 25.99
             }
         },
         "tabloid": {
@@ -348,6 +390,27 @@
                 "num_rows": 2,
                 "num_cols": 5,
                 "max_length_mm": 27.52
+            },
+            "american_mini": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 4,
+                "num_cols": 9,
+                "max_length_mm": 15.16
+            },
+            "catan": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 3,
+                "num_cols": 7,
+                "max_length_mm": 11.77
+            },
+            "70mm_square": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 3,
+                "num_cols": 5,
+                "max_length_mm": 27.01
             }
         },
         "a4": {
@@ -462,6 +525,27 @@
                 "num_rows": 2,
                 "num_cols": 2,
                 "max_length_mm": 23.28
+            },
+            "american_mini": {
+                "orientation": "portrait",
+                "version": 1,
+                "num_rows": 4,
+                "num_cols": 4,
+                "max_length_mm": 9.91
+            },
+            "catan": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 2,
+                "num_cols": 5,
+                "max_length_mm": 13.12
+            },
+            "70mm_square": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 2,
+                "num_cols": 3,
+                "max_length_mm": 30.9
             }
         },
         "a3": {
@@ -576,6 +660,27 @@
                 "num_rows": 2,
                 "num_cols": 5,
                 "max_length_mm": 21.59
+            },
+            "american_mini": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 4,
+                "num_cols": 9,
+                "max_length_mm": 9.4
+            },
+            "catan": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 3,
+                "num_cols": 7,
+                "max_length_mm": 16.0
+            },
+            "70mm_square": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 3,
+                "num_cols": 5,
+                "max_length_mm": 30.9
             }
         },
         "arch_b": {
@@ -690,6 +795,27 @@
                 "num_rows": 3,
                 "num_cols": 4,
                 "max_length_mm": 35.14
+            },
+            "american_mini": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 4,
+                "num_cols": 10,
+                "max_length_mm": 13.29
+            },
+            "catan": {
+                "orientation": "portrait",
+                "version": 1,
+                "num_rows": 5,
+                "num_cols": 5,
+                "max_length_mm": 14.82
+            },
+            "70mm_square": {
+                "orientation": "landscape",
+                "version": 1,
+                "num_rows": 4,
+                "num_cols": 5,
+                "max_length_mm": 39.71
             }
         }
     }
