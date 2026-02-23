@@ -541,8 +541,6 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
     if name is not None:
         label = f'name: {name}, {label}'
 
-    scaled_margin = math.floor(label_margin_px * ppi_ratio)
-
     # Label goes on the short side of the paper, opposite the top-left black square.
     # Landscape: short sides are left/right; black square top-left → label on RIGHT.
     # Portrait: short sides are top/bottom; black square top-left → label on BOTTOM.
@@ -551,14 +549,14 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
         front_page = front_page.rotate(-90, expand=True)
         draw = ImageDraw.Draw(front_page)
         label_x = math.floor((page_height / 2) * ppi_ratio)
-        label_y = math.floor(page_width * ppi_ratio) - scaled_margin
+        label_y = math.floor(page_width * ppi_ratio) - label_margin_px
         draw.text((label_x, label_y), label, fill=(0, 0, 0), anchor="mm", font=font)
         front_page = front_page.rotate(90, expand=True)
     else:
         # Bottom side: horizontal text
         draw = ImageDraw.Draw(front_page)
         label_x = math.floor((page_width / 2) * ppi_ratio)
-        label_y = math.floor(page_height * ppi_ratio) - scaled_margin
+        label_y = math.floor(page_height * ppi_ratio) - label_margin_px
         draw.text((label_x, label_y), label, fill=(0, 0, 0), anchor="mm", font=font)
 
     # Rotate portrait pages to landscape so the generated PDF is always landscape.
@@ -724,10 +722,6 @@ def generate_pdf(
     # Convert corner radius to pixels for outline drawing
     radius_px = size_convert.size_to_pixel(card_size_def.radius, layout_config.ppi)
 
-    # Place label at the midpoint of the inset (halfway between paper edge and inset boundary)
-    inset_mm = size_convert.size_to_mm(silhouette.inset)
-    label_margin_px = size_convert.size_to_pixel(f"{inset_mm / 2}mm", layout_config.ppi)
-
     num_rows = len(y_pos)
     num_cols = len(x_pos)
     num_cards = num_rows * num_cols
@@ -749,6 +743,9 @@ def generate_pdf(
 
     # The baseline PPI is 300
     ppi_ratio = ppi / 300
+
+    inset_px = size_convert.size_to_pixel(silhouette.inset, layout_config.ppi)
+    label_margin_px = math.floor((inset_px - 2 * MINIMUM_BLEED) * ppi_ratio)
 
     # Load an image with the registration marks
     with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, silhouette.inset, silhouette.thickness, f"{layout_def.max_length_mm}mm", ppi, registration, orientation) as reg_im:
