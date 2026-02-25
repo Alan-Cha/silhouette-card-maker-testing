@@ -1,8 +1,12 @@
+import sys
 from os import path
 from click import command, argument, Choice, option
 
-from .deck_formats import DeckFormat, parse_deck
-from .ashes import get_handle_card, ImageServer
+# Add parent directory to path to allow imports when run as a script
+sys.path.insert(0, path.join(path.dirname(__file__), '..', '..'))
+
+from plugins.ashes_reborn.deck_formats import DeckFormat, parse_deck
+from plugins.ashes_reborn.ashes import get_handle_card, ImageServer
 
 front_directory = path.join('game', 'front')
 

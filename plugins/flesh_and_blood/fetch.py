@@ -1,8 +1,12 @@
+import sys
 from os import path
 from click import command, argument, Choice
 
-from .deck_formats import DeckFormat, parse_deck
-from .fabtcg import get_handle_card
+# Add parent directory to path to allow imports when run as a script
+sys.path.insert(0, path.join(path.dirname(__file__), '..', '..'))
+
+from plugins.flesh_and_blood.deck_formats import DeckFormat, parse_deck
+from plugins.flesh_and_blood.fabtcg import get_handle_card
 
 front_directory = path.join('game', 'front')
 double_sided_directory = path.join('game', 'double_sided')

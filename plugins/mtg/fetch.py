@@ -1,14 +1,15 @@
 import os
+import sys
 from typing import Set
 
 import click
-from .deck_formats import DeckFormat, parse_deck
-from .scryfall import get_handle_card as scryfall_get_handle_card
-from .mpcfill import get_handle_card as mpc_get_handle_card
 
-from deck_formats import DeckFormat, parse_deck, extract_mpcfill_card_ids
-from scryfall import get_handle_card as scryfall_get_handle_card
-from mpcfill import get_handle_card as mpc_get_handle_card, prefetch_mpcfill
+# Add parent directory to path to allow imports when run as a script
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from plugins.mtg.deck_formats import DeckFormat, parse_deck, extract_mpcfill_card_ids
+from plugins.mtg.scryfall import get_handle_card as scryfall_get_handle_card
+from plugins.mtg.mpcfill import get_handle_card as mpc_get_handle_card, prefetch_mpcfill
 
 front_directory = os.path.join('game', 'front')
 double_sided_directory = os.path.join('game', 'double_sided')
