@@ -1,8 +1,13 @@
 import os
+import sys
 
 import click
-from .deck_formats import DeckFormat, parse_deck
-from .lorcast import get_handle_card
+
+# Add parent directory to path to allow imports when run as a script
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from plugins.lorcana.deck_formats import DeckFormat, parse_deck
+from plugins.lorcana.lorcast import get_handle_card
 
 front_directory = os.path.join('game', 'front')
 

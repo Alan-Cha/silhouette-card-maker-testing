@@ -1,8 +1,12 @@
+import sys
 from os import path
 from click import command, argument, Choice
 
-from deck_formats import DeckFormat, parse_deck
-from bushiroad import get_handle_card
+# Add parent directory to path to allow imports when run as a script
+sys.path.insert(0, path.join(path.dirname(__file__), '..', '..'))
+
+from plugins.bushiroad.deck_formats import DeckFormat, parse_deck
+from plugins.bushiroad.bushiroad import get_handle_card
 
 front_directory = path.join('game', 'front')
 back_directory = path.join('game', 'double_sided')
