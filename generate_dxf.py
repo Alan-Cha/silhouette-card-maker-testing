@@ -45,20 +45,21 @@ def generate_single_dxf(
     card_def = config.card_sizes[card_size]
     paper_def = config.paper_sizes[paper_size]
     layout_def = config.layouts[paper_size][card_size]
-    silhouette = config.silhouette
+    reg = config.defaults.registration
     ppi = config.ppi
 
     orientation = layout_def.orientation
     version = layout_def.version
 
+    total_length_mm = size_convert.size_to_mm(reg.length) + page_manager.REG_PADDING_MM
     computed = page_manager.generate_layout(
         orientation=orientation,
         card_width=card_def.width,
         card_height=card_def.height,
         paper_width=paper_def.width,
         paper_height=paper_def.height,
-        inset=silhouette.inset,
-        length=silhouette.length,
+        inset=reg.inset,
+        length=f"{total_length_mm}mm",
         ppi=ppi,
     )
 
@@ -73,7 +74,7 @@ def generate_single_dxf(
     dxf_manager.generate_dxf(
         card_def.width,
         card_def.height,
-        card_def.radius,
+        card_def.radius or config.defaults.card_radius,
         x_pos,
         y_pos,
         ppi,
@@ -94,7 +95,7 @@ def generate_single_dxf(
 # For defining paper/card sizes directly instead of using predefined ones from layouts.json
 @click.option("--card_length", type=str, default=None, help="Card length (height) as a size string (e.g. '88mm', '3.5in'). Requires --card_width. Cannot be combined with --card_size.")
 @click.option("--card_width", type=str, default=None, help="Card width as a size string (e.g. '63mm', '2.5in'). Requires --card_length. Cannot be combined with --card_size.")
-@click.option("--card_radius", type=str, default="3mm", show_default=True, help="Card corner radius as a size string (e.g. '3mm'). Used only with --card_length/--card_width.")
+@click.option("--card_radius", type=str, default=None, help="Card corner radius as a size string (e.g. '3mm'). Overrides the default radius for the card size. Defaults to 3mm when using --card_length/--card_width.")
 @click.option("--card_name", type=str, default=None, help="Override the card label used for the output filename and --save.")
 @click.option("--paper_length", type=str, default=None, help="Paper length (longer dimension) as a size string (e.g. '11in', '297mm'). Requires --paper_width. Cannot be combined with --paper_size.")
 @click.option("--paper_width", type=str, default=None, help="Paper width (shorter dimension) as a size string (e.g. '8.5in', '210mm'). Requires --paper_length. Cannot be combined with --paper_size.")
@@ -143,7 +144,7 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
                     num_cols, num_rows, ml_mm = generate_single_dxf(cs, ps, config, out)
                     raw_config["layouts"][ps][cs]["num_rows"] = num_rows
                     raw_config["layouts"][ps][cs]["num_cols"] = num_cols
-                    raw_config["layouts"][ps][cs]["max_length_mm"] = ml_mm
+                    raw_config["layouts"][ps][cs]["registration"] = {"length": f"{ml_mm}mm"}
                     generated += 1
                 except Exception as e:
                     print(f"  Error: {ps} + {cs}: {e}")
@@ -202,12 +203,12 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
         card_def = config.card_sizes[card_size]
         resolved_card_width = card_def.width
         resolved_card_height = card_def.height
-        resolved_card_radius = card_def.radius
+        resolved_card_radius = card_radius if card_radius is not None else (card_def.radius or config.defaults.card_radius)
         card_label = card_size
     else:
         resolved_card_width = card_width
         resolved_card_height = card_length
-        resolved_card_radius = card_radius
+        resolved_card_radius = card_radius if card_radius is not None else config.defaults.card_radius
         card_label = f"{card_width}x{card_length}"
 
     # Resolve paper parameters (stored as landscape: longer dim = width)
@@ -247,17 +248,18 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
     name = template_name(paper_label, card_label, version)
     output_file = out / f"{name}.dxf"
 
-    silhouette = config.silhouette
+    reg = config.defaults.registration
     ppi = config.ppi
 
+    total_length_mm = size_convert.size_to_mm(reg.length) + page_manager.REG_PADDING_MM
     computed = page_manager.generate_layout(
         orientation=orientation,
         card_width=resolved_card_width,
         card_height=resolved_card_height,
         paper_width=resolved_paper_width,
         paper_height=resolved_paper_height,
-        inset=silhouette.inset,
-        length=silhouette.length,
+        inset=reg.inset,
+        length=f"{total_length_mm}mm",
         ppi=ppi,
     )
 
@@ -310,7 +312,7 @@ def cli(paper_size, card_size, card_length, card_width, card_radius, paper_lengt
                 "version": version,
                 "num_rows": num_rows,
                 "num_cols": num_cols,
-                "max_length_mm": computed.max_length_mm,
+                "registration": {"length": f"{computed.max_length_mm}mm"},
             }
             print(f"  Saved new layout '{paper_label}' + '{card_label}'")
             changed = True
@@ -346,8 +348,9 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
     for ps, paper_def in config.paper_sizes.items():
         for cs, card_def in config.card_sizes.items():
             try:
-                silhouette = config.silhouette
+                reg = config.defaults.registration
                 ppi = config.ppi
+                total_length_mm = size_convert.size_to_mm(reg.length) + page_manager.REG_PADDING_MM
 
                 # Check if a layout already exists for this combination
                 existing = (
@@ -375,8 +378,8 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
                             card_height=card_def.height,
                             paper_width=paper_def.width,
                             paper_height=paper_def.height,
-                            inset=silhouette.inset,
-                            length=silhouette.length,
+                            inset=reg.inset,
+                            length=f"{total_length_mm}mm",
                             ppi=ppi,
                         )
                     except ValueError:
@@ -413,13 +416,13 @@ def _generate_all_optimized(config: LayoutConfig, out: Path):
 
                 raw_config["layouts"][ps][cs]["num_rows"] = num_rows
                 raw_config["layouts"][ps][cs]["num_cols"] = num_cols
-                raw_config["layouts"][ps][cs]["max_length_mm"] = best_computed.max_length_mm
+                raw_config["layouts"][ps][cs]["registration"] = {"length": f"{best_computed.max_length_mm}mm"}
 
                 name = template_name(ps, cs, version)
                 output_file = out / f"{name}.dxf"
 
                 dxf_manager.generate_dxf(
-                    card_def.width, card_def.height, card_def.radius,
+                    card_def.width, card_def.height, card_def.radius or config.defaults.card_radius,
                     best_computed.x_pos, best_computed.y_pos, ppi,
                     output_path=str(output_file),
                 )

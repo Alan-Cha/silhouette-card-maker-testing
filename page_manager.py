@@ -17,6 +17,7 @@ MAX_REG_INSET_MM = 86.36
 MIN_REG_LENGTH_MM = 5.0
 MIN_REG_THICKNESS_MM = 0.5
 MIN_REG_INSET_MM = 10.0
+REG_PADDING_MM = 1.5  # Extra clearance around registration marks
 
 class CardLayout(NamedTuple):
     card_width_px: int

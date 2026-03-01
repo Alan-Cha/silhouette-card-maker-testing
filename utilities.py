@@ -52,16 +52,23 @@ valid_mimetypes = (
 # Approximately 1.25mm of bleed assuming 300 PPI: ceil(1.25mm * 1in/25.4mm * 300ppi)
 MINIMUM_BLEED = 15
 
+
 class CardSizeDef(BaseModel):
     width: str
     height: str
-    radius: str
+    radius: Optional[str] = None
     aliases: Optional[List[str]] = None
 
-class SilhouetteSettings(BaseModel):
-    inset: str
-    thickness: str
-    length: str
+class RegistrationSettings(BaseModel):
+    inset: Optional[str] = None
+    thickness: Optional[str] = None
+    length: Optional[str] = None
+
+
+class DefaultSettings(BaseModel):
+    card_radius: str
+    registration: RegistrationSettings
+
 
 class FitMode(str, Enum):
     STRETCH = "stretch"
@@ -84,19 +91,19 @@ class PaperSizeDef(BaseModel):
             raise ValueError(f'Paper width ({self.width}) must be >= height ({self.height}). Paper sizes are stored as landscape.')
         return self
 
-class CardLayoutDef(BaseModel):
+class CardLayout(BaseModel):
     orientation: Orientation
     version: int
     num_rows: Optional[int] = None
     num_cols: Optional[int] = None
-    max_length_mm: Optional[float] = None
+    registration: Optional[RegistrationSettings] = None
 
 class LayoutConfig(BaseModel):
     ppi: int
-    silhouette: SilhouetteSettings
+    defaults: DefaultSettings
     card_sizes: Dict[str, CardSizeDef]
     paper_sizes: Dict[str, PaperSizeDef]
-    layouts: Dict[str, Dict[str, CardLayoutDef]]
+    layouts: Dict[str, Dict[str, CardLayout]]
 
 
 def load_layout_config() -> LayoutConfig:
@@ -694,16 +701,24 @@ def generate_pdf(
     orientation = layout_def.orientation
     version = layout_def.version
 
-    # Compute card positions dynamically
-    silhouette = layout_config.silhouette
+    # Effective registration: merge per-layout overrides on top of defaults
+    default_reg = layout_config.defaults.registration
+    layout_reg = layout_def.registration
+    lr = layout_reg or RegistrationSettings()
+    effective_inset = lr.inset or default_reg.inset
+    effective_thickness = lr.thickness or default_reg.thickness
+    effective_length = lr.length or default_reg.length
+
+    # Corner exclusion zone = configured mark length + padding constant
+    total_exclusion_mm = size_convert.size_to_mm(default_reg.length) + page_manager.REG_PADDING_MM
     computed = page_manager.generate_layout(
         orientation=orientation,
         card_width=card_size_def.width,
         card_height=card_size_def.height,
         paper_width=paper_size_def.width,
         paper_height=paper_size_def.height,
-        inset=silhouette.inset,
-        length=silhouette.length,
+        inset=effective_inset,
+        length=f"{total_exclusion_mm}mm",
         ppi=layout_config.ppi,
     )
 
@@ -720,7 +735,8 @@ def generate_pdf(
     crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
 
     # Convert corner radius to pixels for outline drawing
-    radius_px = size_convert.size_to_pixel(card_size_def.radius, layout_config.ppi)
+    effective_card_radius = card_size_def.radius or layout_config.defaults.card_radius
+    radius_px = size_convert.size_to_pixel(effective_card_radius, layout_config.ppi)
 
     num_rows = len(y_pos)
     num_cols = len(x_pos)
@@ -744,11 +760,11 @@ def generate_pdf(
     # The baseline PPI is 300
     ppi_ratio = ppi / 300
 
-    inset_px = size_convert.size_to_pixel(silhouette.inset, layout_config.ppi)
+    inset_px = size_convert.size_to_pixel(effective_inset, layout_config.ppi)
     label_margin_px = math.floor((inset_px - 2 * MINIMUM_BLEED) * ppi_ratio)
 
     # Load an image with the registration marks
-    with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, silhouette.inset, silhouette.thickness, f"{layout_def.max_length_mm}mm", ppi, registration, orientation) as reg_im:
+    with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, effective_inset, effective_thickness, effective_length, ppi, registration, orientation) as reg_im:
         reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
 
         # Create the array that will store the filled templates

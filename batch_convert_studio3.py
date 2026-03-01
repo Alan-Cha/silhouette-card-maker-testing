@@ -19,6 +19,8 @@ from pathlib import Path
 
 import click
 
+import size_convert
+
 from enums import Orientation
 from utilities import LayoutConfig, load_layout_config, template_name
 from dxf_to_studio3 import (
@@ -54,51 +56,45 @@ def parse_dxf_filename(filename: str, config: LayoutConfig) -> tuple[str, str] |
     return None
 
 
-def get_paper_dimensions(filename: str, config: LayoutConfig) -> tuple[str, str]:
-    """Get paper width and height unit strings for a DXF file.
+def get_paper_dimensions(paper_size: str | None, config: LayoutConfig) -> tuple[str, str]:
+    """Get paper width and height unit strings for a paper size.
 
-    Parses paper_size from the filename and looks up dimensions
-    in layouts.json. Falls back to letter size.
+    Falls back to letter size if paper_size is None or unknown.
     """
-    parts = parse_dxf_filename(filename, config)
-    if parts is not None:
-        paper_size, _ = parts
+    if paper_size is not None and paper_size in config.paper_sizes:
         paper_def = config.paper_sizes[paper_size]
         return paper_def.width, paper_def.height
 
-    # Fall back to letter
     paper_def = config.paper_sizes["letter"]
     return paper_def.width, paper_def.height
 
 
-def get_orientation_for_dxf(filename: str, config: LayoutConfig) -> Orientation:
-    """Look up the paper orientation for a DXF file from layouts.json.
+def get_orientation_for_dxf(paper_size: str | None, card_size: str | None, config: LayoutConfig) -> Orientation:
+    """Look up the paper orientation for a paper/card size pair from layouts.json.
 
-    Falls back to landscape if the filename can't be parsed.
+    Falls back to landscape if either size is None.
     """
-    parts = parse_dxf_filename(filename, config)
-    if parts is not None:
-        paper_size, card_size = parts
+    if paper_size is not None and card_size is not None:
         return config.layouts[paper_size][card_size].orientation
 
     return Orientation.LANDSCAPE
 
 
-def get_max_length_for_dxf(filename: str, config: LayoutConfig, unit: str) -> float | None:
-    """Look up the max registration mark length for a DXF file.
+def get_max_length_for_dxf(paper_size: str | None, card_size: str | None, config: LayoutConfig, unit: str) -> float | None:
+    """Look up the max registration mark length for a paper/card size pair.
 
     Args:
-        filename: DXF filename.
+        paper_size: Paper size key (e.g. "letter"), or None.
+        card_size: Card size key (e.g. "poker"), or None.
         config: Loaded layout config.
         unit: "mm" or "in".
 
     Returns:
         Max length in the requested unit, or None if not available.
     """
-    parts = parse_dxf_filename(filename, config)
-    if parts is not None:
-        paper_size, card_size = parts
-        mm = config.layouts[paper_size][card_size].max_length_mm
+    if paper_size is not None and card_size is not None:
+        layout_reg = config.layouts[paper_size][card_size].registration
+        mm = size_convert.size_to_mm(layout_reg.length) if layout_reg is not None and layout_reg.length is not None else None
         if mm is None:
             return None
         if unit == "in":
@@ -156,9 +152,10 @@ def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, 
     if dry_run:
         for dxf_file in dxf_files:
             output_file = out_path / dxf_file.with_suffix(".studio3").name
-            orientation = get_orientation_for_dxf(dxf_file.name, config)
-            paper_w, paper_h = get_paper_dimensions(dxf_file.name, config)
-            max_len = get_max_length_for_dxf(dxf_file.name, config, unit)
+            paper_size, card_size = parse_dxf_filename(dxf_file.name, config) or (None, None)
+            orientation = get_orientation_for_dxf(paper_size, card_size, config)
+            paper_w, paper_h = get_paper_dimensions(paper_size, config)
+            max_len = get_max_length_for_dxf(paper_size, card_size, config, unit)
             len_str = f", max_length={max_len}{unit}" if max_len is not None else ""
             click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h}{len_str})")
         click.echo()
@@ -188,9 +185,10 @@ def cli(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, 
 
         for dxf_file in dxf_files:
             output_file = out_path / dxf_file.with_suffix(".studio3").name
-            orientation = get_orientation_for_dxf(dxf_file.name, config)
-            paper_w, paper_h = get_paper_dimensions(dxf_file.name, config)
-            max_len = get_max_length_for_dxf(dxf_file.name, config, unit)
+            paper_size, card_size = parse_dxf_filename(dxf_file.name, config) or (None, None)
+            orientation = get_orientation_for_dxf(paper_size, card_size, config)
+            paper_w, paper_h = get_paper_dimensions(paper_size, config)
+            max_len = get_max_length_for_dxf(paper_size, card_size, config, unit)
 
             # Registration marks: always enabled, thickness=100,
             # length set to the computed max for this layout.
