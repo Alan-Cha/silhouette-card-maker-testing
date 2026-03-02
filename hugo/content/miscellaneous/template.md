@@ -2,121 +2,133 @@
 title: 'Create Templates'
 ---
 
-This project already supports many [cutting templates]({{% ref "../_index.md#supported-sizes" %}}) but if you'd like to create your own, here's what you need to do.
+This project already supports many [cutting templates]({{% ref "../_index.md#supported-sizes" %}}) but if you'd like to add your own, here's how.
 
-### Create cutting template
+Before a cutting template can be used, the card size must exist in [`assets/layouts.json`](https://github.com/Alan-Cha/silhouette-card-maker/blob/main/assets/layouts.json). This is the source of truth for all card and paper sizes — `create_pdf.py` reads it to place registration marks and lay out the card grid, so a template without a matching entry won't work.
 
-Open Silhouette Studio and create a cutting template.
+## Update `layouts.json`
 
-![Cutting template](/images/cutting_template_domino.png)
+A layout entry looks like this:
 
-Use the **Transform tools** to ensure that the cards are aligned and evenly distributed.
-
-![Transform tools](/images/transform_tools.png)
-
-Save the template in `cutting_templates/`.
-
-### Create square PDF
-
-Modify the cutting template so that the corners of the cards are square.
-
-![Square cards](/images/square_cards.png)
-
-Fill the cards with black color.
-
-![Black cards](/images/black_cards.png)
-
-Disable print bleed. 
-
-![Print bleed](/images/print_bleed.png)
-
-Print the template to PDF.
-
-![Print preview](/images/print_preview.png)
-
-### Update `layouts.json`
-
-[`assets/layouts.json`](https://github.com/Alan-Cha/silhouette-card-maker/blob/main/assets/layouts.json) contains the position of each cutting shape.
-
-Import the square PDF into a photo editing software. The photo editing software should convert the PDF into a photo format. The photo must be 300 PPI.
-
-![Photo editor](/images/photo_editor.png)
-
-Determine the coordinates of the top left corner and the size of each card.
-
-![Card_size](/images/card_size.png)
-
-Create a new entry in `layouts.json`.
-
-```diff
+```json
 {
-    "paper_layouts": {
-        "letter": {
-            "width": 3300,
-            "height": 2550,
-            "card_layouts": {
-+               "domino": {
-+                   "width": 524,
-+                   "height": 1049,
-+                   "x_pos": [
-+                       245,
-+                       817,
-+                       1388,
-+                       1959,
-+                       2531
-+                   ],
-+                   "y_pos": [
-+                       205,
-+                       1296
-+                   ],
-+                   "template": "letter-domino-v1"
-+               }
-            }
+    "card_sizes": {
+        "domino": {
+            "width": "1.75in",
+            "height": "3.5in",
         }
+    },
+    "paper_sizes": {
+        "letter": {
+            "width": "11in",
+            "height": "8.5in"
+        }
+    },
+    "layouts": {
+        ...
     }
 }
 ```
 
-### Update `utilities.py`
+You may edit the JSON manually or let `generate_dxf.py` edit it for you by using the `--save` flag. 
 
-[`utilities.py`](https://github.com/Alan-Cha/silhouette-card-maker/blob/main/utilities.py) contains two enums which capture every card and paper size. Update these appropriately.
-
-```diff
-class CardSize(str, Enum):
-    STANDARD = "standard"
-    JAPANESE = "japanese"
-    POKER = "poker"
-    POKER_HALF = "poker_half"
-    BRIDGE = "bridge"
-+   DOMINO = "domino"    
-
-class PaperSize(str, Enum):
-    LETTER = "letter"
-    TABLOID = "tabloid"
-    A4 = "a4"
-    A3 = "a3"
-    ARCH_B = "arch_b"
-```
-
-### Update Assets
-
-If you're adding a new paper size, you also need to add new base images to [`assets/`](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/assets).
-
-For example, for `letter` paper size, there are the following files:
-* [`letter_blank.jpg`](https://github.com/Alan-Cha/silhouette-card-maker/blob/main/assets/letter_blank.jpg)
-* [`letter_registration.jpg`](https://github.com/Alan-Cha/silhouette-card-maker/blob/main/assets/letter_registration.jpg)
-* [`letter_registration.pdf`](https://github.com/Alan-Cha/silhouette-card-maker/blob/main/assets/letter_registration.pdf)
-
-### Run `create_pdf.py`
-
-Now you're ready to test out your new card and paper size!
+For example, to create a new card size, use the `--card_width`, `--card_length`, `--card_name`, and `--save` options. Use `--card_radius` to set the corner radius (defaults to `3mm`).
 
 ```sh
-python create_pdf.py --card_size domino
+python generate_dxf.py --card_width 1.75in --card_length 3.5in --card_name domino --paper_size letter --save
 ```
 
-### Pull Request
+To create a new paper size, use the `--paper_width`, `--paper_length`, `--paper_name`, and `--save` options.
 
-A pull request is how external contributors can suggest changes.
+```sh
+python generate_dxf.py --paper_width 11in --paper_length 8.5in --paper_name letter --paper_size letter --save
+```
+
+Both metric (`mm`) and imperial (`in`) units are accepted. This generates the DXF and saves the new card size, paper size, and layout entry to `layouts.json` automatically.
+
+## Generate DXF files
+
+Once the size is in `layouts.json`, generate DXFs for all new paper and card combinations:
+
+```sh
+python generate_dxf.py --new
+```
+
+Or regenerate everything:
+
+```sh
+python generate_dxf.py --all
+```
+
+DXF files are written to [`cutting_templates/dxf/`](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/cutting_templates/dxf).
+
+## Create template
+
+There are two ways of creating cutting templates, either manually or autogenerating them. Autogenerating them requires calibrating GUI automation, which a bit more involved than manually creating templates.
+
+### Manual template
+
+To convert a DXF to a `.studio3` file by hand, follow these steps in Silhouette Studio.
+
+**Step 1: Set DXF import preference**
+
+Open **Edit > Preferences** (`Ctrl+K`). Click the **Import** tab. Find the **DXF Open** dropdown and set it to **As-is**. Click **OK**.
+
+This ensures DXF dimensions are preserved exactly as drawn when the file is imported.
+
+**Step 2: Open the DXF file**
+
+Press `Ctrl+O`. Navigate to and open your DXF file from `cutting_templates/dxf/`.
+
+**Step 3: Page setup**
+
+Click the **Page Setup** icon in the left sidebar.
+
+- Set the **cutting mat** dropdown:
+  - Paper ≤ 12×12 in → **12" × 12"**
+  - Paper > 12×12 in → **12" × 24"**
+- Set the **media size** dropdown to match the cutting mat.
+- Set the **orientation** (portrait or landscape) to match your layout.
+- Enter the exact **media width** and **height** in inches for your paper size.
+
+**Step 4: Center to page**
+
+Press `Ctrl+A` to select all, then `Ctrl+G` to group. Click the **Transform** icon in the left sidebar, then click **Center to Page**.
+
+**Step 5: Set registration marks**
+
+Click the **Print & Cut** icon in the left sidebar. Enable the **registration marks** checkbox. Set **length**, **thickness**, and **inset** to the minimum (set all to `0` to use Silhouette Studio's minimum allowed values).
+
+**Step 6: Ungroup**
+
+Press `Ctrl+A` to select all, then `Ctrl+Shift+G` to ungroup. This preserves the individual cut paths in the saved file.
+
+**Step 7: Save as `.studio3`**
+
+Press `Ctrl+Shift+S`. Save the file to `cutting_templates/` with a `.studio3` extension.
+
+### Autogenerated templates
+
+`dxf_to_studio3.py` automates the steps above using GUI automation. It requires a one-time calibration to record the screen positions of UI elements.
+
+**Calibrate**
+
+```sh
+python dxf_to_studio3.py calibrate
+```
+
+Silhouette Studio will open and you'll be guided through hovering over each UI element and pressing Enter to record its position. Calibration is saved to `assets/coordinates_<version>.json`.
+
+**Convert new templates**
+
+```sh
+python dxf_to_studio3.py batch --unit mm --new
+```
+
+`--unit` must match the unit setting in Silhouette Studio's preferences (`mm` or `in`). `--new` skips any `.studio3` files that already exist. Use `--dry_run` to preview what would be converted without launching Studio.
+
+`.studio3` files are written to `cutting_templates/`.
+
+## Pull Request
 
 Make a pull request to share your cutting template with the rest of the world!
