@@ -271,7 +271,7 @@ class SilhouetteAutomation:
             print("No calibration file found.")
             print("Run 'calibrate' command first.")
 
-    def _get_window_origin(self):
+    def get_window_origin(self):
         """Get the current top-left corner of the Silhouette Studio window."""
         if self.window:
             rect = self.window.rectangle()
@@ -301,19 +301,19 @@ class SilhouetteAutomation:
         pyautogui.press('n')  # Don't save
         time.sleep(self.action_delay)
 
-    def _click(self, x: int, y: int):
+    def click(self, x: int, y: int):
         """Click at window-relative coordinates.
 
         Queries the current window position so clicks remain correct
         even if the window has been moved.
         """
-        win_x, win_y = self._get_window_origin()
+        win_x, win_y = self.get_window_origin()
         abs_x = win_x + x
         abs_y = win_y + y
         pyautogui.click(abs_x, abs_y)
         time.sleep(self.action_delay)
 
-    def _click_element(self, element_id: str):
+    def click_element(self, element_id: str):
         """
         Click a calibrated element by ID.
 
@@ -323,7 +323,7 @@ class SilhouetteAutomation:
             elem = self.calibration["elements"][element_id]
             x = elem["relative"]["x"]
             y = elem["relative"]["y"]
-            self._click(x, y)
+            self.click(x, y)
             return True
         else:
             print(f"Warning: Element '{element_id}' not calibrated. Run 'calibrate' first.")
@@ -345,16 +345,16 @@ class SilhouetteAutomation:
         pyautogui.hotkey('ctrl', 'k')
         time.sleep(self.action_delay)
 
-        self._click_element("pref_import_tab")
+        self.click_element("pref_import_tab")
         time.sleep(self.action_delay)
 
-        self._click_element("pref_dxf_open_dropdown")
+        self.click_element("pref_dxf_open_dropdown")
         time.sleep(self.action_delay)
 
-        self._click_element("pref_dxf_asis")
+        self.click_element("pref_dxf_asis")
         time.sleep(self.action_delay)
 
-        self._click_element("pref_ok")
+        self.click_element("pref_ok")
         time.sleep(self.action_delay)
 
     # -------------------------------------------------------------------------
@@ -436,34 +436,34 @@ class SilhouetteAutomation:
         print(f"  Setting up page: {mat.value} mat, {width_in:.2f}x{height_in:.2f}in, {orientation.value}")
 
         # Open the Page Setup panel once
-        self._click_element("page_setup")
+        self.click_element("page_setup")
         time.sleep(PANEL_SWITCH_DELAY)
 
         # Select cutting mat
-        self._click_element("cutting_mat_dropdown")
+        self.click_element("cutting_mat_dropdown")
         if mat == CuttingMat.MAT_12X12:
-            self._click_element("cutting_mat_12x12")
+            self.click_element("cutting_mat_12x12")
         else:
-            self._click_element("cutting_mat_12x24")
+            self.click_element("cutting_mat_12x24")
 
         # Select matching media size
-        self._click_element("media_size_dropdown")
+        self.click_element("media_size_dropdown")
         if mat == CuttingMat.MAT_12X12:
-            self._click_element("media_size_12x12")
+            self.click_element("media_size_12x12")
         else:
-            self._click_element("media_size_12x24")
+            self.click_element("media_size_12x24")
 
         # Set orientation
         if orientation == Orientation.PORTRAIT:
-            self._click_element("portrait_button")
+            self.click_element("portrait_button")
         else:
-            self._click_element("landscape_button")
+            self.click_element("landscape_button")
 
         # Set custom dimensions
-        self._click_element("media_width_field")
+        self.click_element("media_width_field")
         type_in_field(f"{width_in:.2f}")
 
-        self._click_element("media_height_field")
+        self.click_element("media_height_field")
         type_in_field(f"{height_in:.2f}")
 
     # -------------------------------------------------------------------------
@@ -483,9 +483,9 @@ class SilhouetteAutomation:
         print("  Centering to page...")
 
         self.select_all_and_group()
-        self._click_element("transform")
+        self.click_element("transform")
         time.sleep(PANEL_SWITCH_DELAY)
-        self._click_element("center_to_page")
+        self.click_element("center_to_page")
 
     def ungroup_all(self):
         """Select all and ungroup (Ctrl+A, Ctrl+Shift+G)."""
@@ -503,24 +503,24 @@ class SilhouetteAutomation:
         """Configure registration mark settings."""
         print(f"  Setting registration marks: enabled={settings.enabled}")
 
-        self._click_element("print_cut")
+        self.click_element("print_cut")
         time.sleep(PANEL_SWITCH_DELAY)
 
         # Enable registration marks
-        self._click_element("regmark_checkbox")
+        self.click_element("regmark_checkbox")
         time.sleep(self.action_delay)
 
         if settings.enabled:
             # Set length
-            self._click_element("regmark_length_field")
+            self.click_element("regmark_length_field")
             type_in_field(str(settings.length))
 
             # Set thickness
-            self._click_element("regmark_thickness_field")
+            self.click_element("regmark_thickness_field")
             type_in_field(str(settings.thickness))
 
             # Set inset
-            self._click_element("regmark_inset_field")
+            self.click_element("regmark_inset_field")
             type_in_field(str(settings.inset))
 
     # -------------------------------------------------------------------------

@@ -205,7 +205,7 @@ Definitions:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def normalize_page_size(
-    orientation,
+    orientation: Orientation,
     paper_width_px: int,
     paper_height_px: int,
 ) -> Tuple[int, int]:
@@ -373,7 +373,7 @@ def compute_card_positions(
 
 
 def generate_layout(
-    orientation,
+    orientation: Orientation,
     card_width: str,
     card_height: str,
     paper_width: str,

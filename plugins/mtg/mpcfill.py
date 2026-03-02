@@ -45,7 +45,7 @@ def request_mpcfill(card_id: str) -> bytes:
     return b64decode(r.content)
 
 
-def _fetch_single(card_id: str) -> tuple[str, bytes | None]:
+def fetch_single(card_id: str) -> tuple[str, bytes | None]:
     """Fetch a single card, returning None on failure instead of raising."""
     try:
         image_bytes = request_mpcfill(card_id)
@@ -75,7 +75,7 @@ def prefetch_mpcfill(card_ids: Set[str]) -> None:
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         # Submit all fetch tasks to the thread pool. Each call returns a Future
         # representing the pending result. We map each Future back to its card_id.
-        futures = {executor.submit(_fetch_single, card_id): card_id for card_id in ids_to_fetch}
+        futures = {executor.submit(fetch_single, card_id): card_id for card_id in ids_to_fetch}
 
         completed = 0
         # as_completed() yields futures in the order they finish, so we can
@@ -94,7 +94,7 @@ def prefetch_mpcfill(card_ids: Set[str]) -> None:
 def get_cached_image(card_id: str) -> bytes | None:
     """Get an image from cache, fetching on-demand if not already cached."""
     if card_id not in _image_cache:
-        _, image_bytes = _fetch_single(card_id)
+        _, image_bytes = fetch_single(card_id)
         if image_bytes:
             _image_cache[card_id] = image_bytes
     return _image_cache.get(card_id)
