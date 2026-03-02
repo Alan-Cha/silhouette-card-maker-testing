@@ -60,9 +60,44 @@ When documentation changes are made, similar changes need to be made in both loc
 
 The Hugo site is deployed to: https://alan-cha.github.io/silhouette-card-maker
 
-## Key Scripts
+## Script Reference
 
-### create_pdf.py
+### User-facing scripts
+
+Run by end users as part of the normal card-making workflow.
+
+| Script | Purpose |
+|--------|---------|
+| `create_pdf.py` | Lay out card images into a print-ready PDF with registration marks |
+| `offset_pdf.py` | Add x/y/angle offset to a PDF to compensate for printer front/back misalignment |
+| `clean_up.py` | Delete all images from `game/front/` and `game/double_sided/` to start fresh |
+
+### Developer/maintainer tools
+
+Run by maintainers to regenerate project artifacts. Not needed for normal card-making use.
+
+| Script | Purpose |
+|--------|---------|
+| `generate_calibration.py` | Generate calibration PDFs for all paper sizes |
+| `generate_dxf.py` | Generate DXF cutting templates from `assets/layouts.json` |
+| `dxf_to_studio3.py` | Convert DXF files to Silhouette Studio `.studio3` format; subcommands: `convert` (single file), `batch` (all DXFs), `calibrate` (record UI coordinates) |
+| `generate_readme_tables.py` | Regenerate the card/paper size tables in `README.md` and Hugo docs |
+
+### Internal modules
+
+Imported by other scripts. Not intended to be run directly.
+
+| Module | Purpose |
+|--------|---------|
+| `utilities.py` | Shared data loading: `LayoutConfig`, `load_layout_config`, `template_name`, etc. |
+| `enums.py` | Shared enums: `Orientation` |
+| `size_convert.py` | Unit conversion utilities (pixels, mm, inches) |
+| `page_manager.py` | Card layout and page geometry calculations |
+| `dxf_manager.py` | DXF file generation utilities |
+
+### Key Script Details
+
+#### create_pdf.py
 Creates PDFs with card layouts and registration marks for cutting. Supports multiple card sizes (standard, japanese, poker, bridge, tarot, etc.) and paper sizes (letter, tabloid, a4, a3, arch_b).
 
 Key options:
@@ -72,7 +107,7 @@ Key options:
 - `--load_offset`: Apply saved printer offset
 - `--skip`: Skip cards near registration marks
 
-### offset_pdf.py
+#### offset_pdf.py
 Adds offset to every other page in a PDF to compensate for printer front/back misalignment. Supports x/y offset and angle rotation.
 
 Key options:

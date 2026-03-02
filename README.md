@@ -27,6 +27,7 @@ Proxies should be easily identifiable as proxies. You may not use this repo to c
 * [supply list](https://alan-cha.github.io/silhouette-card-maker/tutorial/supplies/)
 * [create_pdf.py](#create_pdfpy), a script for laying out your cards in a PDF
 * [offset_pdf.py](#offset_pdfpy), a script for adding an offset to your PDF
+* [clean_up.py](#clean_uppy), a script for clearing your card image directories
 * [cutting_templates/](cutting_templates/), a directory containing Silhoutte Studio cutting templates
 * [calibration/](calibration/), a directory containing offset calibration sheets
 * [examples/](examples/), a directory containing sample games
@@ -418,4 +419,14 @@ Options:
   --ppi INTEGER RANGE     Pixels per inch (PPI) when generating offset PDF.
                           [default: 300; x>=0]
   --help                  Show this message and exit.
+```
+
+## clean_up.py
+
+`clean_up.py` deletes all images from `game/front/` and `game/double_sided/`, leaving the directories empty and ready for a new batch of cards.
+
+### Usage
+
+```sh
+python clean_up.py
 ```
