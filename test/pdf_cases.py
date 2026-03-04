@@ -9,7 +9,7 @@ import os
 # Shared fixture paths
 IMAGES_DIR = os.path.join('test', 'images')       # card images used as input
 BACK_DIR = os.path.join('test', 'basic', 'back')  # back image for all tests
-EXPECTED_DIR = os.path.join('test', 'images_expected')  # pre-generated reference PNGs
+EXPECTED_DIR = os.path.join('test', 'expected_pdfs')  # pre-generated reference PNGs
 
 # Each entry: (name, extra_cli_args)
 # - name: identifies the test and maps to a subdirectory in EXPECTED_DIR

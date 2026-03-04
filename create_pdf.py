@@ -37,8 +37,10 @@ paper_size_choices = get_all_paper_size_names(layout_config)
 @click.option("--quality", default=100, type=click.IntRange(min=0, max=100), show_default=True, help="File compression. A higher value corresponds to better quality and larger file size.")
 @click.option("--load_offset", default=False, is_flag=True, help="Apply saved offsets. See `offset_pdf.py` for more information.")
 @click.option("--skip", type=click.IntRange(min=0), multiple=True, help="Skip a card based on its index. Useful for registration issues. Examples: 0, 4.")
+
 @click.option("--label", help="Apply a custom label to each page.")
 @click.option("--show_outline", default=False, is_flag=True, help="Overlay a black outline of the cutting path on each page.")
+
 @click.version_option("1.8.2")
 
 def cli(

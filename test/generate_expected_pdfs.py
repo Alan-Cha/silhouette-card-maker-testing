@@ -1,6 +1,6 @@
 """Generate expected output images for create_pdf.py integration tests.
 
-Run this script to regenerate the expected images in test/images_expected/
+Run this script to regenerate the expected images in test/expected_pdfs/
 after intentional changes to the layout logic.
 
 Usage:
@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from click.testing import CliRunner
 from create_pdf import cli
-from image_cases import IMAGES_DIR, BACK_DIR, EXPECTED_DIR, TEST_CASES
+from pdf_cases import IMAGES_DIR, BACK_DIR, EXPECTED_DIR, TEST_CASES
 
 
 def generate_expected_images():

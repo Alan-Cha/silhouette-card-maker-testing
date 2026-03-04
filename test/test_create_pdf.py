@@ -12,7 +12,7 @@ from click.testing import CliRunner
 import numpy as np
 from PIL import Image, ImageChops
 from create_pdf import cli
-from image_cases import IMAGES_DIR, BACK_DIR, EXPECTED_DIR, TEST_CASES
+from pdf_cases import IMAGES_DIR, BACK_DIR, EXPECTED_DIR, TEST_CASES
 
 
 # --- Smoke Test ---
