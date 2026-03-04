@@ -107,12 +107,12 @@ def generate_single_dxf(
 @click.option("--all_optimize", "optimize_all", is_flag=True, help="Generate DXF files for all combinations, optimizing orientation for maximum cards. Updates layouts.json if a better orientation is found.")
 @click.option("--new", "generate_new", is_flag=True, help="Generate DXF files only for new paper and card combinations.")
 
-@click.option("--output_dir", type=click.Path(), default=str(OUTPUT_DIR), show_default=True, help="Output directory for DXF files.")
-def cli(paper_size, card_size, card_length, card_width, card_radius, paper_length, paper_width, card_name, paper_name, save, generate_all, generate_new, optimize_all, output_dir):
+@click.option("--output_dir_path", type=click.Path(), default=str(OUTPUT_DIR), show_default=True, help="Output directory for DXF files.")
+def cli(paper_size, card_size, card_length, card_width, card_radius, paper_length, paper_width, card_name, paper_name, save, generate_all, generate_new, optimize_all, output_dir_path):
     """Generate DXF cutting templates from layouts.json."""
     config = load_layout_config()
 
-    out = Path(output_dir)
+    out = Path(output_dir_path)
     out.mkdir(parents=True, exist_ok=True)
 
     if optimize_all:

@@ -77,7 +77,7 @@ python tools/dxf_to_studio3_advanced.py convert input.dxf output.studio3 --regis
 - `--registration`: Enable registration marks
 - `--reg_length`, `--reg_thickness`, `--reg_inset`: Registration mark dimensions (mm)
 - `--studio_path`: Path to Silhouette Studio executable
-- `--calibration_file`: Path to calibration JSON
+- `--calibration_path`: Path to calibration JSON
 
 ### Important Notes:
 

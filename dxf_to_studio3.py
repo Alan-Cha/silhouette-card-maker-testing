@@ -819,10 +819,10 @@ def cli():
 @click.option("--reg_thickness", type=float, default=0, show_default=True, help="Registration mark thickness. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
 @click.option("--reg_inset", type=float, default=0, show_default=True, help="Registration mark inset. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds). Increase if Silhouette Studio is slow.")
-@click.option("--calibration_file", type=click.Path(), default=None, help="Path to calibration JSON. Default: latest coordinates_*.json in assets/.")
+@click.option("--calibration_path", type=click.Path(), default=None, help="Path to calibration JSON. Default: latest coordinates_*.json in assets/.")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
 def convert(input_file, output_file, paper_size, orientation, no_center, registration,
-            reg_length, reg_thickness, reg_inset, action_delay, calibration_file, studio_path):
+            reg_length, reg_thickness, reg_inset, action_delay, calibration_path, studio_path):
     """Convert a DXF file to .studio3 with paper size setup and registration marks."""
     orient = Orientation(orientation)
     reg_settings = None
@@ -858,7 +858,7 @@ def convert(input_file, output_file, paper_size, orientation, no_center, registr
         click.echo("Aborted.")
         return
 
-    cal_path = Path(calibration_file) if calibration_file else None
+    cal_path = Path(calibration_path) if calibration_path else None
     automation = SilhouetteAutomation(studio_path, cal_path, action_delay)
 
     try:
@@ -980,18 +980,18 @@ def calibrate(studio_path):
 
 
 @cli.command()
-@click.option("--dxf_dir", type=click.Path(exists=True), default=str(DEFAULT_DXF_DIR), show_default=True, help="Directory containing DXF files.")
-@click.option("--output_dir", type=click.Path(), default=str(DEFAULT_OUTPUT_DIR), show_default=True, help="Output directory for .studio3 files.")
+@click.option("--dxf_dir_path", type=click.Path(exists=True), default=str(DEFAULT_DXF_DIR), show_default=True, help="Directory containing DXF files.")
+@click.option("--output_dir_path", type=click.Path(), default=str(DEFAULT_OUTPUT_DIR), show_default=True, help="Output directory for .studio3 files.")
 @click.option("--unit", type=click.Choice(["mm", "in"], case_sensitive=False), required=True, help="Unit for registration mark values (must match Silhouette Studio's setting).")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds).")
-@click.option("--calibration_file", type=click.Path(), default=None, help="Path to calibration JSON.")
+@click.option("--calibration_path", type=click.Path(), default=None, help="Path to calibration JSON.")
 @click.option("--new", "generate_new", is_flag=True, help="Only convert layouts whose .studio3 file is missing (based on layouts.json versions).")
 @click.option("--dry_run", is_flag=True, help="List files that would be converted without running Silhouette Studio.")
-def batch(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file, generate_new, dry_run):
+def batch(dxf_dir_path, output_dir_path, unit, studio_path, action_delay, calibration_path, generate_new, dry_run):
     """Batch convert all DXF files in a directory to .studio3 with registration marks."""
-    dxf_path = Path(dxf_dir)
-    out_path = Path(output_dir)
+    dxf_path = Path(dxf_dir_path)
+    out_path = Path(output_dir_path)
     out_path.mkdir(parents=True, exist_ok=True)
 
     config = load_layout_config()
@@ -1049,7 +1049,7 @@ def batch(dxf_dir, output_dir, unit, studio_path, action_delay, calibration_file
         click.echo("Aborted.")
         return
 
-    cal_path = Path(calibration_file) if calibration_file else None
+    cal_path = Path(calibration_path) if calibration_path else None
     automation = SilhouetteAutomation(studio_path, cal_path, action_delay)
 
     try:
