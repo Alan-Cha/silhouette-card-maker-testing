@@ -41,7 +41,7 @@ python generate_dxf.py --card_width 1.75in --card_length 3.5in --card_name domin
 To create a new paper size, use the `--paper_width`, `--paper_length`, `--paper_name`, and `--save` options.
 
 ```sh
-python generate_dxf.py --paper_width 11in --paper_length 8.5in --paper_name letter --paper_size letter --save
+python generate_dxf.py --card_size standard --paper_width 11in --paper_length 8.5in --paper_name letter --save
 ```
 
 Both metric (`mm`) and imperial (`in`) units are accepted. This generates the DXF and saves the new card size, paper size, and layout entry to `layouts.json` automatically.
