@@ -58,11 +58,15 @@ Output goes to `cutting_templates/dxf/`.
 
 ### 3. Convert DXF → `.studio3` (requires Silhouette Studio on Windows)
 
-Run a calibration first if you haven't already (one-time setup per machine/Studio version):
+A pre-built calibration file is included at `assets/gui_coordinates.json`, tested on Silhouette Studio 5.0.402ss on Windows with a display scale of 100% and a display resolution of at least 1920×1080. If your setup matches, you can skip to converting templates below.
+
+If the pre-built calibration doesn't work, run a calibration (one-time setup per machine/Studio version):
 
 ```sh
 python dxf_to_studio3.py calibrate
 ```
+
+Silhouette Studio will open and you'll be guided through hovering over each UI element and pressing Enter to record its position. Calibration is saved to `assets/gui_coordinates.json`.
 
 Then convert all new/changed templates:
 
@@ -100,7 +104,13 @@ Output goes to `calibration/`.
 
 The `README.md` and the Hugo documentation site (`hugo/`) must be kept in sync. See `AGENTS.md` for the mapping between README sections and Hugo content files.
 
-To preview the Hugo site locally:
+To preview the Hugo site locally, first initialize the Git submodules (required for the Hextra theme):
+
+```sh
+git submodule update --init --recursive
+```
+
+Then start the Hugo server:
 
 ```sh
 cd hugo

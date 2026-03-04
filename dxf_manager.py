@@ -3,7 +3,6 @@ import re
 import size_convert
 from ezdxf import units
 from typing import List
-import math
 
 # Write fixed timestamps and GUIDs so regenerated files are deterministic.
 ezdxf.options.write_fixed_meta_data_for_testing = True

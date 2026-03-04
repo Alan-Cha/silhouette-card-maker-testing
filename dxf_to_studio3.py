@@ -9,9 +9,6 @@ This script automates Silhouette Studio with mouse interactions for:
 - Centering cutting paths
 - Registration mark settings
 
-Requirements:
-    pip install pyautogui pywinauto pillow click
-
 Usage:
     python dxf_to_studio3.py convert input.dxf output.studio3 --paper_size letter
     python dxf_to_studio3.py calibrate
@@ -39,19 +36,14 @@ from enums import Orientation
 from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, template_name
 import size_convert
 
-try:
-    import pyautogui
-    pyautogui.FAILSAFE = True
-    pyautogui.PAUSE = 0.1
-except ImportError:
-    print("ERROR: pyautogui not installed. Run: pip install pyautogui pillow")
-    sys.exit(1)
+# pyautogui: Used for mouse/keyboard automation (clicking UI elements, typing, hotkeys).
+# FAILSAFE=True enables abort-by-moving-mouse-to-corner safety feature.
+import pyautogui
+pyautogui.FAILSAFE = True
 
-try:
-    from pywinauto import Application
-except ImportError:
-    print("ERROR: pywinauto not installed. Run: pip install pywinauto")
-    sys.exit(1)
+# pywinauto: Used for window management (connecting to app, resizing, positioning).
+# The win32 backend is used throughout for move_window() and rectangle() methods.
+from pywinauto import Application
 
 
 # =============================================================================
@@ -68,12 +60,9 @@ WINDOW_Y = 0
 
 # Timing (seconds). These defaults work for most machines.
 # Use --action_delay on the CLI to increase if Silhouette Studio is slow.
-STARTUP_WAIT = 10       # Wait for Silhouette Studio to start
-ACTION_DELAY = 1.0      # Delay between UI actions (clicking, typing)
 SETTLE_DELAY = 0.2      # Short delay for UI to settle (after select-all, paste, etc.)
-FILE_LOAD_DELAY = 5.0   # Wait for DXF file to fully load
-PANEL_SWITCH_DELAY = 1.5  # Wait after clicking a sidebar panel icon
-SAVE_DELAY = 3.0        # Wait for save dialog / file write
+ACTION_DELAY = 1.0      # Delay between UI actions (clicking, typing, panel switches)
+LONG_DELAY = 5.0        # Long operations (file load, save, startup uses 2x)
 
 # Calibration file location
 ASSETS_DIR = Path(__file__).parent / "assets"
@@ -99,9 +88,9 @@ class RegistrationSettings:
     of whether the units are set to inches or mm.
     """
     enabled: bool = True
-    length: float = 0  # 0 = minimum allowed by Silhouette Studio
-    thickness: float = 0  # 0 = minimum allowed by Silhouette Studio
-    inset: float = 0  # 0 = minimum allowed by Silhouette Studio
+    length: float = 0  # 0 will default to minimum allowed by Silhouette Studio
+    thickness: float = 0  # 0 will default to minimum allowed by Silhouette Studio
+    inset: float = 0  # 0 will default to minimum allowed by Silhouette Studio
 
 
 def determine_cutting_mat(width_in: float, height_in: float) -> CuttingMat:
@@ -221,8 +210,9 @@ def start_and_resize_studio(studio_path: str = DEFAULT_STUDIO_PATH):
         raise FileNotFoundError(f"Not found: {studio_path}")
 
     subprocess.Popen([studio_path])
-    print(f"Waiting {STARTUP_WAIT}s for startup...")
-    time.sleep(STARTUP_WAIT)
+    startup_wait = 2 * LONG_DELAY
+    print(f"Waiting {startup_wait}s for startup...")
+    time.sleep(startup_wait)
 
     return connect_and_resize_studio(studio_path)
 
@@ -272,8 +262,9 @@ class SilhouetteAutomation:
             raise FileNotFoundError(f"Not found: {self.studio_path}")
 
         subprocess.Popen([self.studio_path])
-        print(f"Waiting {STARTUP_WAIT}s for startup...")
-        time.sleep(STARTUP_WAIT)
+        startup_wait = 2 * LONG_DELAY
+        print(f"Waiting {startup_wait}s for startup...")
+        time.sleep(startup_wait)
 
         self.window, _ = connect_and_resize_studio(self.studio_path)
 
@@ -364,8 +355,8 @@ class SilhouetteAutomation:
 
         pyautogui.press('enter')
         # Wait for Silhouette Studio to fully load the DXF
-        print(f"  Waiting {FILE_LOAD_DELAY}s for file to load...")
-        time.sleep(FILE_LOAD_DELAY)
+        print(f"  Waiting {LONG_DELAY}s for file to load...")
+        time.sleep(LONG_DELAY)
 
     def save_as(self, output_path: str):
         """Save as .studio3 file."""
@@ -386,11 +377,11 @@ class SilhouetteAutomation:
         time.sleep(self.action_delay)
 
         pyautogui.press('enter')
-        time.sleep(SAVE_DELAY)
+        time.sleep(LONG_DELAY)
 
         # Handle overwrite confirmation
         pyautogui.press('y')
-        time.sleep(SAVE_DELAY)
+        time.sleep(LONG_DELAY)
 
         # Close the file to avoid accumulating open tabs
         pyautogui.hotkey('ctrl', 'w')
@@ -423,7 +414,7 @@ class SilhouetteAutomation:
 
         # Open the Page Setup panel once
         self.click_element("page_setup")
-        time.sleep(PANEL_SWITCH_DELAY)
+        time.sleep(ACTION_DELAY)
 
         # Select cutting mat
         self.click_element("cutting_mat_dropdown")
@@ -470,7 +461,7 @@ class SilhouetteAutomation:
 
         self.select_all_and_group()
         self.click_element("transform")
-        time.sleep(PANEL_SWITCH_DELAY)
+        time.sleep(ACTION_DELAY)
         self.click_element("center_to_page")
 
     # def ungroup_all(self):
@@ -504,7 +495,7 @@ class SilhouetteAutomation:
         print(f"  Setting registration marks: enabled={settings.enabled}")
 
         self.click_element("print_cut")
-        time.sleep(PANEL_SWITCH_DELAY)
+        time.sleep(ACTION_DELAY)
 
         # Enable registration marks
         self.click_element("regmark_checkbox")
