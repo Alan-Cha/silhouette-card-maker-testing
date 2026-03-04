@@ -487,13 +487,13 @@ class SilhouetteAutomation:
         time.sleep(PANEL_SWITCH_DELAY)
         self.click_element("center_to_page")
 
-    def ungroup_all(self):
-        """Select all and ungroup (Ctrl+A, Ctrl+Shift+G)."""
-        print("  Ungrouping...")
-        pyautogui.hotkey('ctrl', 'a')
-        time.sleep(self.action_delay)
-        pyautogui.hotkey('ctrl', 'shift', 'g')
-        time.sleep(self.action_delay)
+    # def ungroup_all(self):
+    #     """Select all and ungroup (Ctrl+A, Ctrl+Shift+G)."""
+    #     print("  Ungrouping...")
+    #     pyautogui.hotkey('ctrl', 'a')
+    #     time.sleep(self.action_delay)
+    #     pyautogui.hotkey('ctrl', 'shift', 'g')
+    #     time.sleep(self.action_delay)
 
     def release_compound_path(self):
         """Select all and release compound path (Ctrl+A, Ctrl+Shift+E).
@@ -592,11 +592,8 @@ class SilhouetteAutomation:
         if registration:
             self.set_registration_marks(registration)
 
-        # Ungroup the centering group, then release the compound path so each
-        # card is individually selectable. SS merges all LINE/ARC entities into
-        # one compound path on import; Ctrl+Shift+E splits them back out.
-        self.ungroup_all()
         self.release_compound_path()
+        # self.ungroup_all()
 
         self.save_as(output_studio3)
 
