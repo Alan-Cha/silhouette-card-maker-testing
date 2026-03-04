@@ -764,7 +764,7 @@ def generate_pdf(
     label_margin_px = math.floor((inset_px - 2 * MINIMUM_BLEED) * ppi_ratio)
 
     # Load an image with the registration marks
-    with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, effective_inset, effective_thickness, effective_length, ppi, registration, orientation) as reg_im:
+    with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, effective_inset, effective_thickness, effective_length, layout_config.ppi, registration, orientation) as reg_im:
         reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
 
         # Create the array that will store the filled templates

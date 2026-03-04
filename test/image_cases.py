@@ -33,8 +33,28 @@ TEST_CASES = [
     ('a4-bridge',      ['--paper_size', 'a4', '--card_size', 'bridge', '--only_fronts']),
 
     # Other options
+    ('ppi600', ['--ppi', '600']),
+    ('ppi1200', ['--ppi', '1200']),
+    ('a4-ppi600',      ['--paper_size', 'a4', '--ppi', '600', '--only_fronts']),
+    ('a4-ppi1200',     ['--paper_size', 'a4', '--ppi', '1200', '--only_fronts']),
+
+    ('ppi600-quality100', ['--ppi', '600', '--quality', '100']),
+
+    ('quality100', ['--quality', '100']),
+    ('quality75', ['--quality', '75', '--only_fronts']),
+    ('quality50', ['--quality', '50', '--only_fronts']),
+
+    ('registration4', ['--registration', '4']),
+    ('registration4-tabloid', ['--registration', '4', '--paper_size', 'tabloid']),
+
+    ('show_outline', ['--show_outline']),
+    ('show_outline-domino', ['--show_outline', '--card_size', 'domino']),
+    
+    ('label', ['--label', 'Test Label', '--only_fronts']),
+    ('label-tabloid', ['--label', 'Test Label', '--paper_size', 'tabloid', '--only_fronts']),
+
     ('crop',           ['--crop', '3mm', '--only_fronts']),
     ('extend_corners', ['--extend_corners', '10', '--only_fronts']),
-    ('fit_crop',       ['--card_size', 'domino','--fit', 'crop', '--only_fronts']),
+    ('fit_crop',       ['--card_size', 'domino', '--fit', 'crop', '--only_fronts']),
     ('skip',           ['--skip', '0', '--skip', '4']),
 ]
