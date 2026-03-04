@@ -12,3 +12,6 @@ markers = [
     "integration: Integration tests that require network access",
     "slow: Tests that take a long time to run",
 ]
+filterwarnings = [
+    "ignore::pyparsing.exceptions.PyparsingDeprecationWarning",
+]

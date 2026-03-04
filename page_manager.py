@@ -159,7 +159,9 @@ def generate_reg_mark(
     img_buf = io.BytesIO()
     plt.savefig(img_buf, format='jpg')
     img_buf.seek(0)
-    return Image.open(img_buf)
+    img = Image.open(img_buf)
+    plt.close(fig)  # Close the figure to free memory
+    return img
 
 
 """
