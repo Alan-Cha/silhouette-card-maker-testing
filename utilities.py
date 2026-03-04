@@ -537,16 +537,16 @@ def draw_outline(
                 width=1,
             )
 
-def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, name: str, orientation: Orientation, label_margin_px: int):
+def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, label: str, orientation: Orientation, label_margin_px: int):
     font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 40 * ppi_ratio)
 
     num_sheet = len(pages) + 1
     if not only_fronts:
         num_sheet = int(len(pages) / 2) + 1
 
-    label = f'sheet: {num_sheet}, template: {template}'
-    if name is not None:
-        label = f'name: {name}, {label}'
+    label_text = f'sheet: {num_sheet}, template: {template}'
+    if label is not None:
+        label_text = f'label: {label}, {label_text}'
 
     # Label goes on the short side of the paper, opposite the top-left black square.
     # Landscape: short sides are left/right; black square top-left → label on RIGHT.
@@ -557,14 +557,14 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
         draw = ImageDraw.Draw(front_page)
         label_x = math.floor((page_height / 2) * ppi_ratio)
         label_y = math.floor(page_width * ppi_ratio) - label_margin_px
-        draw.text((label_x, label_y), label, fill=(0, 0, 0), anchor="mm", font=font)
+        draw.text((label_x, label_y), label_text, fill=(0, 0, 0), anchor="mm", font=font)
         front_page = front_page.rotate(90, expand=True)
     else:
         # Bottom side: horizontal text
         draw = ImageDraw.Draw(front_page)
         label_x = math.floor((page_width / 2) * ppi_ratio)
         label_y = math.floor(page_height * ppi_ratio) - label_margin_px
-        draw.text((label_x, label_y), label, fill=(0, 0, 0), anchor="mm", font=font)
+        draw.text((label_x, label_y), label_text, fill=(0, 0, 0), anchor="mm", font=font)
 
     # Rotate portrait pages to landscape so the generated PDF is always landscape.
     # This ensures offset_pdf.py works regardless of orientation detection.
@@ -627,7 +627,7 @@ def generate_pdf(
     quality: int,
     skip_indices: List[int],
     load_offset: bool,
-    name: str,
+    label: str,
     show_outline: bool = False,
 ):
     # Sanity checks for the different directories
@@ -906,7 +906,7 @@ def generate_pdf(
                 ppi_ratio,
                 template,
                 only_fronts,
-                name,
+                label,
                 orientation,
                 label_margin_px
             )
