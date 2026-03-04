@@ -117,11 +117,15 @@ Press `Ctrl+Shift+S`. Save the file to `cutting_templates/` with a `.studio3` ex
 
 **Calibrate**
 
+A pre-built calibration file is included at [`assets/gui_coordinates.json`](https://github.com/Alan-Cha/silhouette-card-maker/blob/main/assets/gui_coordinates.json), tested on Silhouette Studio 5.0.402ss on Windows with a display scale of 100% and a display resolution of at least 1920×1080. If your setup matches, you can skip to the **Convert new templates** step below.
+
+If it doesn't work, perform the calibration step:
+
 ```sh
 python dxf_to_studio3.py calibrate
 ```
 
-Silhouette Studio will open and you'll be guided through hovering over each UI element and pressing Enter to record its position. Calibration is saved to `assets/coordinates_<version>.json`.
+Silhouette Studio will open and you'll be guided through hovering over each UI element and pressing Enter to record its position. Calibration is saved to `assets/gui_coordinates.json`.
 
 **Convert new templates**
 

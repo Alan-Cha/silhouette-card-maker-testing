@@ -77,25 +77,12 @@ SAVE_DELAY = 3.0        # Wait for save dialog / file write
 
 # Calibration file location
 ASSETS_DIR = Path(__file__).parent / "assets"
+CALIBRATION_FILE = ASSETS_DIR / "gui_coordinates.json"
 
 # Batch conversion defaults
 DEFAULT_DXF_DIR = Path(__file__).parent / "cutting_templates" / "dxf"
 DEFAULT_OUTPUT_DIR = Path(__file__).parent / "cutting_templates"
 
-
-def calibration_filename(version: str) -> Path:
-    """Build calibration file path from a Silhouette Studio version string.
-
-    Example: "5.0.402ss" -> assets/coordinates_5_0_402ss.json
-    """
-    safe = version.strip().replace(".", "_")
-    return ASSETS_DIR / f"coordinates_{safe}.json"
-
-
-def find_latest_calibration() -> Optional[Path]:
-    """Find the most recently modified coordinates_*.json in assets/."""
-    files = sorted(ASSETS_DIR.glob("coordinates_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return files[0] if files else None
 
 
 class CuttingMat(Enum):
@@ -168,12 +155,11 @@ def paste():
 def load_calibration(filepath: Path = None) -> Optional[dict]:
     """Load calibration data from JSON file.
 
-    If no filepath given, auto-detects the most recent
-    coordinates_*.json in assets/.
+    If no filepath given, uses the default CALIBRATION_FILE.
     """
     if filepath is None:
-        filepath = find_latest_calibration()
-    if filepath is None or not filepath.exists():
+        filepath = CALIBRATION_FILE
+    if not filepath.exists():
         return None
 
     try:
@@ -834,7 +820,7 @@ def cli():
 @click.option("--reg_thickness", type=float, default=0, show_default=True, help="Registration mark thickness. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
 @click.option("--reg_inset", type=float, default=0, show_default=True, help="Registration mark inset. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds). Increase if Silhouette Studio is slow.")
-@click.option("--calibration_path", type=click.Path(), default=None, help="Path to calibration JSON. Default: latest coordinates_*.json in assets/.")
+@click.option("--calibration_path", type=click.Path(), default=None, help="Path to calibration JSON. Default: assets/gui_coordinates.json.")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
 def convert(input_file, output_file, paper_size, orientation, no_center, registration,
             reg_length, reg_thickness, reg_inset, action_delay, calibration_path, studio_path):
@@ -908,9 +894,7 @@ def calibrate(studio_path):
     Starts Silhouette Studio at a fixed window size, then prompts you
     to hover over each UI element and press Enter to record its position.
 
-    Saves window-relative coordinates to assets/coordinates_{version}.json
-    where {version} is the Silhouette Studio version with periods replaced
-    by underscores.
+    Saves window-relative coordinates to assets/gui_coordinates.json.
     """
     click.echo("=" * 60)
     click.echo("UI Coordinate Calibration Tool")
@@ -919,7 +903,7 @@ def calibrate(studio_path):
     click.echo("This tool will:")
     click.echo(f"  1. Start Silhouette Studio at {WINDOW_WIDTH}x{WINDOW_HEIGHT}")
     click.echo("  2. Prompt you to hover over each UI element")
-    click.echo(f"  3. Save relative coordinates to assets/coordinates_<version>.json")
+    click.echo(f"  3. Save relative coordinates to {CALIBRATION_FILE}")
     click.echo()
     click.echo("Press 's' to skip an element, Ctrl+C to abort.")
     click.echo()
@@ -935,7 +919,7 @@ def calibrate(studio_path):
     version = click.prompt("What version of Silhouette Studio are you using?", default="unknown")
     click.echo()
 
-    output_file = calibration_filename(version)
+    output_file = CALIBRATION_FILE
     click.echo(f"Calibration will be saved to: {output_file}")
     click.echo()
 

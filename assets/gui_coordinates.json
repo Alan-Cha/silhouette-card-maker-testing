@@ -1,0 +1,167 @@
+{
+  "version": "1.0",
+  "silhouette_studio_version": "5.0.402ss",
+  "window": {
+    "x": 0,
+    "y": 0,
+    "width": 1920,
+    "height": 1080
+  },
+  "elements": {
+    "pref_import_tab": {
+      "name": "Import tab in Preferences",
+      "relative": {
+        "x": 952,
+        "y": 335
+      }
+    },
+    "pref_dxf_open_dropdown": {
+      "name": "DXF Open dropdown",
+      "relative": {
+        "x": 1126,
+        "y": 453
+      }
+    },
+    "pref_dxf_asis": {
+      "name": "As-is option for DXF Open",
+      "relative": {
+        "x": 1122,
+        "y": 485
+      }
+    },
+    "pref_ok": {
+      "name": "OK button in Preferences",
+      "relative": {
+        "x": 1182,
+        "y": 780
+      }
+    },
+    "page_setup": {
+      "name": "Page Setup icon in sidebar",
+      "relative": {
+        "x": 1895,
+        "y": 125
+      }
+    },
+    "cutting_mat_dropdown": {
+      "name": "Cutting mat dropdown",
+      "relative": {
+        "x": 1767,
+        "y": 337
+      }
+    },
+    "cutting_mat_12x12": {
+      "name": "12x12 cutting mat option",
+      "relative": {
+        "x": 1771,
+        "y": 457
+      }
+    },
+    "cutting_mat_12x24": {
+      "name": "12x24 cutting mat option",
+      "relative": {
+        "x": 1771,
+        "y": 490
+      }
+    },
+    "media_size_dropdown": {
+      "name": "Media size dropdown",
+      "relative": {
+        "x": 1773,
+        "y": 375
+      }
+    },
+    "media_size_12x12": {
+      "name": "12x12 media size option",
+      "relative": {
+        "x": 1773,
+        "y": 519
+      }
+    },
+    "media_size_12x24": {
+      "name": "12x24 media size option",
+      "relative": {
+        "x": 1777,
+        "y": 485
+      }
+    },
+    "media_width_field": {
+      "name": "Media width input field",
+      "relative": {
+        "x": 1793,
+        "y": 467
+      }
+    },
+    "media_height_field": {
+      "name": "Media height input field",
+      "relative": {
+        "x": 1793,
+        "y": 528
+      }
+    },
+    "portrait_button": {
+      "name": "Portrait orientation button",
+      "relative": {
+        "x": 1656,
+        "y": 599
+      }
+    },
+    "landscape_button": {
+      "name": "Landscape orientation button",
+      "relative": {
+        "x": 1794,
+        "y": 600
+      }
+    },
+    "transform": {
+      "name": "Transform icon in sidebar",
+      "relative": {
+        "x": 1896,
+        "y": 247
+      }
+    },
+    "center_to_page": {
+      "name": "Center to Page button",
+      "relative": {
+        "x": 1778,
+        "y": 230
+      }
+    },
+    "print_cut": {
+      "name": "Print & Cut icon in sidebar",
+      "relative": {
+        "x": 1897,
+        "y": 334
+      }
+    },
+    "regmark_checkbox": {
+      "name": "Registration marks enable checkbox",
+      "relative": {
+        "x": 1595,
+        "y": 225
+      }
+    },
+    "regmark_length_field": {
+      "name": "Registration mark length input field",
+      "relative": {
+        "x": 1795,
+        "y": 408
+      }
+    },
+    "regmark_thickness_field": {
+      "name": "Registration mark thickness input field",
+      "relative": {
+        "x": 1794,
+        "y": 463
+      }
+    },
+    "regmark_inset_field": {
+      "name": "Registration mark inset input field",
+      "relative": {
+        "x": 1795,
+        "y": 517
+      }
+    }
+  },
+  "notes": "All coordinates are relative to the window top-left corner"
+}
