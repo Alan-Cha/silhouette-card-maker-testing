@@ -495,6 +495,20 @@ class SilhouetteAutomation:
         pyautogui.hotkey('ctrl', 'shift', 'g')
         time.sleep(self.action_delay)
 
+    def release_compound_path(self):
+        """Select all and release compound path (Ctrl+A, Ctrl+Shift+E).
+
+        When a DXF is imported with LINE+ARC entities, Silhouette Studio merges
+        all entities into a single compound path regardless of DXF layers or groups.
+        Ctrl+Shift+E releases the compound path into individually selectable card paths.
+        This must be called after ungrouping so the compound path is the selected object.
+        """
+        print("  Releasing compound path...")
+        pyautogui.hotkey('ctrl', 'a')
+        time.sleep(self.action_delay)
+        pyautogui.hotkey('ctrl', 'shift', 'e')
+        time.sleep(self.action_delay)
+
     # -------------------------------------------------------------------------
     # Registration Marks
     # -------------------------------------------------------------------------
@@ -544,7 +558,8 @@ class SilhouetteAutomation:
         3. Center paths
         4. Set registration marks
         5. Ungroup cutting paths
-        6. Save as .studio3
+        6. Release compound path (Ctrl+Shift+E) so each card is individually selectable
+        7. Save as .studio3
 
         Args:
             input_dxf: Path to the input DXF file.
@@ -577,8 +592,11 @@ class SilhouetteAutomation:
         if registration:
             self.set_registration_marks(registration)
 
-        # Ungroup so individual cut paths are preserved in the .studio3
+        # Ungroup the centering group, then release the compound path so each
+        # card is individually selectable. SS merges all LINE/ARC entities into
+        # one compound path on import; Ctrl+Shift+E splits them back out.
         self.ungroup_all()
+        self.release_compound_path()
 
         self.save_as(output_studio3)
 

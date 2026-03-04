@@ -9,40 +9,56 @@ import math
 ezdxf.options.write_fixed_meta_data_for_testing = True
 
 def add_rounded_rectangle(msp, x, y, width, height, radius):
-    y=-y-height #corner alignment
-    # Define corner centers
-    bl = (x + radius, y + radius)  # Bottom-left
-    br = (x + width - radius, y + radius)  # Bottom-right
-    tr = (x + width - radius, y + height - radius)  # Top-right
-    tl = (x + radius, y + height - radius)  # Top-left
+    """Add a rounded rectangle as separate LINE + ARC entities (screen Y-down coords).
 
-    # Lines between arcs
-    msp.add_line((bl[0], y), (br[0], y))  # Bottom edge
-    msp.add_line((x + width, br[1]), (x + width, tr[1]))  # Right edge
-    msp.add_line((tr[0], y + height), (tl[0], y + height))  # Top edge
-    msp.add_line((x, tl[1]), (x, bl[1]))  # Left edge
+    Uses separate LINE and ARC entities, NOT a closed polyline (POLYLINE2D/LWPOLYLINE).
 
-    # Corner arcs (always counter-clockwise in DXF)
-    msp.add_arc(center=br, radius=radius, start_angle=270, end_angle=360)  # Bottom-right
-    msp.add_arc(center=tr, radius=radius, start_angle=0, end_angle=90)     # Top-right
-    msp.add_arc(center=tl, radius=radius, start_angle=90, end_angle=180)   # Top-left
-    msp.add_arc(center=bl, radius=radius, start_angle=180, end_angle=270)  # Bottom-left
+    ENTITY TYPE INVESTIGATION SUMMARY
+    ----------------------------------
+    Two conflicting requirements exist for Silhouette Studio (SS) DXF import:
+      (A) Correct image fill orientation (not vertically flipped)
+      (B) Individually selectable card paths after import
 
-def add_rounded_rectangle_polyline(msp, x, y, width, height, radius):
-    y=-y-height #corner alignment
-    bulge = math.tan(math.radians(90 / 4))  # bulge for 90-degree arc ≈ 0.4142
-    raw_points = [
-        (x + width - radius, y, bulge),  # bottom-right arc
-        (x + width, y + radius),  # right side
-        (x + width, y + height - radius, bulge),  # top-right arc
-        (x + width - radius, y + height),  # top line
-        (x + radius, y + height, bulge),  # top-left arc
-        (x + 0, y + height - radius),  # left side
-        (x + 0, y + radius, bulge),  # bottom-left arc
-        (x + radius, y),  # bottom line
-    ] 
+    POLYLINE2D / LWPOLYLINE (single entity per card):
+      - Satisfies (B): each card is one entity, individually selectable after ungrouping.
+      - Fails (A): image fills appear vertically flipped in SS, regardless of winding
+        direction (CCW/CW), starting vertex, or Y-coordinate convention.
+        Tested exhaustively across ~10 variants with no fix found.
 
-    msp.add_polyline2d(raw_points, format="xyb", close=True)
+    Separate LINE + ARC entities (8 entities per card):
+      - Satisfies (A): correct image fill orientation.
+      - Fails (B) when 2+ cards are present: SS merges all LINE/ARC entities from the
+        file into a single compound path, making cards inseparable.
+        Tested with: same layer, per-card DXF layers, DXF GROUP entities -- all merged.
+        A single-card DXF works fine (1 card = 1 selectable shape).
+
+    DXF layers and DXF GROUP entities have no effect on SS selectability.
+    HATCH entities (LINE+ARC edge path) are invisible/ignored by SS entirely.
+
+    SOLUTION
+    --------
+    Use LINE + ARC entities (correct fill orientation), and in dxf_to_studio3.py
+    use Ctrl+Shift+E ("Release Compound Path") after importing, which breaks the
+    merged compound shape into individually selectable card paths.
+    """
+    # Convert screen Y-down (origin top-left) to DXF Y-up (origin bottom-left)
+    y = -y - height
+
+    bl = (x + radius, y + radius)
+    br = (x + width - radius, y + radius)
+    tr = (x + width - radius, y + height - radius)
+    tl = (x + radius, y + height - radius)
+
+    msp.add_line((bl[0], y),         (br[0], y))           # Bottom edge
+    msp.add_line((x + width, br[1]), (x + width, tr[1]))   # Right edge
+    msp.add_line((tr[0], y + height),(tl[0], y + height))  # Top edge
+    msp.add_line((x, tl[1]),         (x, bl[1]))            # Left edge
+
+    # Corner arcs, CCW in DXF Y-up convention
+    msp.add_arc(center=br, radius=radius, start_angle=270, end_angle=360)  # BR
+    msp.add_arc(center=tr, radius=radius, start_angle=0,   end_angle=90)   # TR
+    msp.add_arc(center=tl, radius=radius, start_angle=90,  end_angle=180)  # TL
+    msp.add_arc(center=bl, radius=radius, start_angle=180, end_angle=270)  # BL
 
 
 # Create new DXF document
@@ -72,7 +88,7 @@ def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: Lis
             else:
                 pos_x = x_pos[x] * 25.4 / ppi
                 pos_y = y_pos[y] * 25.4 / ppi
-            add_rounded_rectangle_polyline(msp, pos_x, pos_y, width, height, radius)
+            add_rounded_rectangle(msp, pos_x, pos_y, width, height, radius)
 
 
     # Strip non-deterministic metadata so regenerated files don't produce

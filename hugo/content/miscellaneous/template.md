@@ -101,9 +101,13 @@ Click the **Print & Cut** icon in the left sidebar. Enable the **registration ma
 
 **Step 6: Ungroup**
 
-Press `Ctrl+A` to select all, then `Ctrl+Shift+G` to ungroup. This preserves the individual cut paths in the saved file.
+Press `Ctrl+A` to select all, then `Ctrl+Shift+G` to ungroup.
 
-**Step 7: Save as `.studio3`**
+**Step 7: Release compound path**
+
+Press `Ctrl+A` to select all, then `Ctrl+Shift+E` to release the compound path. This makes each card path individually selectable in the saved file.
+
+**Step 8: Save as `.studio3`**
 
 Press `Ctrl+Shift+S`. Save the file to `cutting_templates/` with a `.studio3` extension.
 
