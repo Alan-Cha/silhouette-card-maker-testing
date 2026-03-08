@@ -25,6 +25,12 @@ def request_scryfall(
 
     return r
 
+def save_card_art_copies(data: bytes, output_dir: str, index: int, clean_card_name: str, quantity: int) -> None:
+    for counter in range(quantity):
+        image_path = os.path.join(output_dir, f'{index}{clean_card_name}{counter + 1}.png')
+        with open(image_path, 'wb') as f:
+            f.write(data)
+
 def fetch_meld_back(
     index: int,
     quantity: int,
@@ -50,25 +56,31 @@ def fetch_meld_back(
     if meld_result['name'] == card_name:
         return
 
-    # Determine which half this card is (first meld_part = top, second = bottom)
+    # Find the 0-based index of this card within meld_parts (the two non-result halves).
+    # Scryfall lists meld parts in a consistent order; index 0 = top half, index 1 = bottom half.
+    # next() returns the first index i where the part's name matches, or -1 as the default.
     meld_part_index = next((i for i, p in enumerate(meld_parts) if p['name'] == card_name), -1)
     if meld_part_index == -1:
         return
 
-    # Fetch the meld result card info and image
+    # Fetch the meld result card info; the PNG URL is in the response, no second request needed
     meld_result_json = request_scryfall(meld_result['uri']).json()
-    meld_result_image_query = f"https://api.scryfall.com/cards/{meld_result_json['set']}/{meld_result_json['collector_number']}/?format=image&version=png"
-    meld_result_image_data = request_scryfall(meld_result_image_query).content
+    meld_result_image_data = request_scryfall(meld_result_json['image_uris']['png']).content
 
     # Split the meld result image into top/bottom halves
     img = Image.open(BytesIO(meld_result_image_data))
     width, height = img.size
     half_height = height // 2
 
+    # Scryfall lists meld parts by collector number; index 0 is the lower-numbered card,
+    # which corresponds to the bottom half of the combined image.
     if meld_part_index == 0:
-        cropped = img.crop((0, 0, width, half_height))
+        cropped = img.crop((0, half_height, width, height))  # bottom half
     else:
-        cropped = img.crop((0, half_height, width, height))
+        cropped = img.crop((0, 0, width, half_height))  # top half
+
+    # Rotate 90° clockwise (meld result images are stored upright)
+    cropped = cropped.rotate(-90, expand=True)
 
     # Resize to full card dimensions
     resized = cropped.resize((width, height), Image.LANCZOS)
@@ -97,13 +109,7 @@ def fetch_card_art(
     card_front_image_query = f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
     card_art = request_scryfall(card_front_image_query).content
     if card_art is not None:
-
-        # Save image based on quantity
-        for counter in range(quantity):
-            image_path = os.path.join(front_img_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
-
-            with open(image_path, 'wb') as f:
-                f.write(card_art)
+        save_card_art_copies(card_art, front_img_dir, index, clean_card_name, quantity)
 
     # Get backside of card, if it exists
     if layout in double_sided_layouts:
@@ -111,16 +117,9 @@ def fetch_card_art(
             if all_parts and card_name:
                 fetch_meld_back(index, quantity, clean_card_name, card_name, all_parts, double_sided_dir)
         else:
-            card_back_image_query = f'{card_front_image_query}&face=back'
-            card_art = request_scryfall(card_back_image_query).content
+            card_art = request_scryfall(f'{card_front_image_query}&face=back').content
             if card_art is not None:
-
-                # Save image based on quantity
-                for counter in range(quantity):
-                    image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
-
-                    with open(image_path, 'wb') as f:
-                        f.write(card_art)
+                save_card_art_copies(card_art, double_sided_dir, index, clean_card_name, quantity)
 
 def partition_printings(printings: List, condition: List) -> Tuple[List, List]:
     matches = []

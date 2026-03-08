@@ -527,3 +527,40 @@ class TestFullFetchWorkflow:
         for f in files:
             file_path = os.path.join(front_dir, f)
             assert os.path.getsize(file_path) > 0
+
+    def test_fetch_meld_card(self, temp_dirs):
+        """Fetching a meld part saves its front art and a cropped half of the combined meld result as the back."""
+        from PIL import Image
+        front_dir, double_sided_dir = temp_dirs
+
+        # Bruna, the Fading Light is a meld part whose back is the top half of Brisela, Voice of Nightmares
+        deck_text = "1 Bruna, the Fading Light (EMN) 15"
+
+        handle_card = get_handle_card(
+            ignore_set_and_collector_number=False,
+            prefer_older_sets=False,
+            prefer_sets=[],
+            prefer_showcase=False,
+            prefer_extra_art=False,
+            tokens=False,
+            front_img_dir=front_dir,
+            double_sided_dir=double_sided_dir
+        )
+
+        parse_deck(deck_text, DeckFormat.MTGA, handle_card)
+
+        # Front image of Bruna should be saved
+        front_files = os.listdir(front_dir)
+        assert len(front_files) == 1
+        assert os.path.getsize(os.path.join(front_dir, front_files[0])) > 0
+
+        # Cropped meld result (top half of Brisela, resized to full card) should be in double_sided_dir
+        back_files = os.listdir(double_sided_dir)
+        assert len(back_files) == 1
+        back_path = os.path.join(double_sided_dir, back_files[0])
+        assert os.path.getsize(back_path) > 0
+
+        # The saved back image should have full card dimensions (same width as the meld result image)
+        back_img = Image.open(back_path)
+        front_img = Image.open(os.path.join(front_dir, front_files[0]))
+        assert back_img.size == front_img.size
