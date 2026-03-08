@@ -6,6 +6,8 @@ import os
 import shutil
 import tempfile
 import pytest
+import requests
+from unittest.mock import patch, MagicMock
 
 from plugins.mtg.deck_formats import (
     DeckFormat,
@@ -18,7 +20,7 @@ from plugins.mtg.deck_formats import (
     parse_moxfield,
     parse_scryfall_json,
 )
-from plugins.mtg.scryfall import request_scryfall, get_handle_card
+from plugins.mtg.scryfall import request_scryfall, get_handle_card, fetch_card
 from plugins.mtg.patterns import MOXFIELD_PATTERN, DECKSTATS_PATTERN
 
 # --- Unit Tests for Deck Format Parsing ---
@@ -235,6 +237,20 @@ class TestDeckstatsFormat:
         assert parsed_cards[1]['name'] == "Blinkmoth Nexus"
         assert parsed_cards[1]['set_code'] == ""
 
+    def test_strips_commander_annotation(self):
+        """Test that #!Commander annotation is stripped from card names."""
+        deck_text = "1 Varragoth, Bloodsky Sire #!Commander"
+
+        parsed_cards = []
+        def collect_card(index, name, set_code, collector_number, quantity):
+            parsed_cards.append({'index': index, 'name': name, 'set_code': set_code, 'collector_number': collector_number, 'quantity': quantity})
+
+        parse_deckstats(deck_text, collect_card)
+
+        assert len(parsed_cards) == 1
+        assert parsed_cards[0]['name'] == "Varragoth, Bloodsky Sire"
+        assert parsed_cards[0]['quantity'] == 1
+
 
 class TestMoxfieldFormat:
     """Test Moxfield format parsing."""
@@ -298,6 +314,86 @@ class TestScryfallJsonFormat:
         assert parsed_cards[0]['name'] == "Lightning Bolt"
         assert parsed_cards[0]['set_code'] == "clu"
         assert parsed_cards[0]['quantity'] == 2
+
+
+# --- Unit Tests for Scryfall Fetching ---
+
+_SHADOWSPEAR_JSON = {
+    'name': 'Shadowspear',
+    'set': 'pza',
+    'collector_number': '17',
+    'layout': 'normal',
+}
+
+def _make_404():
+    err = requests.exceptions.HTTPError()
+    err.response = MagicMock()
+    err.response.status_code = 404
+    return err
+
+class TestScryfallFetch:
+    """Unit tests for Scryfall card fetching logic."""
+
+    @patch('plugins.mtg.scryfall.fetch_card_art')
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_flavor_name_card_is_fetched(self, mock_request, mock_fetch_art):
+        """A card known only by its flavor name still has its art fetched successfully."""
+        search_response = MagicMock()
+        search_response.json.return_value = {'data': [_SHADOWSPEAR_JSON]}
+        mock_request.side_effect = [_make_404(), search_response]
+
+        fetch_card(1, 1, "", "", False, "Donnie's Bō",
+                   False, set(), False, False, False, 'front', 'double_sided')
+
+        mock_fetch_art.assert_called_once()
+
+    @patch('plugins.mtg.scryfall.requests.get')
+    def test_image_fetched_with_lowercase_set_code(self, mock_get):
+        """When given an uppercase set code, the image is fetched using the lowercase code returned by the API."""
+        info_response = MagicMock(status_code=200)
+        info_response.raise_for_status.return_value = None
+        info_response.json.return_value = {
+            'name': 'Felidar Retreat',
+            'set': 'fdn',
+            'collector_number': '574',
+            'layout': 'normal',
+        }
+        image_response = MagicMock(status_code=200)
+        image_response.raise_for_status.return_value = None
+        image_response.content = b'fake_image'
+
+        mock_get.side_effect = [info_response, image_response]
+
+        with patch('builtins.open', MagicMock()):
+            fetch_card(1, 1, "FDN", "574", False, "Felidar Retreat",
+                       False, set(), False, False, False, 'front', 'double_sided')
+
+        # call_args_list is a list of all calls made to mock_get, in order.
+        # [1]    → the second call (index 1), which is the image fetch (after the card info fetch)
+        # [0]    → the positional args tuple for that call
+        # [0]    → the first positional argument, which is the URL string
+        image_url = mock_get.call_args_list[1][0][0]
+        assert '/fdn/' in image_url
+        assert '/FDN/' not in image_url
+
+    @patch('plugins.mtg.scryfall.fetch_card_art')
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_found_by_exact_name_does_not_call_flavor_search(self, mock_request, mock_fetch_art):
+        """When a card is found by its exact name, no additional flavor name search is made."""
+        named_response = MagicMock()
+        named_response.json.return_value = _SHADOWSPEAR_JSON
+        mock_request.return_value = named_response
+
+        fetch_card(1, 1, "", "", False, "Shadowspear",
+                   False, set(), False, False, False, 'front', 'double_sided')
+
+        # Build a list of every URL string passed to request_scryfall across all calls.
+        # call_args_list → list of calls, one per request_scryfall invocation
+        # call[0]        → positional args tuple for that call
+        # call[0][0]     → first positional argument, which is the URL string
+        called_urls = [call[0][0] for call in mock_request.call_args_list]
+        assert not any('flavor_name' in url for url in called_urls)
+        mock_fetch_art.assert_called_once()
 
 
 # --- Integration Tests for API and Image Fetching ---
@@ -383,6 +479,27 @@ class TestFullFetchWorkflow:
         for f in front_files:
             file_path = os.path.join(front_dir, f)
             assert os.path.getsize(file_path) > 0
+
+    def test_fetch_flavor_name_card(self, temp_dirs):
+        """Cards with flavor names (e.g. convention promos) resolve to the correct card art."""
+        front_dir, double_sided_dir = temp_dirs
+
+        handle_card = get_handle_card(
+            ignore_set_and_collector_number=False,
+            prefer_older_sets=False,
+            prefer_sets=[],
+            prefer_showcase=False,
+            prefer_extra_art=False,
+            tokens=False,
+            front_img_dir=front_dir,
+            double_sided_dir=double_sided_dir
+        )
+
+        handle_card(1, "Donnie's Bō", "", "", 1)
+
+        files = os.listdir(front_dir)
+        assert len(files) == 1
+        assert os.path.getsize(os.path.join(front_dir, files[0])) > 0
 
     def test_fetch_with_quantity(self, temp_dirs):
         """Test fetching cards with quantity > 1."""

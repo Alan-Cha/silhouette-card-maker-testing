@@ -9,8 +9,9 @@ double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversi
 
 def request_scryfall(
     query: str,
+    params: dict = None,
 ) -> requests.Response:
-    r = requests.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = requests.get(query, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()
@@ -107,7 +108,7 @@ def fetch_card(
 ):
     # Query based on card set and card collector number if provided
     if not ignore_set_and_collector_number and card_set != "" and card_collector_number != "":
-        card_info_query = f"https://api.scryfall.com/cards/{card_set}/{card_collector_number}"
+        card_info_query = f"https://api.scryfall.com/cards/{card_set.lower()}/{card_collector_number}"
 
         # Query for card info
         card_json = request_scryfall(card_info_query).json()
@@ -116,8 +117,8 @@ def fetch_card(
             index,
             quantity,
             remove_nonalphanumeric(card_json['name']),
-            card_set,
-            card_collector_number,
+            card_json['set'],
+            card_json['collector_number'],
             card_json['layout'],
             front_img_dir,
             double_sided_dir
@@ -147,13 +148,21 @@ def fetch_card(
         if name == "":
             raise Exception()
 
-        # Filter out symbols from card names
+        # Query for card info (use params= for correct URL encoding of accented/special chars)
+        try:
+            card_json = request_scryfall('https://api.scryfall.com/cards/named', params={'exact': name}).json()
+        except requests.exceptions.HTTPError as e:
+            if e.response is None or e.response.status_code != 404:
+                raise
+            # Fall back to flavor name search (e.g. Godzilla series, convention promos)
+            search_json = request_scryfall('https://api.scryfall.com/cards/search', params={'q': f'flavor_name:"{name}"', 'unique': 'cards'}).json()
+            if not search_json.get('data'):
+                raise
+            card_json = search_json['data'][0]
+            print(f'Found by flavor name: {card_json["name"]}')
+
+        # Filter out symbols from card names for use in filenames
         clean_card_name = remove_nonalphanumeric(name)
-
-        card_info_query = f'https://api.scryfall.com/cards/named?exact={clean_card_name}'
-
-        # Query for card info
-        card_json = request_scryfall(card_info_query).json()
 
         set = card_json["set"]
         collector_number = card_json["collector_number"]
@@ -229,7 +238,7 @@ def get_handle_card(
     tokens: bool,
 
     front_img_dir: str,
-    double_sided_dir: str
+    double_sided_dir: str,
 ):
     def configured_fetch_card(index: int, name: str, card_set: str = None, card_collector_number: int = None, quantity: int = 1):
         fetch_card(

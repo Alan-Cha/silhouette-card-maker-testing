@@ -34,7 +34,7 @@ def cli(
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
-    tokens: bool
+    tokens: bool,
 ):
     if format == DeckFormat.URL:
         deck_text = deck_path
@@ -64,7 +64,7 @@ def cli(
             tokens,
 
             front_directory,
-            double_sided_directory
+            double_sided_directory,
         )
 
     parse_deck(

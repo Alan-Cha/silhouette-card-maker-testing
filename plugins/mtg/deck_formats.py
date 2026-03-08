@@ -170,7 +170,7 @@ def parse_deckstats(deck_text, handle_card: Callable) -> None:
         quantity = int(match.group(1))
         set_code = match.group(2) or ""
         collector_number = match.group(3) or ""
-        name = match.group(4).strip()
+        name = re.sub(r'\s*#!.*$', '', match.group(4).strip())
 
         return (name, set_code, collector_number, quantity)
 
