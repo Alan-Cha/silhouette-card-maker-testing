@@ -528,6 +528,37 @@ class TestFullFetchWorkflow:
             file_path = os.path.join(front_dir, f)
             assert os.path.getsize(file_path) > 0
 
+    def test_fetch_reversible_card(self, temp_dirs):
+        """Fetching a reversible_card saves both the front and back art."""
+        front_dir, double_sided_dir = temp_dirs
+
+        # Anointed Procession (SLD) 1511 is a reversible_card layout — same card name/rules on both
+        # sides, but with different artwork. Both faces should be downloaded.
+        deck_text = "1 Anointed Procession (SLD) 1511"
+
+        handle_card = get_handle_card(
+            ignore_set_and_collector_number=False,
+            prefer_older_sets=False,
+            prefer_sets=[],
+            prefer_showcase=False,
+            prefer_extra_art=False,
+            tokens=False,
+            front_img_dir=front_dir,
+            double_sided_dir=double_sided_dir
+        )
+
+        parse_deck(deck_text, DeckFormat.MTGA, handle_card)
+
+        # Front image should be saved
+        front_files = os.listdir(front_dir)
+        assert len(front_files) == 1
+        assert os.path.getsize(os.path.join(front_dir, front_files[0])) > 0
+
+        # Back image should also be saved
+        back_files = os.listdir(double_sided_dir)
+        assert len(back_files) == 1
+        assert os.path.getsize(os.path.join(double_sided_dir, back_files[0])) > 0
+
     def test_fetch_meld_card(self, temp_dirs):
         """Fetching a meld part saves its front art and a cropped half of the combined meld result as the back."""
         from PIL import Image
