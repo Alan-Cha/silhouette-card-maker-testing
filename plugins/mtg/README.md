@@ -42,6 +42,10 @@ Options:
   --prefer_extra_art              Prefer fetching cards with full art,
                                   borderless, or extended art.
   --tokens                        Fetch related tokens when fetching cards
+  --prefer_lang [en|sp|fr|de|it|pt|jp|kr|ru|cs|ct|ag|ph]
+                                  Preferred language for card images (printed
+                                  code). Falls back to English if unavailable.
+                                  [default: en]
   --help                          Show this message and exit.
 ```
 
@@ -75,6 +79,12 @@ Use a Deckstats decklist named `eldraine_commander.txt`. Use the set and collect
 
 ```sh
 python plugins/mtg/fetch.py game/decklist/eldraine_commander.txt deckstats -s eld -s woe
+```
+
+Use an MTG Arena decklist named `deck.txt` and fetch Japanese card images where available, falling back to English otherwise.
+
+```sh
+python plugins/mtg/fetch.py game/decklist/deck.txt mtga --prefer_lang jp
 ```
 
 ## Formats
@@ -228,7 +238,7 @@ SIDEBOARD:
 
 ### `scryfall_json`
 
-[Scryfall](https://scryfall.com) JSON format.
+[Scryfall](https://scryfall.com) JSON format. When the JSON includes `image_uris`, images are fetched directly from those URLs.
 
 ```json
 {
