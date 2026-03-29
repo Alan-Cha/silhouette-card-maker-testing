@@ -7,6 +7,7 @@ import click
 # Add parent directory to path to allow imports when run as a script
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+from plugins.mtg.common import ScryfallLanguage
 from plugins.mtg.deck_formats import DeckFormat, parse_deck, extract_mpcfill_card_ids
 from plugins.mtg.scryfall import get_handle_card as scryfall_get_handle_card
 from plugins.mtg.mpcfill import get_handle_card as mpc_get_handle_card, prefetch_mpcfill
@@ -23,6 +24,7 @@ double_sided_directory = os.path.join('game', 'double_sided')
 @click.option('--prefer_showcase', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with showcase treatment")
 @click.option('--prefer_extra_art', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with full art, borderless, or extended art.")
 @click.option('--tokens', default=False, is_flag=True, show_default=True, help="Fetch related tokens when fetching cards")
+@click.option('--prefer_lang', default=ScryfallLanguage.ENGLISH.value, show_default=True, type=click.Choice([lang.value for lang in ScryfallLanguage], case_sensitive=False), help="Preferred language for card images (printed code). Falls back to English if unavailable.")
 
 def cli(
     deck_path: str,
@@ -35,6 +37,8 @@ def cli(
     prefer_showcase: bool,
     prefer_extra_art: bool,
     tokens: bool,
+
+    prefer_lang: str,
 ):
     if format == DeckFormat.URL:
         deck_text = deck_path
@@ -62,6 +66,8 @@ def cli(
             prefer_showcase,
             prefer_extra_art,
             tokens,
+
+            ScryfallLanguage(prefer_lang),
 
             front_directory,
             double_sided_directory,

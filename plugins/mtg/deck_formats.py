@@ -205,7 +205,7 @@ def parse_moxfield(deck_text, handle_card: Callable) -> None:
     parse_deck_helper(deck_text, is_moxfield_card_line, extract_moxfield_card_data, handle_card)
 
 # Scryfall deck builder JSON
-def parse_scryfall_json(deck_text, handle_card: Callable) -> None:
+def parse_scryfall_json(deck_text, handle_card: Callable, front_img_dir: str = '', double_sided_dir: str = '') -> None:
     data = json.loads(deck_text)
     entries = data.get("entries", {})
     for entry in entries.values():
@@ -218,13 +218,35 @@ def parse_scryfall_json(deck_text, handle_card: Callable) -> None:
             set_code = card_digest.get("set", "")
             collector_number = card_digest.get("collector_number", "")
             quantity = item.get("count", 1)
+            image_uris = card_digest.get("image_uris")
 
             parts = [f'Index: {index}', f'quantity: {quantity}']
             if set_code: parts.append(f'set code: {set_code}')
             if collector_number: parts.append(f'collector number: {collector_number}')
             if name: parts.append(f'name: {name}')
             print(', '.join(parts))
-            handle_card(index, name, set_code, collector_number, quantity)
+
+            # Scryfall JSON may already include image URIs, so we can fetch directly without an extra Scryfall API call. If not, fall back to handle_card which will query Scryfall by set/collector number or name.
+            if image_uris and front_img_dir:
+                clean_name = remove_nonalphanumeric(name)
+
+                front_url = image_uris.get("front")
+                if front_url:
+                    response = requests.get(front_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+                    response.raise_for_status()
+                    for counter in range(quantity):
+                        with open(os.path.join(front_img_dir, f'{index}{clean_name}{counter + 1}.png'), 'wb') as f:
+                            f.write(response.content)
+
+                back_url = image_uris.get("back")
+                if back_url and double_sided_dir:
+                    response = requests.get(back_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+                    response.raise_for_status()
+                    for counter in range(quantity):
+                        with open(os.path.join(double_sided_dir, f'{index}{clean_name}{counter + 1}.png'), 'wb') as f:
+                            f.write(response.content)
+            else:
+                handle_card(index, name, set_code, collector_number, quantity)
 
 # MPCFill XML
 def extract_card_name(raw_name: str) -> str:
@@ -436,7 +458,7 @@ def parse_deck(deck_text: str, format: DeckFormat, handle_card: Callable, front_
     elif format == DeckFormat.MOXFIELD:
         parse_moxfield(deck_text, handle_card)
     elif format == DeckFormat.SCRYFALL_JSON:
-        parse_scryfall_json(deck_text, handle_card)
+        parse_scryfall_json(deck_text, handle_card, front_img_dir, double_sided_dir)
     elif format == DeckFormat.MPCFILL_XML:
         parse_mpcfill_xml(deck_text, handle_card)
     elif format == DeckFormat.CUBECOBRA_CSV:

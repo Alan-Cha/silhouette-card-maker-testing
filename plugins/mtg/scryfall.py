@@ -6,7 +6,7 @@ import time
 
 from PIL import Image
 
-from .common import remove_nonalphanumeric
+from .common import remove_nonalphanumeric, ScryfallLanguage, to_scryfall_api_lang
 
 double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card', 'meld']
 
@@ -90,6 +90,21 @@ def fetch_meld_back(
         image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_card_name}{str(counter + 1)}.png')
         resized.save(image_path)
 
+def build_image_url(card_set: str, card_collector_number: str, prefer_lang: ScryfallLanguage = None) -> str:
+    if prefer_lang and prefer_lang != ScryfallLanguage.ENGLISH:
+        api_lang = to_scryfall_api_lang(prefer_lang)
+        return f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/{api_lang}?format=image&version=png'
+    return f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
+
+def fetch_image(url: str, card_set: str, card_collector_number: str, prefer_lang: ScryfallLanguage = None) -> bytes:
+    try:
+        return request_scryfall(url).content
+    except requests.exceptions.HTTPError as e:
+        if prefer_lang and prefer_lang != ScryfallLanguage.ENGLISH and e.response is not None and e.response.status_code == 404:
+            print(f'Language "{prefer_lang.value}" not available for set code: {card_set} and collector number: {card_collector_number}, falling back to English.')
+            return request_scryfall(build_image_url(card_set, card_collector_number)).content
+        raise
+
 def fetch_card_art(
     index: int,
     quantity: int,
@@ -99,15 +114,16 @@ def fetch_card_art(
     card_collector_number: int,
     layout: str,
 
-    front_img_dir: str,
-    double_sided_dir: str,
-
     all_parts: List = None,
-    card_name: str = None
+    card_name: str = None,
+    prefer_lang: ScryfallLanguage = None,
+
+    front_img_dir: str = None,
+    double_sided_dir: str = None,
 ) -> None:
     # Query for the front side
-    card_front_image_query = f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
-    card_art = request_scryfall(card_front_image_query).content
+    card_front_image_query = build_image_url(card_set, card_collector_number, prefer_lang)
+    card_art = fetch_image(card_front_image_query, card_set, card_collector_number, prefer_lang)
     if card_art is not None:
         save_card_art_copies(card_art, front_img_dir, index, clean_card_name, quantity)
 
@@ -117,7 +133,7 @@ def fetch_card_art(
             if all_parts and card_name:
                 fetch_meld_back(index, quantity, clean_card_name, card_name, all_parts, double_sided_dir)
         else:
-            card_art = request_scryfall(f'{card_front_image_query}&face=back').content
+            card_art = fetch_image(f'{card_front_image_query}&face=back', card_set, card_collector_number, prefer_lang)
             if card_art is not None:
                 save_card_art_copies(card_art, double_sided_dir, index, clean_card_name, quantity)
 
@@ -165,8 +181,10 @@ def fetch_card(
     prefer_extra_art: bool,
     tokens: bool,
 
-    front_img_dir: str,
-    double_sided_dir: str
+    prefer_lang: ScryfallLanguage = None,
+
+    front_img_dir: str = None,
+    double_sided_dir: str = None,
 ):
     # Query based on card set and card collector number if provided
     if not ignore_set_and_collector_number and card_set != "" and card_collector_number != "":
@@ -182,10 +200,11 @@ def fetch_card(
             card_json['set'],
             card_json['collector_number'],
             card_json['layout'],
+            card_json.get('all_parts'),
+            card_json['name'],
+            prefer_lang,
             front_img_dir,
             double_sided_dir,
-            card_json.get('all_parts'),
-            card_json['name']
         )
 
         # Fetch tokens
@@ -203,8 +222,9 @@ def fetch_card(
                             card_json["set"],
                             card_json["collector_number"],
                             card_json["layout"],
-                            front_img_dir,
-                            double_sided_dir
+                            prefer_lang=prefer_lang,
+                            front_img_dir=front_img_dir,
+                            double_sided_dir=double_sided_dir,
                         )
 
     # Query based on card name
@@ -268,10 +288,11 @@ def fetch_card(
             set,
             collector_number,
             card_json['layout'],
+            card_json.get('all_parts'),
+            card_json['name'],
+            prefer_lang,
             front_img_dir,
             double_sided_dir,
-            card_json.get('all_parts'),
-            card_json['name']
         )
 
         # Fetch tokens
@@ -289,8 +310,9 @@ def fetch_card(
                             card_json["set"],
                             card_json["collector_number"],
                             card_json["layout"],
-                            front_img_dir,
-                            double_sided_dir
+                            prefer_lang=prefer_lang,
+                            front_img_dir=front_img_dir,
+                            double_sided_dir=double_sided_dir,
                         )
 
 def get_handle_card(
@@ -303,8 +325,10 @@ def get_handle_card(
     prefer_extra_art: bool,
     tokens: bool,
 
-    front_img_dir: str,
-    double_sided_dir: str,
+    prefer_lang: ScryfallLanguage = None,
+
+    front_img_dir: str = None,
+    double_sided_dir: str = None,
 ):
     def configured_fetch_card(index: int, name: str, card_set: str = None, card_collector_number: int = None, quantity: int = 1):
         fetch_card(
@@ -324,7 +348,9 @@ def get_handle_card(
             prefer_extra_art,
             tokens,
 
+            prefer_lang,
+
             front_img_dir,
-            double_sided_dir
+            double_sided_dir,
         )
     return configured_fetch_card

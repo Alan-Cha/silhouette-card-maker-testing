@@ -20,7 +20,8 @@ from plugins.mtg.deck_formats import (
     parse_moxfield,
     parse_scryfall_json,
 )
-from plugins.mtg.scryfall import request_scryfall, get_handle_card, fetch_card
+from plugins.mtg.common import ScryfallLanguage, to_scryfall_api_lang
+from plugins.mtg.scryfall import request_scryfall, get_handle_card, fetch_card, build_image_url, fetch_image
 from plugins.mtg.patterns import MOXFIELD_PATTERN, DECKSTATS_PATTERN
 
 # --- Unit Tests for Deck Format Parsing ---
@@ -281,8 +282,8 @@ class TestMoxfieldFormat:
 class TestScryfallJsonFormat:
     """Test Scryfall JSON format parsing."""
 
-    def test_parse_scryfall_json(self):
-        """Test parsing Scryfall deck builder JSON."""
+    def test_parse_scryfall_json_without_image_uris(self):
+        """Without image_uris, cards are dispatched through handle_card."""
         deck_text = """{
   "entries": {
     "mainboard": [
@@ -315,6 +316,87 @@ class TestScryfallJsonFormat:
         assert parsed_cards[0]['set_code'] == "clu"
         assert parsed_cards[0]['quantity'] == 2
 
+    @patch('plugins.mtg.deck_formats.requests.get')
+    def test_parse_scryfall_json_with_image_uris_fetches_directly(self, mock_get, tmp_path):
+        """When image_uris.front is present, the image is fetched directly and handle_card is not called."""
+        mock_response = MagicMock()
+        mock_response.content = b'fake_image_data'
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        deck_text = """{
+  "entries": {
+    "mainboard": [
+      {
+        "count": 2,
+        "card_digest": {
+          "name": "Formidable Speaker",
+          "collector_number": "176",
+          "set": "ecl",
+          "image_uris": {
+            "front": "https://cards.scryfall.io/large/front/9/3/93ac8c22.jpg"
+          }
+        }
+      }
+    ]
+  }
+}"""
+
+        handle_card = MagicMock()
+        front_dir = str(tmp_path / "front")
+        os.makedirs(front_dir)
+
+        parse_scryfall_json(deck_text, handle_card, front_dir, '')
+
+        handle_card.assert_not_called()
+        mock_get.assert_called_once_with(
+            "https://cards.scryfall.io/large/front/9/3/93ac8c22.jpg",
+            headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'}
+        )
+        saved_files = os.listdir(front_dir)
+        assert len(saved_files) == 2  # quantity=2
+
+    @patch('plugins.mtg.deck_formats.requests.get')
+    def test_parse_scryfall_json_with_image_uris_back(self, mock_get, tmp_path):
+        """When image_uris.back is present, both front and back images are fetched."""
+        mock_response = MagicMock()
+        mock_response.content = b'fake_image_data'
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        deck_text = """{
+  "entries": {
+    "mainboard": [
+      {
+        "count": 1,
+        "card_digest": {
+          "name": "Delver of Secrets",
+          "collector_number": "51",
+          "set": "isd",
+          "image_uris": {
+            "front": "https://cards.scryfall.io/large/front/a/b/front.jpg",
+            "back": "https://cards.scryfall.io/large/back/a/b/back.jpg"
+          }
+        }
+      }
+    ]
+  }
+}"""
+
+        front_dir = str(tmp_path / "front")
+        back_dir = str(tmp_path / "back")
+        os.makedirs(front_dir)
+        os.makedirs(back_dir)
+
+        parse_scryfall_json(deck_text, MagicMock(), front_dir, back_dir)
+
+        fetched_urls = [call[0][0] for call in mock_get.call_args_list]
+        assert any("front.jpg" in url for url in fetched_urls)
+        assert any("back.jpg" in url for url in fetched_urls)
+        assert len(os.listdir(front_dir)) == 1
+        assert len(os.listdir(back_dir)) == 1
+
+
 
 # --- Unit Tests for Scryfall Fetching ---
 
@@ -343,7 +425,8 @@ class TestScryfallFetch:
         mock_request.side_effect = [_make_404(), search_response]
 
         fetch_card(1, 1, "", "", False, "Donnie's Bō",
-                   False, set(), False, False, False, 'front', 'double_sided')
+                   False, set(), False, False, False,
+                   front_img_dir='front', double_sided_dir='double_sided')
 
         mock_fetch_art.assert_called_once()
 
@@ -366,7 +449,8 @@ class TestScryfallFetch:
 
         with patch('builtins.open', MagicMock()):
             fetch_card(1, 1, "FDN", "574", False, "Felidar Retreat",
-                       False, set(), False, False, False, 'front', 'double_sided')
+                       False, set(), False, False, False,
+                       front_img_dir='front', double_sided_dir='double_sided')
 
         # call_args_list is a list of all calls made to mock_get, in order.
         # [1]    → the second call (index 1), which is the image fetch (after the card info fetch)
@@ -385,7 +469,8 @@ class TestScryfallFetch:
         mock_request.return_value = named_response
 
         fetch_card(1, 1, "", "", False, "Shadowspear",
-                   False, set(), False, False, False, 'front', 'double_sided')
+                   False, set(), False, False, False,
+                   front_img_dir='front', double_sided_dir='double_sided')
 
         # Build a list of every URL string passed to request_scryfall across all calls.
         # call_args_list → list of calls, one per request_scryfall invocation
@@ -394,6 +479,164 @@ class TestScryfallFetch:
         called_urls = [call[0][0] for call in mock_request.call_args_list]
         assert not any('flavor_name' in url for url in called_urls)
         mock_fetch_art.assert_called_once()
+
+
+# --- Unit Tests for Language Support ---
+
+class TestScryfallLanguageEnum:
+    """Test ScryfallLanguage enum values and mapping to Scryfall API codes."""
+
+    def test_all_printed_codes_present(self):
+        """All supported printed codes are present in the enum."""
+        expected_printed_codes = {"en", "sp", "fr", "de", "it", "pt", "jp", "kr", "ru", "cs", "ct", "ag", "ph"}
+        actual_codes = {lang.value for lang in ScryfallLanguage}
+        assert actual_codes == expected_printed_codes
+
+    def test_enum_values_are_printed_codes(self):
+        """Enum values match the Scryfall printed code column."""
+        assert ScryfallLanguage.ENGLISH.value == "en"
+        assert ScryfallLanguage.SPANISH.value == "sp"
+        assert ScryfallLanguage.FRENCH.value == "fr"
+        assert ScryfallLanguage.GERMAN.value == "de"
+        assert ScryfallLanguage.ITALIAN.value == "it"
+        assert ScryfallLanguage.PORTUGUESE.value == "pt"
+        assert ScryfallLanguage.JAPANESE.value == "jp"
+        assert ScryfallLanguage.KOREAN.value == "kr"
+        assert ScryfallLanguage.RUSSIAN.value == "ru"
+        assert ScryfallLanguage.SIMPLIFIED_CHINESE.value == "cs"
+        assert ScryfallLanguage.TRADITIONAL_CHINESE.value == "ct"
+        assert ScryfallLanguage.ANCIENT_GREEK.value == "ag"
+        assert ScryfallLanguage.PHYREXIAN.value == "ph"
+
+    def test_to_scryfall_api_lang_non_trivial_mappings(self):
+        """Printed codes that differ from the Scryfall API code are mapped correctly."""
+        assert to_scryfall_api_lang(ScryfallLanguage.SPANISH)           == "es"
+        assert to_scryfall_api_lang(ScryfallLanguage.JAPANESE)          == "ja"
+        assert to_scryfall_api_lang(ScryfallLanguage.KOREAN)            == "ko"
+        assert to_scryfall_api_lang(ScryfallLanguage.SIMPLIFIED_CHINESE)  == "zhs"
+        assert to_scryfall_api_lang(ScryfallLanguage.TRADITIONAL_CHINESE) == "zht"
+        assert to_scryfall_api_lang(ScryfallLanguage.ANCIENT_GREEK)     == "grc"
+
+    def test_to_scryfall_api_lang_identity_mappings(self):
+        """Printed codes that are the same as the Scryfall API code pass through unchanged."""
+        for lang in (ScryfallLanguage.ENGLISH, ScryfallLanguage.FRENCH, ScryfallLanguage.GERMAN,
+                     ScryfallLanguage.ITALIAN, ScryfallLanguage.PORTUGUESE, ScryfallLanguage.RUSSIAN,
+                     ScryfallLanguage.PHYREXIAN):
+            assert to_scryfall_api_lang(lang) == lang.value
+
+    def test_construct_via_printed_code(self):
+        """ScryfallLanguage can be constructed from a printed code string."""
+        assert ScryfallLanguage("jp") == ScryfallLanguage.JAPANESE
+        assert ScryfallLanguage("cs") == ScryfallLanguage.SIMPLIFIED_CHINESE
+
+
+class TestBuildImageUrl:
+    """Test URL construction for different language preferences."""
+
+    def test_english_produces_default_url(self):
+        url = build_image_url("lea", "1", ScryfallLanguage.ENGLISH)
+        assert url == "https://api.scryfall.com/cards/lea/1/?format=image&version=png"
+        assert "/en?" not in url
+
+    def test_none_produces_default_url(self):
+        url = build_image_url("lea", "1", None)
+        assert url == "https://api.scryfall.com/cards/lea/1/?format=image&version=png"
+
+    def test_non_english_embeds_api_lang_code(self):
+        url = build_image_url("lea", "1", ScryfallLanguage.JAPANESE)
+        assert url == "https://api.scryfall.com/cards/lea/1/ja?format=image&version=png"
+
+    def test_spanish_uses_api_code_not_printed_code(self):
+        """Printed code 'sp' must map to API code 'es' in the URL."""
+        url = build_image_url("lea", "1", ScryfallLanguage.SPANISH)
+        assert "/es?" in url
+        assert "/sp?" not in url
+
+    def test_simplified_chinese_uses_zhs(self):
+        url = build_image_url("lea", "1", ScryfallLanguage.SIMPLIFIED_CHINESE)
+        assert "/zhs?" in url
+
+
+class TestFetchImageLanguageFallback:
+    """Test that fetch_image falls back to English on a 404 for the language URL."""
+
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_falls_back_to_english_on_404(self, mock_request):
+        lang_404 = requests.exceptions.HTTPError()
+        lang_404.response = MagicMock()
+        lang_404.response.status_code = 404
+
+        english_response = MagicMock()
+        english_response.content = b'fake_english_image'
+        mock_request.side_effect = [lang_404, english_response]
+
+        lang_url = build_image_url("neo", "26", ScryfallLanguage.JAPANESE)
+        result = fetch_image(lang_url, "neo", "26", ScryfallLanguage.JAPANESE)
+
+        assert result == b'fake_english_image'
+        assert mock_request.call_count == 2
+        fallback_url = mock_request.call_args_list[1][0][0]
+        assert "/ja?" not in fallback_url
+        assert "neo/26/" in fallback_url
+
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_does_not_fall_back_on_non_404_error(self, mock_request):
+        err_500 = requests.exceptions.HTTPError()
+        err_500.response = MagicMock()
+        err_500.response.status_code = 500
+        mock_request.side_effect = err_500
+
+        url = build_image_url("neo", "26", ScryfallLanguage.JAPANESE)
+        with pytest.raises(requests.exceptions.HTTPError):
+            fetch_image(url, "neo", "26", ScryfallLanguage.JAPANESE)
+
+        assert mock_request.call_count == 1
+
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_english_request_does_not_retry_on_404(self, mock_request):
+        err_404 = requests.exceptions.HTTPError()
+        err_404.response = MagicMock()
+        err_404.response.status_code = 404
+        mock_request.side_effect = err_404
+
+        url = build_image_url("lea", "1", ScryfallLanguage.ENGLISH)
+        with pytest.raises(requests.exceptions.HTTPError):
+            fetch_image(url, "lea", "1", ScryfallLanguage.ENGLISH)
+
+        assert mock_request.call_count == 1
+
+
+class TestFetchCardWithLanguage:
+    """Test that fetch_card passes prefer_lang through to fetch_card_art."""
+
+    @patch('plugins.mtg.scryfall.fetch_card_art')
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_prefer_lang_passed_to_fetch_card_art(self, mock_request, mock_fetch_art):
+        named_response = MagicMock()
+        named_response.json.return_value = _SHADOWSPEAR_JSON
+        mock_request.return_value = named_response
+
+        fetch_card(1, 1, "", "", False, "Shadowspear",
+                   False, set(), False, False, False,
+                   prefer_lang=ScryfallLanguage.JAPANESE,
+                   front_img_dir='front', double_sided_dir='double_sided')
+
+        args, _ = mock_fetch_art.call_args
+        assert args[8] == ScryfallLanguage.JAPANESE
+
+    @patch('plugins.mtg.scryfall.fetch_card_art')
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_no_lang_defaults_to_none(self, mock_request, mock_fetch_art):
+        named_response = MagicMock()
+        named_response.json.return_value = _SHADOWSPEAR_JSON
+        mock_request.return_value = named_response
+
+        fetch_card(1, 1, "", "", False, "Shadowspear",
+                   False, set(), False, False, False,
+                   front_img_dir='front', double_sided_dir='double_sided')
+
+        args, _ = mock_fetch_art.call_args
+        assert args[8] is None
 
 
 # --- Integration Tests for API and Image Fetching ---
