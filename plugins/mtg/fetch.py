@@ -1,6 +1,5 @@
 import os
 import sys
-from typing import Set
 
 import click
 
@@ -21,10 +20,11 @@ double_sided_directory = os.path.join('game', 'double_sided')
 @click.option('-i', '--ignore_set_and_collector_number', default=False, is_flag=True, show_default=True, help="Ignore provided sets and collector numbers when fetching cards.")
 @click.option('--prefer_older_sets', default=False, is_flag=True, show_default=True, help="Prefer fetching cards from older sets if sets are not provided.")
 @click.option('-s', '--prefer_set', multiple=True, help="Prefer fetching cards from a particular set(s) if sets are not provided. Use this option multiple times to specify multiple preferred sets.")
+@click.option('--ignore_set', multiple=True, help="Exclude a set from consideration when fetching cards. Use this option multiple times to exclude multiple sets.")
 @click.option('--prefer_showcase', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with showcase treatment")
 @click.option('--prefer_extra_art', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with full art, borderless, or extended art.")
 @click.option('--tokens', default=False, is_flag=True, show_default=True, help="Fetch related tokens when fetching cards")
-@click.option('--prefer_lang', default=ScryfallLanguage.ENGLISH.value, show_default=True, type=click.Choice([lang.value for lang in ScryfallLanguage], case_sensitive=False), help="Preferred language for card images (printed code). Falls back to English if unavailable.")
+@click.option('--prefer_lang', multiple=True, type=click.Choice([lang.value for lang in ScryfallLanguage], case_sensitive=False), help="Preferred language for card images (printed code). Use multiple times for a priority list. Falls back to English if none are available.")
 
 def cli(
     deck_path: str,
@@ -32,13 +32,14 @@ def cli(
     ignore_set_and_collector_number: bool,
 
     prefer_older_sets: bool,
-    prefer_set: Set[str],
+    prefer_set: tuple,
+    ignore_set: tuple,
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
     tokens: bool,
 
-    prefer_lang: str,
+    prefer_lang: tuple,
 ):
     if format == DeckFormat.URL:
         deck_text = deck_path
@@ -62,12 +63,13 @@ def cli(
 
             prefer_older_sets,
             prefer_set,
+            list(ignore_set),
 
             prefer_showcase,
             prefer_extra_art,
             tokens,
 
-            ScryfallLanguage(prefer_lang),
+            [ScryfallLanguage(lang) for lang in prefer_lang] or None,
 
             front_directory,
             double_sided_directory,

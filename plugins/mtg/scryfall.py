@@ -1,6 +1,6 @@
 import os
 from io import BytesIO
-from typing import List, Set, Tuple
+from typing import List, Tuple
 import requests
 import time
 
@@ -96,14 +96,26 @@ def build_image_url(card_set: str, card_collector_number: str, prefer_lang: Scry
         return f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/{api_lang}?format=image&version=png'
     return f'https://api.scryfall.com/cards/{card_set}/{card_collector_number}/?format=image&version=png'
 
-def fetch_image(url: str, card_set: str, card_collector_number: str, prefer_lang: ScryfallLanguage = None) -> bytes:
-    try:
-        return request_scryfall(url).content
-    except requests.exceptions.HTTPError as e:
-        if prefer_lang and prefer_lang != ScryfallLanguage.ENGLISH and e.response is not None and e.response.status_code == 404:
-            print(f'Language "{prefer_lang.value}" not available for set code: {card_set} and collector number: {card_collector_number}, falling back to English.')
-            return request_scryfall(build_image_url(card_set, card_collector_number)).content
-        raise
+def fetch_image(card_set: str, card_collector_number: str, prefer_langs: List[ScryfallLanguage] = None, face: str = None) -> bytes:
+    langs_to_try = list(prefer_langs) if prefer_langs else []
+    if not langs_to_try or langs_to_try[-1] != ScryfallLanguage.ENGLISH:
+        langs_to_try.append(ScryfallLanguage.ENGLISH)
+
+    last_error = None
+    for i, lang in enumerate(langs_to_try):
+        url = build_image_url(card_set, card_collector_number, lang)
+        if face:
+            url = f'{url}&face={face}'
+        try:
+            return request_scryfall(url).content
+        except requests.exceptions.HTTPError as e:
+            if e.response is None or e.response.status_code != 404:
+                raise
+            last_error = e
+            if i < len(langs_to_try) - 1:
+                next_lang = langs_to_try[i + 1]
+                print(f'Language "{lang.value}" not available for set code: {card_set} and collector number: {card_collector_number}, falling back to "{next_lang.value}".')
+    raise last_error
 
 def fetch_card_art(
     index: int,
@@ -116,14 +128,13 @@ def fetch_card_art(
 
     all_parts: List = None,
     card_name: str = None,
-    prefer_lang: ScryfallLanguage = None,
+    prefer_langs: List[ScryfallLanguage] = None,
 
     front_img_dir: str = None,
     double_sided_dir: str = None,
 ) -> None:
     # Query for the front side
-    card_front_image_query = build_image_url(card_set, card_collector_number, prefer_lang)
-    card_art = fetch_image(card_front_image_query, card_set, card_collector_number, prefer_lang)
+    card_art = fetch_image(card_set, card_collector_number, prefer_langs)
     if card_art is not None:
         save_card_art_copies(card_art, front_img_dir, index, clean_card_name, quantity)
 
@@ -133,7 +144,7 @@ def fetch_card_art(
             if all_parts and card_name:
                 fetch_meld_back(index, quantity, clean_card_name, card_name, all_parts, double_sided_dir)
         else:
-            card_art = fetch_image(f'{card_front_image_query}&face=back', card_set, card_collector_number, prefer_lang)
+            card_art = fetch_image(card_set, card_collector_number, prefer_langs, face='back')
             if card_art is not None:
                 save_card_art_copies(card_art, double_sided_dir, index, clean_card_name, quantity)
 
@@ -175,13 +186,14 @@ def fetch_card(
     name: str,
 
     prefer_older_sets: bool,
-    prefer_sets: Set[str],
+    prefer_sets: List[str],
+    ignore_sets: List[str],
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
     tokens: bool,
 
-    prefer_lang: ScryfallLanguage = None,
+    prefer_langs: List[ScryfallLanguage] = None,
 
     front_img_dir: str = None,
     double_sided_dir: str = None,
@@ -202,7 +214,7 @@ def fetch_card(
             card_json['layout'],
             card_json.get('all_parts'),
             card_json['name'],
-            prefer_lang,
+            prefer_langs,
             front_img_dir,
             double_sided_dir,
         )
@@ -222,7 +234,7 @@ def fetch_card(
                             card_json["set"],
                             card_json["collector_number"],
                             card_json["layout"],
-                            prefer_lang=prefer_lang,
+                            prefer_langs=prefer_langs,
                             front_img_dir=front_img_dir,
                             double_sided_dir=double_sided_dir,
                         )
@@ -252,21 +264,30 @@ def fetch_card(
         collector_number = card_json["collector_number"]
 
         # If preferred options are used, then filter over prints
-        if prefer_older_sets or len(prefer_sets) > 0 or prefer_showcase or prefer_extra_art:
+        if prefer_older_sets or len(prefer_sets) > 0 or len(ignore_sets) > 0 or prefer_showcase or prefer_extra_art:
             # Get available printings
             prints_search_json = request_scryfall(card_json['prints_search_uri']).json()
             card_printings = prints_search_json['data']
+
+            # Remove ignored sets up front; fall back to all printings if everything is excluded
+            if ignore_sets:
+                remaining = [c for c in card_printings if c['set'] not in ignore_sets]
+                if not remaining:
+                    print(f'All printings for "{name}" are in ignored sets. Ignoring --ignore_set.')
+                else:
+                    card_printings = remaining
 
             # Optional reverse for older preferences
             if prefer_older_sets:
                 card_printings.reverse()
 
-            # Define filters in order of preference
+            # Define filters in order of preference.
+            # prefer_sets is an ordered list: each set gets its own filter so earlier sets rank higher.
             filters = [
                 lambda c: c['nonfoil'],
                 lambda c: not c['digital'],
                 lambda c: not c['promo'],
-                lambda c: c['set'] in prefer_sets,
+                *[lambda c, s=s: c['set'] == s for s in prefer_sets],
                 lambda c: not prefer_showcase ^ ('frame_effects' in c and 'showcase' in c['frame_effects']),
                 lambda c: not prefer_extra_art ^ (c['full_art'] or c['border_color'] == "borderless" or ('frame_effects' in c and 'extendedart' in c['frame_effects']))
             ]
@@ -290,7 +311,7 @@ def fetch_card(
             card_json['layout'],
             card_json.get('all_parts'),
             card_json['name'],
-            prefer_lang,
+            prefer_langs,
             front_img_dir,
             double_sided_dir,
         )
@@ -310,7 +331,7 @@ def fetch_card(
                             card_json["set"],
                             card_json["collector_number"],
                             card_json["layout"],
-                            prefer_lang=prefer_lang,
+                            prefer_langs=prefer_langs,
                             front_img_dir=front_img_dir,
                             double_sided_dir=double_sided_dir,
                         )
@@ -319,13 +340,14 @@ def get_handle_card(
     ignore_set_and_collector_number: bool,
 
     prefer_older_sets: bool,
-    prefer_sets: Set[str],
+    prefer_sets: List[str],
+    ignore_sets: List[str],
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
     tokens: bool,
 
-    prefer_lang: ScryfallLanguage = None,
+    prefer_langs: List[ScryfallLanguage] = None,
 
     front_img_dir: str = None,
     double_sided_dir: str = None,
@@ -343,12 +365,13 @@ def get_handle_card(
 
             prefer_older_sets,
             prefer_sets,
+            ignore_sets,
 
             prefer_showcase,
             prefer_extra_art,
             tokens,
 
-            prefer_lang,
+            prefer_langs,
 
             front_img_dir,
             double_sided_dir,

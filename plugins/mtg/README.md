@@ -35,8 +35,10 @@ Options:
                                   sets are not provided.
   -s, --prefer_set TEXT           Prefer fetching cards from a particular
                                   set(s) if sets are not provided. Use this
-                                  option multiple times to specify multiple
-                                  preferred sets.
+                                  option multiple times for a priority list.
+  --ignore_set TEXT               Exclude a set from consideration when
+                                  fetching cards. Use this option multiple
+                                  times to exclude multiple sets.
   --prefer_showcase               Prefer fetching cards with showcase
                                   treatment
   --prefer_extra_art              Prefer fetching cards with full art,
@@ -44,8 +46,8 @@ Options:
   --tokens                        Fetch related tokens when fetching cards
   --prefer_lang [en|sp|fr|de|it|pt|jp|kr|ru|cs|ct|ag|ph]
                                   Preferred language for card images (printed
-                                  code). Falls back to English if unavailable.
-                                  [default: en]
+                                  code). Use multiple times for a priority list.
+                                  Falls back to English if none are available.
   --help                          Show this message and exit.
 ```
 
@@ -85,6 +87,18 @@ Use an MTG Arena decklist named `deck.txt` and fetch Japanese card images where 
 
 ```sh
 python plugins/mtg/fetch.py game/decklist/deck.txt mtga --prefer_lang jp
+```
+
+Use an MTG Arena decklist named `deck.txt` and try Japanese first, then German, then English.
+
+```sh
+python plugins/mtg/fetch.py game/decklist/deck.txt mtga --prefer_lang jp --prefer_lang de
+```
+
+Use a Deckstats decklist named `eldraine_commander.txt` and prefer Eldraine first, then Wilds of Eldraine.
+
+```sh
+python plugins/mtg/fetch.py game/decklist/eldraine_commander.txt deckstats -s eld -s woe
 ```
 
 ## Formats
