@@ -21,7 +21,7 @@ from plugins.mtg.deck_formats import (
     parse_scryfall_json,
 )
 from plugins.mtg.common import ScryfallLanguage, to_scryfall_api_lang
-from plugins.mtg.scryfall import request_scryfall, get_handle_card, fetch_card, build_image_url, fetch_image
+from plugins.mtg.scryfall import request_scryfall, get_handle_card, fetch_card, fetch_printings, build_image_url, fetch_image
 from typing import List
 from plugins.mtg.patterns import MOXFIELD_PATTERN, DECKSTATS_PATTERN
 
@@ -408,11 +408,183 @@ _SHADOWSPEAR_JSON = {
     'layout': 'normal',
 }
 
+_PRINTS_SEARCH_URI = 'https://api.scryfall.com/cards/search?q=oracleid%3Atest&unique=prints'
+
+# Skrelv has both a Universe Beyond printing (SLD) and a standard printing (ONE).
+_SKRELV_JSON = {
+    'name': 'Skrelv, Defector Mite',
+    'set': 'one',
+    'collector_number': '225',
+    'layout': 'normal',
+    'prints_search_uri': _PRINTS_SEARCH_URI,
+}
+_SKRELV_UB_PRINTING = {
+    'set': 'sld', 'collector_number': '1926',
+    'nonfoil': True, 'digital': False, 'promo': False,
+    'full_art': False, 'border_color': 'black', 'frame_effects': [],
+}
+_SKRELV_NON_UB_PRINTING = {
+    'set': 'one', 'collector_number': '225',
+    'nonfoil': True, 'digital': False, 'promo': False,
+    'full_art': False, 'border_color': 'black', 'frame_effects': [],
+}
+
+# Excalibur only exists as a Universe Beyond card.
+_EXCALIBUR_JSON = {
+    'name': 'Excalibur, Sword of Eden',
+    'set': 'acr',
+    'collector_number': '72',
+    'layout': 'normal',
+    'prints_search_uri': _PRINTS_SEARCH_URI,
+}
+_EXCALIBUR_PRINTING = {
+    'set': 'acr', 'collector_number': '72',
+    'nonfoil': True, 'digital': False, 'promo': False,
+    'full_art': False, 'border_color': 'black', 'frame_effects': [],
+}
+
 def _make_404():
     err = requests.exceptions.HTTPError()
     err.response = MagicMock()
     err.response.status_code = 404
     return err
+
+class TestFetchPrintingsUB:
+    """Unit tests for Universe Beyond filtering in fetch_printings."""
+
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_prefer_ub_returns_ub_printings_when_available(self, mock_request):
+        """prefer_ub=True fetches with is:ub filter and returns those results."""
+        ub_response = MagicMock()
+        ub_response.json.return_value = {'data': [_SKRELV_UB_PRINTING]}
+        mock_request.return_value = ub_response
+
+        result = fetch_printings(_PRINTS_SEARCH_URI, True, 'Skrelv, Defector Mite')
+
+        assert result == [_SKRELV_UB_PRINTING]
+        called_url = mock_request.call_args_list[0][0][0]
+        assert 'is%3Aub' in called_url or 'is:ub' in called_url
+
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_ignore_ub_returns_non_ub_printings_when_available(self, mock_request):
+        """ignore_ub=True fetches with -is:ub filter and returns those results."""
+        non_ub_response = MagicMock()
+        non_ub_response.json.return_value = {'data': [_SKRELV_NON_UB_PRINTING]}
+        mock_request.return_value = non_ub_response
+
+        result = fetch_printings(_PRINTS_SEARCH_URI, False, 'Skrelv, Defector Mite')
+
+        assert result == [_SKRELV_NON_UB_PRINTING]
+        called_url = mock_request.call_args_list[0][0][0]
+        assert '-is%3Aub' in called_url or '-is:ub' in called_url
+
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_prefer_ub_falls_back_when_no_ub_printings(self, mock_request):
+        """prefer_ub=True falls back to all printings when no UB printings exist."""
+        ub_response = MagicMock()
+        ub_response.json.return_value = {'data': []}
+        fallback_response = MagicMock()
+        fallback_response.json.return_value = {'data': [_EXCALIBUR_PRINTING]}
+        mock_request.side_effect = [ub_response, fallback_response]
+
+        result = fetch_printings(_PRINTS_SEARCH_URI, True, 'Excalibur, Sword of Eden')
+
+        assert result == [_EXCALIBUR_PRINTING]
+        assert mock_request.call_count == 2
+
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_ignore_ub_falls_back_when_all_printings_are_ub(self, mock_request):
+        """ignore_ub=True falls back to all printings when no non-UB printings exist."""
+        non_ub_response = MagicMock()
+        non_ub_response.json.return_value = {'data': []}
+        fallback_response = MagicMock()
+        fallback_response.json.return_value = {'data': [_EXCALIBUR_PRINTING]}
+        mock_request.side_effect = [non_ub_response, fallback_response]
+
+        result = fetch_printings(_PRINTS_SEARCH_URI, False, 'Excalibur, Sword of Eden')
+
+        assert result == [_EXCALIBUR_PRINTING]
+        assert mock_request.call_count == 2
+
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_no_ub_filter_fetches_all_printings(self, mock_request):
+        """prefer_ub=None skips the filtered request entirely."""
+        all_response = MagicMock()
+        all_response.json.return_value = {'data': [_SKRELV_UB_PRINTING, _SKRELV_NON_UB_PRINTING]}
+        mock_request.return_value = all_response
+
+        result = fetch_printings(_PRINTS_SEARCH_URI, None, 'Skrelv, Defector Mite')
+
+        assert result == [_SKRELV_UB_PRINTING, _SKRELV_NON_UB_PRINTING]
+        assert mock_request.call_count == 1
+        assert mock_request.call_args_list[0][0][0] == _PRINTS_SEARCH_URI
+
+
+class TestFetchCardUB:
+    """Unit tests for prefer_ub/ignore_ub integration inside fetch_card."""
+
+    def _named_response(self, card_json):
+        r = MagicMock()
+        r.json.return_value = card_json
+        return r
+
+    def _printings_response(self, printings):
+        r = MagicMock()
+        r.json.return_value = {'data': printings}
+        return r
+
+    @patch('plugins.mtg.scryfall.fetch_card_art')
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_prefer_ub_selects_ub_printing(self, mock_request, mock_fetch_art):
+        """With prefer_ub=True, the UB printing is selected over the standard one."""
+        mock_request.side_effect = [
+            self._named_response(_SKRELV_JSON),           # /cards/named
+            self._printings_response([_SKRELV_UB_PRINTING]),  # is:ub filtered search
+        ]
+
+        fetch_card(1, 1, "", "", False, "Skrelv, Defector Mite",
+                   False, set(), set(), False, False, True, False, None, False,
+                   front_img_dir='front', double_sided_dir='double_sided')
+
+        args, _ = mock_fetch_art.call_args
+        assert args[3] == 'sld'
+        assert args[4] == '1926'
+
+    @patch('plugins.mtg.scryfall.fetch_card_art')
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_ignore_ub_selects_non_ub_printing(self, mock_request, mock_fetch_art):
+        """With ignore_ub=True, the non-UB printing is selected."""
+        mock_request.side_effect = [
+            self._named_response(_SKRELV_JSON),                    # /cards/named
+            self._printings_response([_SKRELV_NON_UB_PRINTING]),   # -is:ub filtered search
+        ]
+
+        fetch_card(1, 1, "", "", False, "Skrelv, Defector Mite",
+                   False, set(), set(), False, False, False, True, None, False,
+                   front_img_dir='front', double_sided_dir='double_sided')
+
+        args, _ = mock_fetch_art.call_args
+        assert args[3] == 'one'
+        assert args[4] == '225'
+
+    @patch('plugins.mtg.scryfall.fetch_card_art')
+    @patch('plugins.mtg.scryfall.request_scryfall')
+    def test_prefer_ub_falls_back_for_ub_only_card(self, mock_request, mock_fetch_art):
+        """With prefer_ub=True on a UB-only card, the UB printing is used after fallback."""
+        mock_request.side_effect = [
+            self._named_response(_EXCALIBUR_JSON),            # /cards/named
+            self._printings_response([]),                     # is:ub → empty (no non-UB)
+            self._printings_response([_EXCALIBUR_PRINTING]),  # fallback to all printings
+        ]
+
+        fetch_card(1, 1, "", "", False, "Excalibur, Sword of Eden",
+                   False, set(), set(), False, False, True, False, None, False,
+                   front_img_dir='front', double_sided_dir='double_sided')
+
+        args, _ = mock_fetch_art.call_args
+        assert args[3] == 'acr'
+        assert args[4] == '72'
+
 
 class TestScryfallFetch:
     """Unit tests for Scryfall card fetching logic."""
@@ -426,7 +598,7 @@ class TestScryfallFetch:
         mock_request.side_effect = [_make_404(), search_response]
 
         fetch_card(1, 1, "", "", False, "Donnie's Bō",
-                   False, set(), set(), False, False, False,
+                   False, set(), set(), False, False, False, False, None, False,
                    front_img_dir='front', double_sided_dir='double_sided')
 
         mock_fetch_art.assert_called_once()
@@ -450,7 +622,7 @@ class TestScryfallFetch:
 
         with patch('builtins.open', MagicMock()):
             fetch_card(1, 1, "FDN", "574", False, "Felidar Retreat",
-                       False, set(), set(), False, False, False,
+                       False, set(), set(), False, False, False, False, None, False,
                        front_img_dir='front', double_sided_dir='double_sided')
 
         # call_args_list is a list of all calls made to mock_get, in order.
@@ -470,7 +642,7 @@ class TestScryfallFetch:
         mock_request.return_value = named_response
 
         fetch_card(1, 1, "", "", False, "Shadowspear",
-                   False, set(), set(), False, False, False,
+                   False, set(), set(), False, False, False, False, None, False,
                    front_img_dir='front', double_sided_dir='double_sided')
 
         # Build a list of every URL string passed to request_scryfall across all calls.
@@ -659,8 +831,7 @@ class TestFetchCardWithLanguage:
 
         langs = [ScryfallLanguage.JAPANESE, ScryfallLanguage.GERMAN]
         fetch_card(1, 1, "", "", False, "Shadowspear",
-                   False, set(), set(), False, False, False,
-                   prefer_langs=langs,
+                   False, set(), set(), False, False, False, False, langs, False,
                    front_img_dir='front', double_sided_dir='double_sided')
 
         args, _ = mock_fetch_art.call_args
@@ -674,7 +845,7 @@ class TestFetchCardWithLanguage:
         mock_request.return_value = named_response
 
         fetch_card(1, 1, "", "", False, "Shadowspear",
-                   False, set(), set(), False, False, False,
+                   False, set(), set(), False, False, False, False, None, False,
                    front_img_dir='front', double_sided_dir='double_sided')
 
         args, _ = mock_fetch_art.call_args
@@ -719,8 +890,12 @@ class TestFullFetchWorkflow:
             ignore_set_and_collector_number=False,
             prefer_older_sets=False,
             prefer_sets=[],
+            ignore_sets=[],
             prefer_showcase=False,
             prefer_extra_art=False,
+            prefer_ub=False,
+            ignore_ub=False,
+            prefer_langs=None,
             tokens=False,
             front_img_dir=front_dir,
             double_sided_dir=double_sided_dir
@@ -748,8 +923,12 @@ class TestFullFetchWorkflow:
             ignore_set_and_collector_number=False,
             prefer_older_sets=False,
             prefer_sets=[],
+            ignore_sets=[],
             prefer_showcase=False,
             prefer_extra_art=False,
+            prefer_ub=False,
+            ignore_ub=False,
+            prefer_langs=None,
             tokens=False,
             front_img_dir=front_dir,
             double_sided_dir=double_sided_dir
@@ -773,8 +952,12 @@ class TestFullFetchWorkflow:
             ignore_set_and_collector_number=False,
             prefer_older_sets=False,
             prefer_sets=[],
+            ignore_sets=[],
             prefer_showcase=False,
             prefer_extra_art=False,
+            prefer_ub=False,
+            ignore_ub=False,
+            prefer_langs=None,
             tokens=False,
             front_img_dir=front_dir,
             double_sided_dir=double_sided_dir
@@ -796,8 +979,12 @@ class TestFullFetchWorkflow:
             ignore_set_and_collector_number=False,
             prefer_older_sets=False,
             prefer_sets=[],
+            ignore_sets=[],
             prefer_showcase=False,
             prefer_extra_art=False,
+            prefer_ub=False,
+            ignore_ub=False,
+            prefer_langs=None,
             tokens=False,
             front_img_dir=front_dir,
             double_sided_dir=double_sided_dir
@@ -825,8 +1012,12 @@ class TestFullFetchWorkflow:
             ignore_set_and_collector_number=False,
             prefer_older_sets=False,
             prefer_sets=[],
+            ignore_sets=[],
             prefer_showcase=False,
             prefer_extra_art=False,
+            prefer_ub=False,
+            ignore_ub=False,
+            prefer_langs=None,
             tokens=False,
             front_img_dir=front_dir,
             double_sided_dir=double_sided_dir
@@ -856,8 +1047,12 @@ class TestFullFetchWorkflow:
             ignore_set_and_collector_number=False,
             prefer_older_sets=False,
             prefer_sets=[],
+            ignore_sets=[],
             prefer_showcase=False,
             prefer_extra_art=False,
+            prefer_ub=False,
+            ignore_ub=False,
+            prefer_langs=None,
             tokens=False,
             front_img_dir=front_dir,
             double_sided_dir=double_sided_dir
@@ -880,3 +1075,90 @@ class TestFullFetchWorkflow:
         back_img = Image.open(back_path)
         front_img = Image.open(os.path.join(front_dir, front_files[0]))
         assert back_img.size == front_img.size
+
+
+@pytest.mark.integration
+class TestUniverseBeyondScryfallData:
+    """Sanity checks that the Scryfall data for our test cards matches expectations.
+
+    If these fail it means the cards have received new printings that change their
+    UB/non-UB composition — update the URIs/set codes below and re-check the
+    filtering tests, rather than assuming the plugin is broken.
+    """
+
+    _SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A48354be0-40ff-4f8f-a0e7-dc3e20bcf6ba&unique=prints'
+    _EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1d1695a2-1d5e-42b1-9e59-a6c51b2b2f80&unique=prints'
+
+    def test_skrelv_has_ub_printing(self):
+        """Scryfall still lists a UB printing of Skrelv (SLD 1926)."""
+        printings = fetch_printings(self._SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
+        sets = {p['set'] for p in printings}
+        assert 'sld' in sets, (
+            "Scryfall no longer lists SLD as a printing of Skrelv. "
+            "Update the expected set codes in TestUniverseBeyondFiltering."
+        )
+
+    def test_skrelv_has_non_ub_printing(self):
+        """Scryfall still lists a non-UB printing of Skrelv (ONE 225)."""
+        printings = fetch_printings(self._SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
+        sets = {p['set'] for p in printings}
+        assert 'one' in sets, (
+            "Scryfall no longer lists ONE as a printing of Skrelv. "
+            "Update the expected set codes in TestUniverseBeyondFiltering."
+        )
+
+    def test_excalibur_is_ub_only(self):
+        """Scryfall lists Excalibur only in UB sets — no non-UB printings exist."""
+        all_printings = fetch_printings(self._EXCALIBUR_PRINTS_URI, None, 'Excalibur, Sword of Eden')
+        non_ub_printings = fetch_printings(self._EXCALIBUR_PRINTS_URI, False, 'Excalibur, Sword of Eden')
+        assert len(non_ub_printings) == len(all_printings), (
+            "Excalibur now has a non-UB printing. It can no longer be used as the "
+            "UB-only fallback test case — update TestUniverseBeyondFiltering."
+        )
+
+
+@pytest.mark.integration
+class TestUniverseBeyondFiltering:
+    """Integration tests for prefer_ub and ignore_ub options via fetch_printings.
+
+    Skrelv, Defector Mite exists as both a standard printing (ONE 225)
+    and a Universe Beyond printing (SLD 1926).
+    Excalibur, Sword of Eden only exists as a Universe Beyond printing (ACR 72).
+    """
+
+    # prints_search_uri for Skrelv, Defector Mite
+    _SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A48354be0-40ff-4f8f-a0e7-dc3e20bcf6ba&unique=prints'
+    # prints_search_uri for Excalibur, Sword of Eden
+    _EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1d1695a2-1d5e-42b1-9e59-a6c51b2b2f80&unique=prints'
+
+    def test_prefer_ub_returns_only_ub_printings(self):
+        """prefer_ub=True returns only Universe Beyond printings of Skrelv."""
+        printings = fetch_printings(self._SKRELV_PRINTS_URI, True, 'Skrelv, Defector Mite')
+
+        sets = {p['set'] for p in printings}
+        assert 'sld' in sets
+        assert 'one' not in sets
+
+    def test_ignore_ub_returns_only_non_ub_printings(self):
+        """ignore_ub=True returns only non-Universe Beyond printings of Skrelv."""
+        printings = fetch_printings(self._SKRELV_PRINTS_URI, False, 'Skrelv, Defector Mite')
+
+        sets = {p['set'] for p in printings}
+        assert 'sld' not in sets
+        assert 'one' in sets
+
+    def test_no_filter_returns_all_printings(self):
+        """prefer_ub=None returns all printings including both UB and non-UB."""
+        printings = fetch_printings(self._SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
+
+        sets = {p['set'] for p in printings}
+        assert 'one' in sets
+        assert 'sld' in sets
+
+    def test_ignore_ub_falls_back_for_ub_only_card(self):
+        """ignore_ub=True falls back to all printings when every printing is UB."""
+        printings = fetch_printings(self._EXCALIBUR_PRINTS_URI, False, 'Excalibur, Sword of Eden')
+
+        # Fallback: should still return printings rather than an empty list
+        assert len(printings) > 0
+        assert any(p['set'] == 'acr' for p in printings)
