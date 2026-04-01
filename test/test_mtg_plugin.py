@@ -825,9 +825,14 @@ class TestFetchCardWithLanguage:
     @patch('plugins.mtg.scryfall.fetch_card_art')
     @patch('plugins.mtg.scryfall.request_scryfall')
     def test_prefer_langs_passed_to_fetch_card_art(self, mock_request, mock_fetch_art):
+        shadowspear_with_prints = {**SHADOWSPEAR_JSON, 'prints_search_uri': PRINTS_SEARCH_URI}
         named_response = MagicMock()
-        named_response.json.return_value = SHADOWSPEAR_JSON
-        mock_request.return_value = named_response
+        named_response.json.return_value = shadowspear_with_prints
+        printings_response = MagicMock()
+        printings_response.json.return_value = {'data': [
+            {**SKRELV_NON_UB_PRINTING, 'set': 'pza', 'collector_number': '17', 'lang': 'ja'},
+        ]}
+        mock_request.side_effect = [named_response, printings_response]
 
         langs = [ScryfallLanguage.JAPANESE, ScryfallLanguage.GERMAN]
         fetch_card(1, 1, "", "", False, "Shadowspear",
