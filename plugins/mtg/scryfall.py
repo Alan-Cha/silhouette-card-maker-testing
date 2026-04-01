@@ -289,39 +289,43 @@ def fetch_card(
         set = card_json["set"]
         collector_number = card_json["collector_number"]
 
-        # Filter over available printings
-        ub_preference = True if prefer_ub else (False if ignore_ub else None)
-        card_printings = fetch_printings(card_json['prints_search_uri'], ub_preference, name)
+        # Filter over available printings when any filtering option is set
+        needs_filtering = prefer_langs or prefer_older_sets or prefer_sets or ignore_sets or prefer_showcase or prefer_extra_art or prefer_ub or ignore_ub
+        if needs_filtering:
+            ub_preference = True if prefer_ub else (False if ignore_ub else None)
+            card_printings = fetch_printings(card_json['prints_search_uri'], ub_preference, name)
 
-        if ignore_sets:
-            remaining = [c for c in card_printings if c['set'] not in ignore_sets]
-            if not remaining:
-                print(f'All printings for "{name}" are in ignored sets. Ignoring --ignore_set.')
+            if ignore_sets:
+                remaining = [c for c in card_printings if c['set'] not in ignore_sets]
+                if not remaining:
+                    print(f'All printings for "{name}" are in ignored sets. Ignoring --ignore_set.')
+                else:
+                    card_printings = remaining
+
+            if prefer_older_sets:
+                card_printings.reverse()
+
+            # Define filters in order of preference.
+            # prefer_langs is an ordered list: each language gets its own filter so earlier languages rank higher.
+            # prefer_sets is an ordered list: each set gets its own filter so earlier sets rank higher.
+            filters = [
+                lambda c: c['nonfoil'],
+                lambda c: not c['digital'],
+                lambda c: not c['promo'],
+                *[lambda c, lang=lang: c['lang'] == to_scryfall_api_lang(lang) for lang in prefer_langs or []],
+                *[lambda c, s=s: c['set'] == s for s in prefer_sets],
+                lambda c: not prefer_showcase ^ ('frame_effects' in c and 'showcase' in c['frame_effects']),
+                lambda c: not prefer_extra_art ^ (c['full_art'] or c['border_color'] == "borderless" or ('frame_effects' in c and 'extendedart' in c['frame_effects']))
+            ]
+
+            filtered_printings = progressive_filtering(card_printings, filters)
+
+            if len(filtered_printings) == 0:
+                print(f'No printings found for "{name}" with preferred options. Using default instead.')
             else:
-                card_printings = remaining
-
-        if prefer_older_sets:
-            card_printings.reverse()
-
-        # Define filters in order of preference.
-        # prefer_sets is an ordered list: each set gets its own filter so earlier sets rank higher.
-        filters = [
-            lambda c: c['nonfoil'],
-            lambda c: not c['digital'],
-            lambda c: not c['promo'],
-            *[lambda c, s=s: c['set'] == s for s in prefer_sets],
-            lambda c: not prefer_showcase ^ ('frame_effects' in c and 'showcase' in c['frame_effects']),
-            lambda c: not prefer_extra_art ^ (c['full_art'] or c['border_color'] == "borderless" or ('frame_effects' in c and 'extendedart' in c['frame_effects']))
-        ]
-
-        filtered_printings = progressive_filtering(card_printings, filters)
-
-        if len(filtered_printings) == 0:
-            print(f'No printings found for "{name}" with preferred options. Using default instead.')
-        else:
-            best_print = filtered_printings[0]
-            set = best_print["set"]
-            collector_number = best_print["collector_number"]
+                best_print = filtered_printings[0]
+                set = best_print["set"]
+                collector_number = best_print["collector_number"]
 
         fetch_card_art(
             index,
