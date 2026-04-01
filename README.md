@@ -161,7 +161,7 @@ Get your PDF at `game/output/game.pdf`.
 
 Plugins streamline the process for acquiring card images for various games.
 
-The [Magic: The Gathering plugin](plugins/mtg/README.md) supports various decklist formats, including **MTGA**, **MTGO**, **Archidekt**, **Deckstats**, **Moxfield**, and **Scryfall**.
+The [Magic: The Gathering plugin](plugins/mtg/README.md) supports various decklist formats, including **Archidekt**, **CubeCobra**, **Deckstats**, **MPCFill**, **MTGA**, **MTGO**, **Moxfield**, and **Scryfall** formats.
 
 The [Pokemon plugin](plugins/pokemon/README.md) supports **Limitless TCG** format.
 
@@ -173,31 +173,31 @@ The [Ashes Reborn plugin](plugins/ashes_reborn/README.md) supports **Ashes** and
 
 The [Bushiroad plugin](plugins/bushiroad/README.md) supports **Bushiroad Deck Log** format for Cardfight Vanguard, Shadowverse: Evolve, Weiss Schwarz, Godzilla Card Game, and hololive.
 
-The [Digimon plugin](plugins/digimon/README.md) supports **Tabletop Simulator**, **Digimoncard.io**, **Digimoncard.dev**, **Digimoncard.app**, **DigimonMeta**, and **Untap** formats.
+The [Digimon plugin](plugins/digimon/README.md) supports **Digimoncard.app**, **Digimoncard.dev**, **Digimoncard.io**, **DigimonMeta**, **Tabletop Simulator**, and **Untap** formats.
 
 The [Echoes of Astra plugin](plugins/echoes_of_astra/README.md) supports **AstraBuilder** format.
 
 The [Elestrals plugin](plugins/elestrals/README.md) supports **Elestrals** format.
 
-The [Final Fantasy plugin](plugins/final_fantasy/README.md) supports **Tabletop Simulator** and **Untap** formats.
+The [Final Fantasy plugin](plugins/final_fantasy/README.md) supports **OCTGN**, **Tabletop Simulator**, and **Untap** formats.
 
 The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
 
 The [Grand Archive plugin](plugins/grand_archive/README.md) supports **Omnideck** format.
 
-The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Limitless TCG**, **Egman Events**, and **ExBurst** formats.
+The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Egman Events**, **ExBurst**, and **Limitless TCG** formats.
 
 The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
 
-The [Netrunner plugin](plugins/netrunner/README.md) supports **text**, **bbCode**, **markdown**, **plain text**,  and **Jinteki** formats.
+The [Netrunner plugin](plugins/netrunner/README.md) supports **bbCode** and **Jinteki** formats.
 
-The [One Piece plugin](plugins/one_piece/README.md) supports **OPTCG Simulator** and **Egman Events** formats.
+The [One Piece plugin](plugins/one_piece/README.md) supports **Egman Events** and **OPTCG Simulator** formats.
 
-The [Riftbound plugin](plugins/riftbound/README.md) supports **Tabletop Simulator**, **Pixelborn**, and **Piltover Archive** formats.
+The [Riftbound plugin](plugins/riftbound/README.md) supports **Piltover Archive**, **Pixelborn**, and **Tabletop Simulator** formats.
 
 The [Sorcery: Contested Realm plugin](plugins/sorcery_contested_realm/README.md) supports **Curiosa** format.
 
-The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **SWUDB JSON**, **Melee**, and **Picklist** formats.
+The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **Melee**, **Picklist**, and **SWUDB** formats.
 
 ### Double-Sided Cards
 
