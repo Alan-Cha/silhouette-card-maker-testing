@@ -24,10 +24,10 @@ double_sided_directory = os.path.join('game', 'double_sided')
 @click.option('--ignore_set', multiple=True, help="Exclude a set from consideration when fetching cards. Use this option multiple times to exclude multiple sets.")
 @click.option('--prefer_showcase', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with showcase treatment")
 @click.option('--prefer_extra_art', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with full art, borderless, or extended art.")
-@click.option('--tokens', default=False, is_flag=True, show_default=True, help="Fetch related tokens when fetching cards")
 @click.option('--prefer_lang', multiple=True, type=click.Choice([lang.value for lang in ScryfallLanguage], case_sensitive=False), help="Preferred language for card images (printed code). Use multiple times for a priority list. Falls back to English if none are available.")
 @click.option('--prefer_ub', default=False, is_flag=True, show_default=True, help="Prefer Universe Beyond printings when available.")
 @click.option('--ignore_ub', default=False, is_flag=True, show_default=True, help="Exclude Universe Beyond printings from consideration.")
+@click.option('--tokens', default=False, is_flag=True, show_default=True, help="Fetch related tokens when fetching cards")
 
 def cli(
     deck_path: str,
@@ -40,11 +40,12 @@ def cli(
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
-    tokens: bool,
 
     prefer_lang: tuple,
     prefer_ub: bool,
     ignore_ub: bool,
+
+    tokens: bool,
 ):
     ensure_directory(front_directory)
     ensure_directory(double_sided_directory)

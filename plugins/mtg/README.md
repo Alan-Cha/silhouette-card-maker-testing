@@ -43,11 +43,15 @@ Options:
                                   treatment
   --prefer_extra_art              Prefer fetching cards with full art,
                                   borderless, or extended art.
-  --tokens                        Fetch related tokens when fetching cards
   --prefer_lang [en|sp|fr|de|it|pt|jp|kr|ru|cs|ct|ag|ph]
                                   Preferred language for card images (printed
                                   code). Use multiple times for a priority list.
                                   Falls back to English if none are available.
+  --prefer_ub                     Prefer Universe Beyond printings when
+                                  available.
+  --ignore_ub                     Exclude Universe Beyond printings from
+                                  consideration.
+  --tokens                        Fetch related tokens when fetching cards
   --help                          Show this message and exit.
 ```
 
@@ -99,6 +103,18 @@ Use a Deckstats decklist named `eldraine_commander.txt` and prefer Eldraine firs
 
 ```sh
 python plugins/mtg/fetch.py game/decklist/eldraine_commander.txt deckstats -s eld -s woe
+```
+
+Use an MTG Arena decklist named `deck.txt` and prefer Universe Beyond printings where available (e.g. Lord of the Rings, Warhammer 40K crossover cards).
+
+```sh
+python plugins/mtg/fetch.py game/decklist/deck.txt mtga --prefer_ub
+```
+
+Use an MTG Arena decklist named `deck.txt` and exclude Universe Beyond printings, always fetching standard Magic printings instead.
+
+```sh
+python plugins/mtg/fetch.py game/decklist/deck.txt mtga --ignore_ub
 ```
 
 ## Formats
