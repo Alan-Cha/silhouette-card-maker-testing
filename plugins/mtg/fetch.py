@@ -26,6 +26,8 @@ double_sided_directory = os.path.join('game', 'double_sided')
 @click.option('--prefer_extra_art', default=False, is_flag=True, show_default=True, help="Prefer fetching cards with full art, borderless, or extended art.")
 @click.option('--tokens', default=False, is_flag=True, show_default=True, help="Fetch related tokens when fetching cards")
 @click.option('--prefer_lang', multiple=True, type=click.Choice([lang.value for lang in ScryfallLanguage], case_sensitive=False), help="Preferred language for card images (printed code). Use multiple times for a priority list. Falls back to English if none are available.")
+@click.option('--prefer_ub', default=False, is_flag=True, show_default=True, help="Prefer Universe Beyond printings when available.")
+@click.option('--ignore_ub', default=False, is_flag=True, show_default=True, help="Exclude Universe Beyond printings from consideration.")
 
 def cli(
     deck_path: str,
@@ -41,6 +43,8 @@ def cli(
     tokens: bool,
 
     prefer_lang: tuple,
+    prefer_ub: bool,
+    ignore_ub: bool,
 ):
     ensure_directory(front_directory)
     ensure_directory(double_sided_directory)
@@ -70,9 +74,12 @@ def cli(
 
             prefer_showcase,
             prefer_extra_art,
-            tokens,
+            prefer_ub,
+            ignore_ub,
 
             [ScryfallLanguage(lang) for lang in prefer_lang] or None,
+
+            tokens,
 
             front_directory,
             double_sided_directory,

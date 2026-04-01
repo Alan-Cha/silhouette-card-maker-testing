@@ -1,6 +1,7 @@
 import os
 from io import BytesIO
-from typing import List, Tuple
+from typing import List, Optional, Tuple
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import requests
 import time
 
@@ -9,6 +10,28 @@ from PIL import Image
 from .common import remove_nonalphanumeric, ScryfallLanguage, to_scryfall_api_lang
 
 double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card', 'meld']
+
+def append_search_filter(uri: str, filter_term: str) -> str:
+    parsed = urlparse(uri)
+    params = parse_qs(parsed.query, keep_blank_values=True)
+    q_val = params.get('q', [''])[0]
+    params['q'] = [q_val + ' ' + filter_term]
+    return urlunparse(parsed._replace(query=urlencode(params, doseq=True)))
+
+def fetch_printings(prints_search_uri: str, prefer_ub: Optional[bool], name: str) -> List:
+    if prefer_ub is not None:
+        filter_term = 'is:ub' if prefer_ub else '-is:ub'
+        filtered_uri = append_search_filter(prints_search_uri, filter_term)
+        try:
+            filtered = request_scryfall(filtered_uri).json().get('data', [])
+        except requests.exceptions.HTTPError:
+            filtered = []
+        if filtered:
+            return filtered
+        label = 'No Universe Beyond' if prefer_ub else 'All'
+        flag = '--prefer_ub' if prefer_ub else '--ignore_ub'
+        print(f'{label} printings for "{name}" are Universe Beyond. Ignoring {flag}.')
+    return request_scryfall(prints_search_uri).json()['data']
 
 def request_scryfall(
     query: str,
@@ -191,12 +214,15 @@ def fetch_card(
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
+    prefer_ub: bool,
+    ignore_ub: bool,
+
+    prefer_langs: List[ScryfallLanguage],
+
     tokens: bool,
 
-    prefer_langs: List[ScryfallLanguage] = None,
-
-    front_img_dir: str = None,
-    double_sided_dir: str = None,
+    front_img_dir: str,
+    double_sided_dir: str,
 ):
     # Query based on card set and card collector number if provided
     if not ignore_set_and_collector_number and card_set != "" and card_collector_number != "":
@@ -263,44 +289,39 @@ def fetch_card(
         set = card_json["set"]
         collector_number = card_json["collector_number"]
 
-        # If preferred options are used, then filter over prints
-        if prefer_older_sets or len(prefer_sets) > 0 or len(ignore_sets) > 0 or prefer_showcase or prefer_extra_art:
-            # Get available printings
-            prints_search_json = request_scryfall(card_json['prints_search_uri']).json()
-            card_printings = prints_search_json['data']
+        # Filter over available printings
+        ub_preference = True if prefer_ub else (False if ignore_ub else None)
+        card_printings = fetch_printings(card_json['prints_search_uri'], ub_preference, name)
 
-            # Remove ignored sets up front; fall back to all printings if everything is excluded
-            if ignore_sets:
-                remaining = [c for c in card_printings if c['set'] not in ignore_sets]
-                if not remaining:
-                    print(f'All printings for "{name}" are in ignored sets. Ignoring --ignore_set.')
-                else:
-                    card_printings = remaining
-
-            # Optional reverse for older preferences
-            if prefer_older_sets:
-                card_printings.reverse()
-
-            # Define filters in order of preference.
-            # prefer_sets is an ordered list: each set gets its own filter so earlier sets rank higher.
-            filters = [
-                lambda c: c['nonfoil'],
-                lambda c: not c['digital'],
-                lambda c: not c['promo'],
-                *[lambda c, s=s: c['set'] == s for s in prefer_sets],
-                lambda c: not prefer_showcase ^ ('frame_effects' in c and 'showcase' in c['frame_effects']),
-                lambda c: not prefer_extra_art ^ (c['full_art'] or c['border_color'] == "borderless" or ('frame_effects' in c and 'extendedart' in c['frame_effects']))
-            ]
-
-            # Apply progressive filtering
-            filtered_printings = progressive_filtering(card_printings, filters)
-
-            if len(filtered_printings) == 0:
-                print(f'No printings found for "{name}" with preferred options. Using default instead.')
+        if ignore_sets:
+            remaining = [c for c in card_printings if c['set'] not in ignore_sets]
+            if not remaining:
+                print(f'All printings for "{name}" are in ignored sets. Ignoring --ignore_set.')
             else:
-                best_print = filtered_printings[0]
-                set = best_print["set"]
-                collector_number = best_print["collector_number"]
+                card_printings = remaining
+
+        if prefer_older_sets:
+            card_printings.reverse()
+
+        # Define filters in order of preference.
+        # prefer_sets is an ordered list: each set gets its own filter so earlier sets rank higher.
+        filters = [
+            lambda c: c['nonfoil'],
+            lambda c: not c['digital'],
+            lambda c: not c['promo'],
+            *[lambda c, s=s: c['set'] == s for s in prefer_sets],
+            lambda c: not prefer_showcase ^ ('frame_effects' in c and 'showcase' in c['frame_effects']),
+            lambda c: not prefer_extra_art ^ (c['full_art'] or c['border_color'] == "borderless" or ('frame_effects' in c and 'extendedart' in c['frame_effects']))
+        ]
+
+        filtered_printings = progressive_filtering(card_printings, filters)
+
+        if len(filtered_printings) == 0:
+            print(f'No printings found for "{name}" with preferred options. Using default instead.')
+        else:
+            best_print = filtered_printings[0]
+            set = best_print["set"]
+            collector_number = best_print["collector_number"]
 
         fetch_card_art(
             index,
@@ -345,12 +366,15 @@ def get_handle_card(
 
     prefer_showcase: bool,
     prefer_extra_art: bool,
+    prefer_ub: bool,
+    ignore_ub: bool,
+
+    prefer_langs: List[ScryfallLanguage],
+
     tokens: bool,
 
-    prefer_langs: List[ScryfallLanguage] = None,
-
-    front_img_dir: str = None,
-    double_sided_dir: str = None,
+    front_img_dir: str,
+    double_sided_dir: str,
 ):
     def configured_fetch_card(index: int, name: str, card_set: str = None, card_collector_number: int = None, quantity: int = 1):
         fetch_card(
@@ -369,9 +393,12 @@ def get_handle_card(
 
             prefer_showcase,
             prefer_extra_art,
-            tokens,
+            prefer_ub,
+            ignore_ub,
 
             prefer_langs,
+
+            tokens,
 
             front_img_dir,
             double_sided_dir,
