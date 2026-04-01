@@ -401,49 +401,49 @@ class TestScryfallJsonFormat:
 
 # --- Unit Tests for Scryfall Fetching ---
 
-_SHADOWSPEAR_JSON = {
+SHADOWSPEAR_JSON = {
     'name': 'Shadowspear',
     'set': 'pza',
     'collector_number': '17',
     'layout': 'normal',
 }
 
-_PRINTS_SEARCH_URI = 'https://api.scryfall.com/cards/search?q=oracleid%3Atest&unique=prints'
+PRINTS_SEARCH_URI = 'https://api.scryfall.com/cards/search?q=oracleid%3Atest&unique=prints'
 
 # Skrelv has both a Universe Beyond printing (SLD) and a standard printing (ONE).
-_SKRELV_JSON = {
+SKRELV_JSON = {
     'name': 'Skrelv, Defector Mite',
     'set': 'one',
     'collector_number': '225',
     'layout': 'normal',
-    'prints_search_uri': _PRINTS_SEARCH_URI,
+    'prints_search_uri': PRINTS_SEARCH_URI,
 }
-_SKRELV_UB_PRINTING = {
+SKRELV_UB_PRINTING = {
     'set': 'sld', 'collector_number': '1926',
     'nonfoil': True, 'digital': False, 'promo': False,
     'full_art': False, 'border_color': 'black', 'frame_effects': [],
 }
-_SKRELV_NON_UB_PRINTING = {
+SKRELV_NON_UB_PRINTING = {
     'set': 'one', 'collector_number': '225',
     'nonfoil': True, 'digital': False, 'promo': False,
     'full_art': False, 'border_color': 'black', 'frame_effects': [],
 }
 
 # Excalibur only exists as a Universe Beyond card.
-_EXCALIBUR_JSON = {
+EXCALIBUR_JSON = {
     'name': 'Excalibur, Sword of Eden',
     'set': 'acr',
     'collector_number': '72',
     'layout': 'normal',
-    'prints_search_uri': _PRINTS_SEARCH_URI,
+    'prints_search_uri': PRINTS_SEARCH_URI,
 }
-_EXCALIBUR_PRINTING = {
+EXCALIBUR_PRINTING = {
     'set': 'acr', 'collector_number': '72',
     'nonfoil': True, 'digital': False, 'promo': False,
     'full_art': False, 'border_color': 'black', 'frame_effects': [],
 }
 
-def _make_404():
+def make_404():
     err = requests.exceptions.HTTPError()
     err.response = MagicMock()
     err.response.status_code = 404
@@ -456,12 +456,12 @@ class TestFetchPrintingsUB:
     def test_prefer_ub_returns_ub_printings_when_available(self, mock_request):
         """prefer_ub=True fetches with is:ub filter and returns those results."""
         ub_response = MagicMock()
-        ub_response.json.return_value = {'data': [_SKRELV_UB_PRINTING]}
+        ub_response.json.return_value = {'data': [SKRELV_UB_PRINTING]}
         mock_request.return_value = ub_response
 
-        result = fetch_printings(_PRINTS_SEARCH_URI, True, 'Skrelv, Defector Mite')
+        result = fetch_printings(PRINTS_SEARCH_URI, True, 'Skrelv, Defector Mite')
 
-        assert result == [_SKRELV_UB_PRINTING]
+        assert result == [SKRELV_UB_PRINTING]
         called_url = mock_request.call_args_list[0][0][0]
         assert 'is%3Aub' in called_url or 'is:ub' in called_url
 
@@ -469,12 +469,12 @@ class TestFetchPrintingsUB:
     def test_ignore_ub_returns_non_ub_printings_when_available(self, mock_request):
         """ignore_ub=True fetches with -is:ub filter and returns those results."""
         non_ub_response = MagicMock()
-        non_ub_response.json.return_value = {'data': [_SKRELV_NON_UB_PRINTING]}
+        non_ub_response.json.return_value = {'data': [SKRELV_NON_UB_PRINTING]}
         mock_request.return_value = non_ub_response
 
-        result = fetch_printings(_PRINTS_SEARCH_URI, False, 'Skrelv, Defector Mite')
+        result = fetch_printings(PRINTS_SEARCH_URI, False, 'Skrelv, Defector Mite')
 
-        assert result == [_SKRELV_NON_UB_PRINTING]
+        assert result == [SKRELV_NON_UB_PRINTING]
         called_url = mock_request.call_args_list[0][0][0]
         assert '-is%3Aub' in called_url or '-is:ub' in called_url
 
@@ -484,12 +484,12 @@ class TestFetchPrintingsUB:
         ub_response = MagicMock()
         ub_response.json.return_value = {'data': []}
         fallback_response = MagicMock()
-        fallback_response.json.return_value = {'data': [_EXCALIBUR_PRINTING]}
+        fallback_response.json.return_value = {'data': [EXCALIBUR_PRINTING]}
         mock_request.side_effect = [ub_response, fallback_response]
 
-        result = fetch_printings(_PRINTS_SEARCH_URI, True, 'Excalibur, Sword of Eden')
+        result = fetch_printings(PRINTS_SEARCH_URI, True, 'Excalibur, Sword of Eden')
 
-        assert result == [_EXCALIBUR_PRINTING]
+        assert result == [EXCALIBUR_PRINTING]
         assert mock_request.call_count == 2
 
     @patch('plugins.mtg.scryfall.request_scryfall')
@@ -498,37 +498,37 @@ class TestFetchPrintingsUB:
         non_ub_response = MagicMock()
         non_ub_response.json.return_value = {'data': []}
         fallback_response = MagicMock()
-        fallback_response.json.return_value = {'data': [_EXCALIBUR_PRINTING]}
+        fallback_response.json.return_value = {'data': [EXCALIBUR_PRINTING]}
         mock_request.side_effect = [non_ub_response, fallback_response]
 
-        result = fetch_printings(_PRINTS_SEARCH_URI, False, 'Excalibur, Sword of Eden')
+        result = fetch_printings(PRINTS_SEARCH_URI, False, 'Excalibur, Sword of Eden')
 
-        assert result == [_EXCALIBUR_PRINTING]
+        assert result == [EXCALIBUR_PRINTING]
         assert mock_request.call_count == 2
 
     @patch('plugins.mtg.scryfall.request_scryfall')
     def test_no_ub_filter_fetches_all_printings(self, mock_request):
         """prefer_ub=None skips the filtered request entirely."""
         all_response = MagicMock()
-        all_response.json.return_value = {'data': [_SKRELV_UB_PRINTING, _SKRELV_NON_UB_PRINTING]}
+        all_response.json.return_value = {'data': [SKRELV_UB_PRINTING, SKRELV_NON_UB_PRINTING]}
         mock_request.return_value = all_response
 
-        result = fetch_printings(_PRINTS_SEARCH_URI, None, 'Skrelv, Defector Mite')
+        result = fetch_printings(PRINTS_SEARCH_URI, None, 'Skrelv, Defector Mite')
 
-        assert result == [_SKRELV_UB_PRINTING, _SKRELV_NON_UB_PRINTING]
+        assert result == [SKRELV_UB_PRINTING, SKRELV_NON_UB_PRINTING]
         assert mock_request.call_count == 1
-        assert mock_request.call_args_list[0][0][0] == _PRINTS_SEARCH_URI
+        assert mock_request.call_args_list[0][0][0] == PRINTS_SEARCH_URI
 
 
 class TestFetchCardUB:
     """Unit tests for prefer_ub/ignore_ub integration inside fetch_card."""
 
-    def _named_response(self, card_json):
+    def named_response(self, card_json):
         r = MagicMock()
         r.json.return_value = card_json
         return r
 
-    def _printings_response(self, printings):
+    def printings_response(self, printings):
         r = MagicMock()
         r.json.return_value = {'data': printings}
         return r
@@ -538,8 +538,8 @@ class TestFetchCardUB:
     def test_prefer_ub_selects_ub_printing(self, mock_request, mock_fetch_art):
         """With prefer_ub=True, the UB printing is selected over the standard one."""
         mock_request.side_effect = [
-            self._named_response(_SKRELV_JSON),           # /cards/named
-            self._printings_response([_SKRELV_UB_PRINTING]),  # is:ub filtered search
+            self.named_response(SKRELV_JSON),           # /cards/named
+            self.printings_response([SKRELV_UB_PRINTING]),  # is:ub filtered search
         ]
 
         fetch_card(1, 1, "", "", False, "Skrelv, Defector Mite",
@@ -555,8 +555,8 @@ class TestFetchCardUB:
     def test_ignore_ub_selects_non_ub_printing(self, mock_request, mock_fetch_art):
         """With ignore_ub=True, the non-UB printing is selected."""
         mock_request.side_effect = [
-            self._named_response(_SKRELV_JSON),                    # /cards/named
-            self._printings_response([_SKRELV_NON_UB_PRINTING]),   # -is:ub filtered search
+            self.named_response(SKRELV_JSON),                    # /cards/named
+            self.printings_response([SKRELV_NON_UB_PRINTING]),   # -is:ub filtered search
         ]
 
         fetch_card(1, 1, "", "", False, "Skrelv, Defector Mite",
@@ -572,9 +572,9 @@ class TestFetchCardUB:
     def test_prefer_ub_falls_back_for_ub_only_card(self, mock_request, mock_fetch_art):
         """With prefer_ub=True on a UB-only card, the UB printing is used after fallback."""
         mock_request.side_effect = [
-            self._named_response(_EXCALIBUR_JSON),            # /cards/named
-            self._printings_response([]),                     # is:ub → empty (no non-UB)
-            self._printings_response([_EXCALIBUR_PRINTING]),  # fallback to all printings
+            self.named_response(EXCALIBUR_JSON),            # /cards/named
+            self.printings_response([]),                     # is:ub → empty (no non-UB)
+            self.printings_response([EXCALIBUR_PRINTING]),  # fallback to all printings
         ]
 
         fetch_card(1, 1, "", "", False, "Excalibur, Sword of Eden",
@@ -594,8 +594,8 @@ class TestScryfallFetch:
     def test_flavor_name_card_is_fetched(self, mock_request, mock_fetch_art):
         """A card known only by its flavor name still has its art fetched successfully."""
         search_response = MagicMock()
-        search_response.json.return_value = {'data': [_SHADOWSPEAR_JSON]}
-        mock_request.side_effect = [_make_404(), search_response]
+        search_response.json.return_value = {'data': [SHADOWSPEAR_JSON]}
+        mock_request.side_effect = [make_404(), search_response]
 
         fetch_card(1, 1, "", "", False, "Donnie's Bō",
                    False, set(), set(), False, False, False, False, None, False,
@@ -638,7 +638,7 @@ class TestScryfallFetch:
     def test_found_by_exact_name_does_not_call_flavor_search(self, mock_request, mock_fetch_art):
         """When a card is found by its exact name, no additional flavor name search is made."""
         named_response = MagicMock()
-        named_response.json.return_value = _SHADOWSPEAR_JSON
+        named_response.json.return_value = SHADOWSPEAR_JSON
         mock_request.return_value = named_response
 
         fetch_card(1, 1, "", "", False, "Shadowspear",
@@ -826,7 +826,7 @@ class TestFetchCardWithLanguage:
     @patch('plugins.mtg.scryfall.request_scryfall')
     def test_prefer_langs_passed_to_fetch_card_art(self, mock_request, mock_fetch_art):
         named_response = MagicMock()
-        named_response.json.return_value = _SHADOWSPEAR_JSON
+        named_response.json.return_value = SHADOWSPEAR_JSON
         mock_request.return_value = named_response
 
         langs = [ScryfallLanguage.JAPANESE, ScryfallLanguage.GERMAN]
@@ -841,7 +841,7 @@ class TestFetchCardWithLanguage:
     @patch('plugins.mtg.scryfall.request_scryfall')
     def test_no_langs_defaults_to_none(self, mock_request, mock_fetch_art):
         named_response = MagicMock()
-        named_response.json.return_value = _SHADOWSPEAR_JSON
+        named_response.json.return_value = SHADOWSPEAR_JSON
         mock_request.return_value = named_response
 
         fetch_card(1, 1, "", "", False, "Shadowspear",
@@ -1086,12 +1086,12 @@ class TestUniverseBeyondScryfallData:
     filtering tests, rather than assuming the plugin is broken.
     """
 
-    _SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A48354be0-40ff-4f8f-a0e7-dc3e20bcf6ba&unique=prints'
-    _EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1d1695a2-1d5e-42b1-9e59-a6c51b2b2f80&unique=prints'
+    SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A48354be0-40ff-4f8f-a0e7-dc3e20bcf6ba&unique=prints'
+    EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1d1695a2-1d5e-42b1-9e59-a6c51b2b2f80&unique=prints'
 
     def test_skrelv_has_ub_printing(self):
         """Scryfall still lists a UB printing of Skrelv (SLD 1926)."""
-        printings = fetch_printings(self._SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
+        printings = fetch_printings(self.SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
         sets = {p['set'] for p in printings}
         assert 'sld' in sets, (
             "Scryfall no longer lists SLD as a printing of Skrelv. "
@@ -1100,7 +1100,7 @@ class TestUniverseBeyondScryfallData:
 
     def test_skrelv_has_non_ub_printing(self):
         """Scryfall still lists a non-UB printing of Skrelv (ONE 225)."""
-        printings = fetch_printings(self._SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
+        printings = fetch_printings(self.SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
         sets = {p['set'] for p in printings}
         assert 'one' in sets, (
             "Scryfall no longer lists ONE as a printing of Skrelv. "
@@ -1109,8 +1109,8 @@ class TestUniverseBeyondScryfallData:
 
     def test_excalibur_is_ub_only(self):
         """Scryfall lists Excalibur only in UB sets — no non-UB printings exist."""
-        all_printings = fetch_printings(self._EXCALIBUR_PRINTS_URI, None, 'Excalibur, Sword of Eden')
-        non_ub_printings = fetch_printings(self._EXCALIBUR_PRINTS_URI, False, 'Excalibur, Sword of Eden')
+        all_printings = fetch_printings(self.EXCALIBUR_PRINTS_URI, None, 'Excalibur, Sword of Eden')
+        non_ub_printings = fetch_printings(self.EXCALIBUR_PRINTS_URI, False, 'Excalibur, Sword of Eden')
         assert len(non_ub_printings) == len(all_printings), (
             "Excalibur now has a non-UB printing. It can no longer be used as the "
             "UB-only fallback test case — update TestUniverseBeyondFiltering."
@@ -1127,13 +1127,13 @@ class TestUniverseBeyondFiltering:
     """
 
     # prints_search_uri for Skrelv, Defector Mite
-    _SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A48354be0-40ff-4f8f-a0e7-dc3e20bcf6ba&unique=prints'
+    SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A48354be0-40ff-4f8f-a0e7-dc3e20bcf6ba&unique=prints'
     # prints_search_uri for Excalibur, Sword of Eden
-    _EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1d1695a2-1d5e-42b1-9e59-a6c51b2b2f80&unique=prints'
+    EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1d1695a2-1d5e-42b1-9e59-a6c51b2b2f80&unique=prints'
 
     def test_prefer_ub_returns_only_ub_printings(self):
         """prefer_ub=True returns only Universe Beyond printings of Skrelv."""
-        printings = fetch_printings(self._SKRELV_PRINTS_URI, True, 'Skrelv, Defector Mite')
+        printings = fetch_printings(self.SKRELV_PRINTS_URI, True, 'Skrelv, Defector Mite')
 
         sets = {p['set'] for p in printings}
         assert 'sld' in sets
@@ -1141,7 +1141,7 @@ class TestUniverseBeyondFiltering:
 
     def test_ignore_ub_returns_only_non_ub_printings(self):
         """ignore_ub=True returns only non-Universe Beyond printings of Skrelv."""
-        printings = fetch_printings(self._SKRELV_PRINTS_URI, False, 'Skrelv, Defector Mite')
+        printings = fetch_printings(self.SKRELV_PRINTS_URI, False, 'Skrelv, Defector Mite')
 
         sets = {p['set'] for p in printings}
         assert 'sld' not in sets
@@ -1149,7 +1149,7 @@ class TestUniverseBeyondFiltering:
 
     def test_no_filter_returns_all_printings(self):
         """prefer_ub=None returns all printings including both UB and non-UB."""
-        printings = fetch_printings(self._SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
+        printings = fetch_printings(self.SKRELV_PRINTS_URI, None, 'Skrelv, Defector Mite')
 
         sets = {p['set'] for p in printings}
         assert 'one' in sets
@@ -1157,7 +1157,7 @@ class TestUniverseBeyondFiltering:
 
     def test_ignore_ub_falls_back_for_ub_only_card(self):
         """ignore_ub=True falls back to all printings when every printing is UB."""
-        printings = fetch_printings(self._EXCALIBUR_PRINTS_URI, False, 'Excalibur, Sword of Eden')
+        printings = fetch_printings(self.EXCALIBUR_PRINTS_URI, False, 'Excalibur, Sword of Eden')
 
         # Fallback: should still return printings rather than an empty list
         assert len(printings) > 0
