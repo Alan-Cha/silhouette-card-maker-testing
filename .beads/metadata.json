@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "silhouette_card_maker",
+  "project_id": "18c58919-0f74-4e26-b76d-6b362145fabd"
+}

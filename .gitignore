@@ -27,3 +27,7 @@ create_pdf.exe
 images/*.xcf
 
 hugo/public/
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
