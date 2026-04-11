@@ -21,7 +21,13 @@ node_modules
 GUI/dist
 GUI/bin/
 data
+# Compiled binaries and build artifacts
+*.exe
+*.spec
+create_pdf
 create_pdf.exe
+clean_up
+offset_pdf
 translated_text_boxes_to_pdf
 translated_text_boxes_to_pdf.exe
 *_to_pdf
