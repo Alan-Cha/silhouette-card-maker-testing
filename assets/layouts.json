@@ -39,6 +39,10 @@
         "domino_square": {
             "width": 524,
             "height": 524
+        },
+        "text_box": {
+            "width": 675,
+            "height": 375
         }
     },
     "paper_layouts": {
@@ -178,6 +182,23 @@
                         1859
                     ],
                     "template": "letter_dominosquare_v1"
+                },
+                "text_box": {
+                    "x_pos": [
+                        300,
+                        975,
+                        1650,
+                        2325
+                    ],
+                    "y_pos": [
+                        150,
+                        525,
+                        900,
+                        1275,
+                        1650,
+                        2025
+                    ],
+                    "template": "letter_textbox_v1"
                 }
             }
         },
@@ -263,6 +284,26 @@
                         4269
                     ],
                     "template": "tabloid_dominosquare_v1"
+                },
+                "text_box": {
+                    "x_pos": [
+                        455,
+                        1130,
+                        1805,
+                        2480,
+                        3155,
+                        3830
+                    ],
+                    "y_pos": [
+                        442,
+                        817,
+                        1192,
+                        1567,
+                        1942,
+                        2317,
+                        2692
+                    ],
+                    "template": "tabloid_textbox_v1"
                 }
             }
         },
@@ -358,6 +399,22 @@
                         1257
                     ],
                     "template": "a4_tarot_v1"
+                },
+                "text_box": {
+                    "x_pos": [
+                        404,
+                        1079,
+                        1754,
+                        2429
+                    ],
+                    "y_pos": [
+                        303,
+                        678,
+                        1053,
+                        1428,
+                        1803
+                    ],
+                    "template": "a4_textbox_v1"
                 }
             }
         },
@@ -380,6 +437,27 @@
                         2284
                     ],
                     "template": "a3_standard_v2"
+                },
+                "text_box": {
+                    "x_pos": [
+                        455,
+                        1130,
+                        1805,
+                        2480,
+                        3155,
+                        3830
+                    ],
+                    "y_pos": [
+                        254,
+                        629,
+                        1004,
+                        1379,
+                        1754,
+                        2129,
+                        2504,
+                        2879
+                    ],
+                    "template": "a3_textbox_v1"
                 }
             }
         },
@@ -402,6 +480,28 @@
                         2400
                     ],
                     "template": "archb_standard_v2"
+                },
+                "text_box": {
+                    "x_pos": [
+                        338,
+                        1013,
+                        1688,
+                        2363,
+                        3038,
+                        3713,
+                        4388
+                    ],
+                    "y_pos": [
+                        300,
+                        675,
+                        1050,
+                        1425,
+                        1800,
+                        2175,
+                        2550,
+                        2925
+                    ],
+                    "template": "archb_textbox_v1"
                 }
             }
         }

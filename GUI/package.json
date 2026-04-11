@@ -31,13 +31,8 @@
     ],
     "extraResources": [
       {
-        "from": "bin/create_pdf.exe",
-        "to": "bin/create_pdf.exe",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "bin/create_pdf",
-        "to": "bin/create_pdf",
+        "from": "bin",
+        "to": "bin",
         "filter": ["**/*"]
       }
     ],

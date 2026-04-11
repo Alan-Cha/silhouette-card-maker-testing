@@ -1,5 +1,6 @@
 @echo off
-REM Build script for create_pdf.exe
+setlocal EnableDelayedExpansion
+REM Build script for PDF generator executables
 REM Ensure you run this from the project root (where requirements.txt is)
 
 echo Checking Python version...
@@ -41,8 +42,31 @@ echo Installing PyInstaller...
 python -m pip install pyinstaller --no-warn-script-location
 
 echo.
-echo Building executable with PyInstaller...
-python -m PyInstaller --onefile --add-data "assets;assets" create_pdf.py --distpath .
+echo Discovering build targets...
+set TARGET_SCRIPTS=
+
+for %%F in (*.py) do (
+    findstr /C:"if __name__ == '__main__':" "%%F" >nul 2>&1
+    if !errorlevel! == 0 (
+        if defined TARGET_SCRIPTS (
+            set TARGET_SCRIPTS=!TARGET_SCRIPTS! %%F
+        ) else (
+            set TARGET_SCRIPTS=%%F
+        )
+    )
+)
+
+if not defined TARGET_SCRIPTS (
+    echo No top-level Python entrypoint scripts found to build.
+    call venv\Scripts\deactivate.bat
+    exit /b 1
+)
+
+for %%S in (!TARGET_SCRIPTS!) do (
+    echo.
+    echo Building %%~nS executable with PyInstaller...
+    python -m PyInstaller --onefile --add-data "assets;assets" %%S --distpath .
+)
 
 echo.
 echo Deactivating virtual environment...
@@ -52,7 +76,9 @@ echo.
 echo Cleaning up build artifacts...
 rmdir /s /q build
 rmdir /s /q __pycache__
-del create_pdf.spec
+for %%S in (!TARGET_SCRIPTS!) do (
+    if exist %%~nS.spec del %%~nS.spec
+)
 
 echo.
-echo Build complete. create_pdf.exe is now in the project root.
+echo Build complete. PDF executables are now in the project root.

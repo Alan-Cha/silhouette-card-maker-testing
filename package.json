@@ -2,12 +2,12 @@
   "name": "silhouette-card-maker-root",
   "private": true,
   "scripts": {
-  "build:create_pdf": "node -e \"process.platform === 'win32' ? require('child_process').execSync('build_create_pdf.bat', {stdio: 'inherit'}) : require('child_process').execSync('./build_create_pdf.sh', {stdio: 'inherit'})\"",
-  "copy:create_pdf": "node -e \"const fs=require('fs'),path=require('path');const binDir=path.join('GUI','bin');fs.mkdirSync(binDir,{recursive:true});['create_pdf','create_pdf.exe'].forEach(f=>{try{fs.copyFileSync(f,path.join(binDir,f))}catch(e){}})\"",
-  "check:create_pdf": "node check_and_build.js",
+  "build:entrypoints": "node -e \"process.platform === 'win32' ? require('child_process').execSync('build_entrypoints.bat', {stdio: 'inherit'}) : require('child_process').execSync('./build_entrypoints.sh', {stdio: 'inherit'})\"",
+  "copy:entrypoints": "node -e \"const fs=require('fs'),path=require('path');const binDir=path.join('GUI','bin');fs.mkdirSync(binDir,{recursive:true});const isEntrypoint=f=>/if\\s+__name__\\s*==\\s*['\\\"]__main__['\\\"]\\s*:/.test(fs.readFileSync(f,'utf8'));const scripts=fs.readdirSync('.').filter(f=>f.endsWith('.py')&&isEntrypoint(f));const files=scripts.flatMap(s=>{const base=s.slice(0,-3);return [base,base+'.exe'];});files.forEach(f=>{if(fs.existsSync(f)){fs.copyFileSync(f,path.join(binDir,f));console.log('Copied',f);}})\"",
+  "check:entrypoints": "node check_and_build_entrypoints.js",
   "build:css": "cd GUI && npm run build:css",
   "build:gui": "cd GUI && npm run dist:mac && npm run dist:win",
-  "build-all": "npm run build:create_pdf && npm run copy:create_pdf && npm run build:css && npm run build:gui",
-  "dev": "npm run check:create_pdf && cd GUI && npm run dev"
+  "build-all": "npm run build:entrypoints && npm run copy:entrypoints && npm run build:css && npm run build:gui",
+  "dev": "npm run check:entrypoints && cd GUI && npm run dev"
   }
 }

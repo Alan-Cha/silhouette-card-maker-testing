@@ -86,12 +86,12 @@ Once Python and Node.js are installed, continue with the project setup steps bel
 
    **Windows:**
    ```powershell
-   .\build_create_pdf.bat
+   .\build_entrypoints.bat
    ```
 
    **macOS/Linux:**
    ```bash
-   ./build_create_pdf.sh
+   ./build_entrypoints.sh
    ```
 
    This will create the PDF generator executable in the project root:

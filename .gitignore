@@ -22,6 +22,10 @@ GUI/dist
 GUI/bin/
 data
 create_pdf.exe
+translated_text_boxes_to_pdf
+translated_text_boxes_to_pdf.exe
+*_to_pdf
+*_to_pdf.exe
 /dist
 
 images/*.xcf

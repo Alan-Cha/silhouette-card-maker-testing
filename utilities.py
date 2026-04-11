@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import re
 import sys
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from xml.dom import ValidationErr
 
 from natsort import natsorted
@@ -39,6 +39,7 @@ class CardSize(str, Enum):
     TAROT = "tarot"
     DOMINO = "domino"
     DOMINO_SQUARE = "domino_square"
+    TEXT_BOX = "text_box"
 
 class PaperSize(str, Enum):
     LETTER = "letter"
@@ -64,6 +65,8 @@ class PaperLayout(BaseModel):
 class Layouts(BaseModel):
     card_sizes: Dict[CardSize, CardLayoutSize]
     paper_layouts: Dict[PaperSize, PaperLayout]
+
+MD_INLINE_STYLE_PATTERN = re.compile(r"(\*\*[^*]+\*\*|\*[^*]+\*)")
 
 # Known junk files across OSes
 EXTRANEOUS_FILES = {
@@ -297,6 +300,415 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
     pages.append(front_page)
     if not only_fronts:
         pages.append(back_page)
+
+def parse_markdown_entries(input_path: str) -> List[str]:
+    with open(input_path, 'r', encoding='utf-8') as markdown_file:
+        content = markdown_file.read()
+
+    entries = re.split(r"^\s*---\s*$", content, flags=re.MULTILINE)
+    return [entry.strip() for entry in entries if entry.strip()]
+
+def _get_text_box_font_path(font_filename: str) -> str:
+    font_path = os.path.join(asset_directory, font_filename)
+    if os.path.exists(font_path):
+        return font_path
+
+    return os.path.join(asset_directory, 'arial.ttf')
+
+def _load_text_box_fonts(font_size: int) -> Dict[str, ImageFont.FreeTypeFont]:
+    regular_font = ImageFont.truetype(_get_text_box_font_path('arial.ttf'), font_size)
+    bold_font = ImageFont.truetype(_get_text_box_font_path('arialbd.ttf'), font_size)
+    italic_font = ImageFont.truetype(_get_text_box_font_path('ariali.ttf'), font_size)
+    header_font = ImageFont.truetype(_get_text_box_font_path('arialbd.ttf'), font_size + 2)
+
+    return {
+        'regular': regular_font,
+        'bold': bold_font,
+        'italic': italic_font,
+        'header': header_font,
+    }
+
+def _measure_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont) -> Tuple[int, int]:
+    left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+    return right - left, bottom - top
+
+def _measure_runs(draw: ImageDraw.ImageDraw, runs: List[Tuple[str, str]], fonts: Dict[str, ImageFont.FreeTypeFont]) -> Tuple[int, int]:
+    line_width = 0
+    line_height = 0
+
+    for text, style in runs:
+        if len(text) == 0:
+            continue
+
+        text_width, text_height = _measure_text(draw, text, fonts[style])
+        line_width += text_width
+        line_height = max(line_height, text_height)
+
+    if line_height == 0:
+        _, line_height = _measure_text(draw, 'Ag', fonts['regular'])
+
+    return line_width, line_height
+
+def _split_markdown_line_runs(line: str) -> List[Tuple[str, str]]:
+    if len(line) == 0:
+        return []
+
+    is_header = line.startswith('### ')
+    if is_header:
+        line = line[4:].strip()
+
+    runs: List[Tuple[str, str]] = []
+    cursor = 0
+    for match in MD_INLINE_STYLE_PATTERN.finditer(line):
+        start, end = match.span()
+        if start > cursor:
+            style = 'header' if is_header else 'regular'
+            runs.append((line[cursor:start], style))
+
+        token = match.group(0)
+        if token.startswith('**') and token.endswith('**'):
+            style = 'header' if is_header else 'bold'
+            runs.append((token[2:-2], style))
+        elif token.startswith('*') and token.endswith('*'):
+            style = 'header' if is_header else 'italic'
+            runs.append((token[1:-1], style))
+
+        cursor = end
+
+    if cursor < len(line):
+        style = 'header' if is_header else 'regular'
+        runs.append((line[cursor:], style))
+
+    return [(text, style) for text, style in runs if len(text) > 0]
+
+def _split_long_run(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    style: str,
+    fonts: Dict[str, ImageFont.FreeTypeFont],
+    max_width: int,
+) -> List[str]:
+    if len(text) == 0:
+        return []
+
+    chunks = []
+    current = ''
+    for char in text:
+        probe = current + char
+        probe_width, _ = _measure_text(draw, probe, fonts[style])
+        if probe_width <= max_width or len(current) == 0:
+            current = probe
+            continue
+
+        chunks.append(current)
+        current = char
+
+    if len(current) > 0:
+        chunks.append(current)
+
+    return chunks
+
+def _wrap_runs(
+    draw: ImageDraw.ImageDraw,
+    runs: List[Tuple[str, str]],
+    fonts: Dict[str, ImageFont.FreeTypeFont],
+    max_width: int,
+) -> List[List[Tuple[str, str]]]:
+    if len(runs) == 0:
+        return [[]]
+
+    wrapped_lines: List[List[Tuple[str, str]]] = []
+    current_line: List[Tuple[str, str]] = []
+
+    for run_text, style in runs:
+        parts = re.split(r'(\s+)', run_text)
+        for part in parts:
+            if len(part) == 0:
+                continue
+
+            # Collapse all whitespace runs into one space for better fitting.
+            if part.isspace():
+                part = ' '
+
+            if part == ' ' and len(current_line) == 0:
+                continue
+
+            probe_line = current_line + [(part, style)]
+            probe_width, _ = _measure_runs(draw, probe_line, fonts)
+            if probe_width <= max_width:
+                current_line = probe_line
+                continue
+
+            if len(current_line) > 0:
+                wrapped_lines.append(current_line)
+                current_line = []
+
+            if part == ' ':
+                continue
+
+            part_width, _ = _measure_text(draw, part, fonts[style])
+            if part_width <= max_width:
+                current_line = [(part, style)]
+                continue
+
+            long_chunks = _split_long_run(draw, part, style, fonts, max_width)
+            if len(long_chunks) == 0:
+                continue
+
+            current_line = [(long_chunks[0], style)]
+            for chunk in long_chunks[1:]:
+                wrapped_lines.append(current_line)
+                current_line = [(chunk, style)]
+
+    wrapped_lines.append(current_line)
+    return wrapped_lines
+
+def _build_wrapped_lines(
+    draw: ImageDraw.ImageDraw,
+    entry: str,
+    fonts: Dict[str, ImageFont.FreeTypeFont],
+    max_width: int,
+) -> List[List[Tuple[str, str]]]:
+    lines = entry.splitlines()
+    if len(lines) == 0:
+        return [[]]
+
+    wrapped_lines: List[List[Tuple[str, str]]] = []
+    for line in lines:
+        runs = _split_markdown_line_runs(line.strip())
+        wrapped_lines.extend(_wrap_runs(draw, runs, fonts, max_width))
+
+    return wrapped_lines
+
+def _append_ellipsis_to_last_line(
+    draw: ImageDraw.ImageDraw,
+    line: List[Tuple[str, str]],
+    fonts: Dict[str, ImageFont.FreeTypeFont],
+    max_width: int,
+) -> List[Tuple[str, str]]:
+    ellipsis = '...'
+    if len(line) == 0:
+        return [(ellipsis, 'regular')]
+
+    result = list(line)
+    text, style = result[-1]
+    for i in range(len(text), -1, -1):
+        result[-1] = (text[:i].rstrip() + ellipsis, style)
+        width, _ = _measure_runs(draw, result, fonts)
+        if width <= max_width:
+            return result
+
+    return [(ellipsis, 'regular')]
+
+def _truncate_wrapped_lines(
+    draw: ImageDraw.ImageDraw,
+    lines: List[List[Tuple[str, str]]],
+    fonts: Dict[str, ImageFont.FreeTypeFont],
+    max_width: int,
+    max_height: int,
+    line_gap: int,
+) -> List[List[Tuple[str, str]]]:
+    kept_lines: List[List[Tuple[str, str]]] = []
+    used_height = 0
+
+    for line in lines:
+        _, line_height = _measure_runs(draw, line, fonts)
+        next_height = used_height + line_height
+        if len(kept_lines) > 0:
+            next_height += line_gap
+
+        if next_height > max_height:
+            break
+
+        if len(kept_lines) > 0:
+            used_height += line_gap
+        used_height += line_height
+        kept_lines.append(line)
+
+    if len(kept_lines) == 0:
+        kept_lines = [[]]
+
+    if len(kept_lines) < len(lines):
+        kept_lines[-1] = _append_ellipsis_to_last_line(draw, kept_lines[-1], fonts, max_width)
+
+    return kept_lines
+
+def fit_text_to_box(
+    draw: ImageDraw.ImageDraw,
+    entry: str,
+    box_width: int,
+    box_height: int,
+    min_font_size: int = 6,
+    max_font_size: int = 24,
+) -> Tuple[int, List[List[Tuple[str, str]]], Dict[str, ImageFont.FreeTypeFont], int, bool]:
+    def try_size(font_size: int):
+        fonts = _load_text_box_fonts(font_size)
+        lines = _build_wrapped_lines(draw, entry, fonts, box_width)
+        line_gap = max(1, font_size // 5)
+
+        total_height = 0
+        for i, line in enumerate(lines):
+            _, line_height = _measure_runs(draw, line, fonts)
+            if i > 0:
+                total_height += line_gap
+            total_height += line_height
+
+        return total_height <= box_height, lines, fonts, line_gap
+
+    best_fit = None
+    low = min_font_size
+    high = max_font_size
+    while low <= high:
+        mid = (low + high) // 2
+        fits, lines, fonts, line_gap = try_size(mid)
+        if fits:
+            best_fit = (mid, lines, fonts, line_gap, False)
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    if best_fit is not None:
+        return best_fit
+
+    _, lines, fonts, line_gap = try_size(min_font_size)
+    truncated_lines = _truncate_wrapped_lines(draw, lines, fonts, box_width, box_height, line_gap)
+    return min_font_size, truncated_lines, fonts, line_gap, True
+
+def draw_text_box(
+    draw: ImageDraw.ImageDraw,
+    entry: str,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    ppi_ratio: float,
+) -> None:
+    border_width = max(1, math.floor(ppi_ratio))
+    draw.rectangle((x, y, x + width, y + height), outline=(0, 0, 0), width=border_width)
+
+    padding = max(8, math.floor(9 * ppi_ratio))
+    text_x = x + padding
+    text_y = y + padding
+    text_width = max(1, width - 2 * padding)
+    text_height = max(1, height - 2 * padding)
+
+    _, wrapped_lines, fonts, line_gap, _ = fit_text_to_box(draw, entry, text_width, text_height)
+
+    y_cursor = text_y
+    for i, line in enumerate(wrapped_lines):
+        x_cursor = text_x
+        _, line_height = _measure_runs(draw, line, fonts)
+        if i > 0:
+            y_cursor += line_gap
+
+        for text, style in line:
+            if len(text) == 0:
+                continue
+
+            font = fonts[style]
+            draw.text((x_cursor, y_cursor), text, fill=(0, 0, 0), font=font)
+            text_width_px, _ = _measure_text(draw, text, font)
+            x_cursor += text_width_px
+
+        y_cursor += line_height
+
+def generate_md_pdf(
+    input_path: str,
+    output_path: str,
+    paper_size: PaperSize,
+    ppi: int,
+    quality: int,
+) -> None:
+    markdown_path = Path(input_path)
+    if not markdown_path.exists() or not markdown_path.is_file():
+        raise Exception(f'Markdown input path "{markdown_path}" is invalid.')
+
+    if not output_path.lower().endswith('.pdf'):
+        raise Exception(f'Cannot save PDF to output path "{output_path}" because it is not a valid PDF file path.')
+
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    entries = parse_markdown_entries(str(markdown_path))
+    if len(entries) == 0:
+        raise Exception(f'No markdown entries were found in "{markdown_path}".')
+
+    with open(layouts_path, 'r') as layouts_file:
+        try:
+            layouts_data = json.load(layouts_file)
+            layouts = Layouts(**layouts_data)
+        except ValidationErr as e:
+            raise Exception(f'Cannot parse layouts.json: {e}.')
+
+    if paper_size not in layouts.paper_layouts:
+        raise Exception(f'Unsupported paper size "{paper_size}".')
+
+    paper_layout = layouts.paper_layouts[paper_size]
+    if CardSize.TEXT_BOX not in layouts.card_sizes:
+        raise Exception('Missing "text_box" card size in layouts.json.')
+    if CardSize.TEXT_BOX not in paper_layout.card_layouts:
+        raise Exception(f'Unsupported card size "text_box" with paper size "{paper_size}".')
+
+    card_layout_size = layouts.card_sizes[CardSize.TEXT_BOX]
+    card_layout = paper_layout.card_layouts[CardSize.TEXT_BOX]
+
+    num_rows = len(card_layout.y_pos)
+    num_cols = len(card_layout.x_pos)
+    num_cards_per_page = num_rows * num_cols
+
+    ppi_ratio = ppi / 300
+    blank_filename = f'{paper_size}_blank.jpg'
+    blank_path = os.path.join(asset_directory, blank_filename)
+
+    with Image.open(blank_path) as blank_image:
+        base_page = blank_image.resize([
+            math.floor(blank_image.width * ppi_ratio),
+            math.floor(blank_image.height * ppi_ratio),
+        ])
+
+        pages: List[Image.Image] = []
+        entry_iter = iter(entries)
+        while True:
+            page = base_page.copy()
+            draw = ImageDraw.Draw(page)
+            placed_count = 0
+
+            for i in range(num_cards_per_page):
+                try:
+                    entry = next(entry_iter)
+                except StopIteration:
+                    break
+
+                x = math.floor(card_layout.x_pos[i % num_cols] * ppi_ratio)
+                y = math.floor(card_layout.y_pos[i // num_cols] * ppi_ratio)
+                width = math.floor(card_layout_size.width * ppi_ratio)
+                height = math.floor(card_layout_size.height * ppi_ratio)
+
+                draw_text_box(draw, entry, x, y, width, height, ppi_ratio)
+                placed_count += 1
+
+            if placed_count == 0:
+                break
+
+            pages.append(page)
+
+        if len(pages) == 0:
+            print('No pages were generated')
+            return
+
+        pages[0].save(
+            output_path,
+            format='PDF',
+            save_all=True,
+            append_images=pages[1:],
+            resolution=math.floor(300 * ppi_ratio),
+            speed=0,
+            subsampling=0,
+            quality=quality,
+        )
+
+    print(f'Generated PDF: {output_path}')
 
 def generate_pdf(
     front_dir_path: str,

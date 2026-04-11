@@ -1,6 +1,8 @@
 #!/bin/bash
-# Build script for create_pdf executable
+# Build script for PDF generator executables
 # Ensure you run this from the project root (where requirements.txt is)
+
+set -e
 
 echo "Checking Python version..."
 python3 --version
@@ -41,8 +43,25 @@ echo "Installing PyInstaller..."
 python -m pip install pyinstaller --no-warn-script-location
 
 echo ""
-echo "Building executable with PyInstaller..."
-python -m PyInstaller --onefile --add-data "assets:assets" create_pdf.py --distpath .
+echo "Discovering build targets..."
+TARGET_SCRIPTS=()
+while IFS= read -r script; do
+    if grep -Eq "if[[:space:]]+__name__[[:space:]]*==[[:space:]]*['\"]__main__['\"][[:space:]]*:" "$script"; then
+        TARGET_SCRIPTS+=("$script")
+    fi
+done < <(find . -maxdepth 1 -type f -name "*.py" -print | sed 's|^\./||' | sort)
+
+if [ ${#TARGET_SCRIPTS[@]} -eq 0 ]; then
+    echo "No top-level Python entrypoint scripts found to build."
+    deactivate
+    exit 1
+fi
+
+for script in "${TARGET_SCRIPTS[@]}"; do
+    echo ""
+    echo "Building ${script%.py} executable with PyInstaller..."
+    python -m PyInstaller --onefile --add-data "assets:assets" "$script" --distpath .
+done
 
 echo ""
 echo "Deactivating virtual environment..."
@@ -52,7 +71,9 @@ echo ""
 echo "Cleaning up build artifacts..."
 rm -rf build
 rm -rf __pycache__
-rm -f create_pdf.spec
+for script in "${TARGET_SCRIPTS[@]}"; do
+    rm -f "${script%.py}.spec"
+done
 
 echo ""
-echo "Build complete. create_pdf executable is now in the project root."
+echo "Build complete. PDF executables are now in the project root."

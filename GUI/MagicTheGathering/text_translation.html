@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="../shared/navbar.js"></script>
+    <script type="module" src="text_translation.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintLister - MTG Text Translation</title>
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body class="min-h-screen bg-surface text-content">
+    <nav-bar current-step="2"></nav-bar>
+
+    <main class="container mx-auto px-4 pt-24 pb-8 max-w-6xl">
+      <header class="paper-element text-center mb-12 p-8">
+        <h1 class="text-4xl font-bold text-primary-dark mb-4">MTG Text Translation</h1>
+        <p class="text-primary text-lg mb-8">Paste markdown card text and generate a printable PDF with cut guides</p>
+      </header>
+
+      <section class="paper-element p-6 max-w-4xl mx-auto">
+        <form id="mdForm" class="space-y-6">
+          <div>
+            <label for="mdText" class="block text-xl font-semibold text-primary-dark mb-4">
+              Markdown Input
+            </label>
+            <textarea
+              id="mdText"
+              rows="14"
+              placeholder="### Card Name {mana cost}\n\n*Card Type - Subtype*\n\nRules text with **bold** and *italic* formatting.\n\n---\n\n### Next Card"
+              class="w-full px-4 py-3 rounded-lg bg-surface border-2 border-primary-light/20 focus:border-primary focus:ring-1 focus:ring-primary-light placeholder-content-light/40 text-content transition-all duration-200 resize-y font-mono text-sm"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label class="block">
+              <span class="block text-sm font-semibold text-primary-dark mb-2">Paper Size</span>
+              <select id="paperSize" class="paper-input">
+                <option value="letter">Letter</option>
+                <option value="a4">A4</option>
+                <option value="a3">A3</option>
+                <option value="tabloid">Tabloid</option>
+                <option value="archb">ArchB</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="block text-sm font-semibold text-primary-dark mb-2">PPI</span>
+              <input id="ppi" type="number" min="1" value="300" class="paper-input" />
+            </label>
+            <label class="block">
+              <span class="block text-sm font-semibold text-primary-dark mb-2">Quality</span>
+              <input id="quality" type="number" min="0" max="100" value="75" class="paper-input" />
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            id="generatePdfBtn"
+            class="paper-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Generate PDF
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <div id="spinner" class="fixed inset-0 bg-surface-dark/95 flex-col items-center justify-center z-50 hidden">
+      <div class="paper-element p-8 flex flex-col items-center gap-4">
+        <h3 class="text-lg font-medium">Generating PDF</h3>
+        <p class="text-content-light">Translating markdown text to printable cards...</p>
+      </div>
+    </div>
+  </body>
+</html>
