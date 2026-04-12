@@ -4,9 +4,6 @@
 
 Open settings cog (top right) -> Backup & Restore -> check "Enable developer mode"
 
-![
-]({FD823D9F-5F64-4D4D-81FE-FE18BA39337D}.png)
-
 Make sure to **Save Settings**
 
 ### 2. Go to https://arkham.build/browse
