@@ -1,0 +1,254 @@
+import os
+from enum import Enum
+from re import compile
+from typing import Callable
+
+from plugins.lotr_lcg.hallofbeorn import fetch_scenario_entries
+from plugins.lotr_lcg.ringsdb import (
+    build_deck_entries,
+    fetch_decklist,
+    fetch_fellowship_decks,
+    fetch_scenario_metadata,
+    load_card_catalog,
+)
+
+RINGSDB_URL_PATTERN = compile(
+    r"https?://(?:www\.)?ringsdb\.com/decklist/view/(\d+)(?:/[^\s]*)?\s*$",
+    flags=0,
+)
+RINGSDB_API_PATTERN = compile(
+    r"https?://(?:www\.)?ringsdb\.com/api/public/decklist/(\d+)\.json\s*$",
+    flags=0,
+)
+RINGSDB_ID_PATTERN = compile(r"(\d+)\s*$")
+RINGSDB_FELLOWSHIP_URL_PATTERN = compile(
+    r"https?://(?:www\.)?ringsdb\.com/fellowship/view/(\d+)(?:/[^\s]*)?\s*$",
+    flags=0,
+)
+RINGSDB_FELLOWSHIP_ID_PATTERN = compile(r"(\d+)\s*$")
+RINGSDB_SCENARIO_API_PATTERN = compile(
+    r"https?://(?:www\.)?ringsdb\.com/api/public/scenario/(\d+)\.json\s*$",
+    flags=0,
+)
+HALL_SCENARIO_URL_PATTERN = compile(
+    r"https?://(?:www\.)?hallofbeorn\.com/LotR/Scenarios/([^\s/]+)\s*$",
+    flags=0,
+)
+RINGSDB_SCENARIO_ID_PATTERN = compile(r"(\d+)\s*$")
+
+
+def extract_decklist_id(value: str) -> str | None:
+    line = value.strip()
+    if not line:
+        return None
+
+    for pattern in (RINGSDB_URL_PATTERN, RINGSDB_API_PATTERN, RINGSDB_ID_PATTERN):
+        match = pattern.fullmatch(line)
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def extract_fellowship_id(value: str) -> str | None:
+    line = value.strip()
+    if not line:
+        return None
+
+    for pattern in (RINGSDB_FELLOWSHIP_URL_PATTERN, RINGSDB_FELLOWSHIP_ID_PATTERN):
+        match = pattern.fullmatch(line)
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def extract_scenario_reference(value: str) -> tuple[str | None, str | None]:
+    line = value.strip()
+    if not line:
+        return (None, None)
+
+    hall_match = HALL_SCENARIO_URL_PATTERN.fullmatch(line)
+    if hall_match:
+        return (None, hall_match.group(1))
+
+    for pattern in (RINGSDB_SCENARIO_API_PATTERN, RINGSDB_SCENARIO_ID_PATTERN):
+        match = pattern.fullmatch(line)
+        if match:
+            return (match.group(1), None)
+
+    return (None, None)
+
+
+def parse_ringsdb(deck_text: str, handle_card: Callable) -> None:
+    if os.path.isfile(deck_text):
+        with open(deck_text, "r", encoding="utf-8") as deck_file:
+            deck_text = deck_file.read()
+
+    card_catalog = load_card_catalog()
+    error_lines = []
+    index = 0
+
+    for line in deck_text.strip().split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+
+        deck_id = extract_decklist_id(line)
+        if deck_id is None:
+            print(f'Skipping: "{line}"')
+            continue
+
+        deck = fetch_decklist(deck_id)
+        print(f'Deck: {deck.get("name", deck_id)} (ID: {deck_id})')
+
+        for entry in build_deck_entries(deck, card_catalog):
+            index += 1
+            parts = [f"Index: {index}", f'quantity: {entry["quantity"]}']
+            if entry["name"]:
+                parts.append(f'name: {entry["name"]}')
+            if entry["card_code"]:
+                parts.append(f'code: {entry["card_code"]}')
+            print(", ".join(parts))
+
+            try:
+                handle_card(
+                    index,
+                    entry["card_code"],
+                    entry["name"],
+                    entry["image_url"],
+                    entry["quantity"],
+                    None,
+                )
+            except Exception as exc:
+                print(f"Error: {exc}")
+                error_lines.append((entry["card_code"], exc))
+
+    if len(error_lines) > 0:
+        print(f"Errors: {error_lines}")
+
+
+def parse_ringsdb_fellowship(deck_text: str, handle_card: Callable) -> None:
+    if os.path.isfile(deck_text):
+        with open(deck_text, "r", encoding="utf-8") as deck_file:
+            deck_text = deck_file.read()
+
+    card_catalog = load_card_catalog()
+    error_lines = []
+    index = 0
+
+    for line in deck_text.strip().split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+
+        fellowship_id = extract_fellowship_id(line)
+        if fellowship_id is None:
+            print(f'Skipping: "{line}"')
+            continue
+
+        fellowship_name, decks = fetch_fellowship_decks(fellowship_id)
+        print(f'Fellowship: {fellowship_name} (ID: {fellowship_id})')
+
+        for deck in decks:
+            print(f'  Deck: {deck.get("name", "Unnamed Deck")}')
+            for entry in build_deck_entries(deck, card_catalog):
+                index += 1
+                parts = [f"Index: {index}", f'quantity: {entry["quantity"]}']
+                if entry["name"]:
+                    parts.append(f'name: {entry["name"]}')
+                if entry["card_code"]:
+                    parts.append(f'code: {entry["card_code"]}')
+                print(", ".join(parts))
+
+                try:
+                    handle_card(
+                        index,
+                        entry["card_code"],
+                        entry["name"],
+                        entry["image_url"],
+                        entry["quantity"],
+                        None,
+                    )
+                except Exception as exc:
+                    print(f"Error: {exc}")
+                    error_lines.append((entry["card_code"], exc))
+
+    if len(error_lines) > 0:
+        print(f"Errors: {error_lines}")
+
+
+def parse_ringsdb_scenario(
+    deck_text: str,
+    handle_card: Callable,
+    scenario_mode: str = "normal",
+) -> None:
+    if os.path.isfile(deck_text):
+        with open(deck_text, "r", encoding="utf-8") as deck_file:
+            deck_text = deck_file.read()
+
+    error_lines = []
+    index = 0
+
+    for line in deck_text.strip().split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+
+        scenario_id, scenario_slug = extract_scenario_reference(line)
+        scenario_name = scenario_slug or line
+
+        if scenario_id is not None:
+            metadata = fetch_scenario_metadata(scenario_id)
+            scenario_slug = metadata.get("nameCanonical")
+            scenario_name = metadata.get("name", scenario_id)
+            print(f"Scenario: {scenario_name} (ID: {scenario_id}, mode: {scenario_mode})")
+        elif scenario_slug is not None:
+            print(f"Scenario: {scenario_slug} (mode: {scenario_mode})")
+        else:
+            print(f'Skipping: "{line}"')
+            continue
+
+        for entry in fetch_scenario_entries(scenario_slug, scenario_mode):
+            index += 1
+            parts = [f"Index: {index}", f'quantity: {entry["quantity"]}']
+            if entry["name"]:
+                parts.append(f'name: {entry["name"]}')
+            print(", ".join(parts))
+
+            try:
+                handle_card(
+                    index,
+                    entry["card_code"],
+                    entry["name"],
+                    entry["image_url"],
+                    entry["quantity"],
+                    entry.get("back_image_url"),
+                )
+            except Exception as exc:
+                print(f"Error: {exc}")
+                error_lines.append((entry["card_code"], exc))
+
+    if len(error_lines) > 0:
+        print(f"Errors: {error_lines}")
+
+
+class DeckFormat(str, Enum):
+    RINGSDB = "ringsdb"
+    RINGSDB_FELLOWSHIP = "ringsdb_fellowship"
+    RINGSDB_SCENARIO = "ringsdb_scenario"
+
+
+def parse_deck(
+    deck_text: str,
+    format: DeckFormat,
+    handle_card: Callable,
+    scenario_mode: str = "normal",
+) -> None:
+    if format == DeckFormat.RINGSDB:
+        return parse_ringsdb(deck_text, handle_card)
+    if format == DeckFormat.RINGSDB_FELLOWSHIP:
+        return parse_ringsdb_fellowship(deck_text, handle_card)
+    if format == DeckFormat.RINGSDB_SCENARIO:
+        return parse_ringsdb_scenario(deck_text, handle_card, scenario_mode)
+    raise ValueError("Unrecognized deck format.")

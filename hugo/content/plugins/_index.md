@@ -21,6 +21,7 @@ The following plugins are currently available:
 * [Flesh and Blood](flesh_and_blood)
 * [Grand Archive](grand_archive)
 * [Gundam](gundam)
+* [Lord of the Rings LCG](lotr_lcg)
 * [Lorcana](lorcana)
 * [Netrunner](netrunner)
 * [One Piece](one_piece)

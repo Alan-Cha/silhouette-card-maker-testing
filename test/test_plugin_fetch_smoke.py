@@ -25,6 +25,7 @@ PLUGINS = [
     ('flesh_and_blood', 'plugins.flesh_and_blood.fetch', ['fab']),
     ('grand_archive', 'plugins.grand_archive.fetch', ['gatcg']),
     ('gundam', 'plugins.gundam.fetch', ['gundam']),
+    ('lotr_lcg', 'plugins.lotr_lcg.fetch', ['ringsdb', 'ringsdb_fellowship', 'ringsdb_scenario']),
     ('lorcana', 'plugins.lorcana.fetch', ['lorcast']),
     ('mtg', 'plugins.mtg.fetch', ['moxfield', 'archidekt', 'text']),
     ('netrunner', 'plugins.netrunner.fetch', ['netrunnerdb']),

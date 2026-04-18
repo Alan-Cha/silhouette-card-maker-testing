@@ -23,3 +23,6 @@ test/*/output/*
 
 hugo/public/
 .vscode/launch.json
+
+# Local-only LOTR back scans
+plugins/lotr_lcg/assets/*.jpg
