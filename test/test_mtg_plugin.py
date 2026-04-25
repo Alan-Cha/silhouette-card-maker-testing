@@ -603,7 +603,7 @@ class TestScryfallFetch:
 
         mock_fetch_art.assert_called_once()
 
-    @patch('plugins.mtg.scryfall.requests.get')
+    @patch('plugins.mtg.scryfall.scryfall.get')
     def test_image_fetched_with_lowercase_set_code(self, mock_get):
         """When given an uppercase set code, the image is fetched using the lowercase code returned by the API."""
         info_response = MagicMock(status_code=200)
