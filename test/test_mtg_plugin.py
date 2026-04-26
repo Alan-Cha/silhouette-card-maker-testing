@@ -1087,12 +1087,16 @@ class TestUniverseBeyondScryfallData:
     """Sanity checks that the Scryfall data for our test cards matches expectations.
 
     If these fail it means the cards have received new printings that change their
-    UB/non-UB composition — update the URIs/set codes below and re-check the
+    UB/non-UB composition — update the URIs below and re-check the
     filtering tests, rather than assuming the plugin is broken.
+
+    Oracle IDs verified from stable card IDs:
+    - Skrelv: https://api.scryfall.com/cards/509c00d2-6a84-4760-8927-483ed123b05f
+    - Excalibur: https://api.scryfall.com/cards/4e357b2d-a3c1-490e-a37c-cdf42abcfa60
     """
 
-    SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A48354be0-40ff-4f8f-a0e7-dc3e20bcf6ba&unique=prints'
-    EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1d1695a2-1d5e-42b1-9e59-a6c51b2b2f80&unique=prints'
+    SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A20053847-6623-493c-8cdb-a69cda3b1577&unique=prints'
+    EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A9fb6bd72-031b-40a1-83c5-8a1c82f84e12&unique=prints'
 
     def test_skrelv_has_ub_printing(self):
         """Scryfall still lists a UB printing of Skrelv (SLD 1926)."""
@@ -1129,12 +1133,14 @@ class TestUniverseBeyondFiltering:
     Skrelv, Defector Mite exists as both a standard printing (ONE 225)
     and a Universe Beyond printing (SLD 1926).
     Excalibur, Sword of Eden only exists as a Universe Beyond printing (ACR 72).
+
+    Oracle IDs verified from stable card IDs:
+    - Skrelv: https://api.scryfall.com/cards/509c00d2-6a84-4760-8927-483ed123b05f
+    - Excalibur: https://api.scryfall.com/cards/4e357b2d-a3c1-490e-a37c-cdf42abcfa60
     """
 
-    # prints_search_uri for Skrelv, Defector Mite
-    SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A48354be0-40ff-4f8f-a0e7-dc3e20bcf6ba&unique=prints'
-    # prints_search_uri for Excalibur, Sword of Eden
-    EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1d1695a2-1d5e-42b1-9e59-a6c51b2b2f80&unique=prints'
+    SKRELV_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A20053847-6623-493c-8cdb-a69cda3b1577&unique=prints'
+    EXCALIBUR_PRINTS_URI = 'https://api.scryfall.com/cards/search?order=released&q=oracleid%3A9fb6bd72-031b-40a1-83c5-8a1c82f84e12&unique=prints'
 
     def test_prefer_ub_returns_only_ub_printings(self):
         """prefer_ub=True returns only Universe Beyond printings of Skrelv."""

@@ -38,23 +38,30 @@ def fetch_printings(prints_search_uri: str, prefer_ub: Optional[bool], name: str
 def request_scryfall(
     query: str,
     params: dict = None,
+    retry_count: int = 0,
 ) -> requests.Response:
-    r = scryfall.get(query, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'}) # Should be a lot smoother and nicer to Scryfall servers.
+    r = scryfall.get(query, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
-    # Rate limit check
+    # Rate limit check - Scryfall requires 30 second wait per their documentation
     if r.status_code == 429:
-        time.sleep(30) # Let us wait 30 seconds so we don't get blocked.
-        return request_scryfall(query, params)
+        if retry_count >= 3:
+            print(f"Warning: Hit rate limit 3 times for {query}, giving up after 30s wait")
+            raise requests.exceptions.HTTPError(f"Max retries (3) exceeded for Scryfall API: {query}", response=r)
+        print(f"Hit Scryfall rate limit (429), waiting 30 seconds before retry {retry_count + 1}/3...")
+        time.sleep(30)
+        return request_scryfall(query, params, retry_count + 1)
 
     r.raise_for_status()
 
-    # Sleep for 500ms or 100ms milliseconds, which is requested by Scryfall API documentation
-    # See rate limits: https://scryfall.com/docs/api
+    # Apply rate limiting per Scryfall API documentation
+    # See: https://scryfall.com/docs/api/rate-limits
+    # Note: Direct image downloads from *.scryfall.io CDN have NO rate limits
 
     if "cards/search" in query or "cards/named" in query:
-        time.sleep(0.5)   # 2/second (500ms) - Required limit as requested by Scryfall
-    elif 'api.scryfall.com' in query: # Catch all for other queries (And slightly over the time to be safe)
-        time.sleep(0.11)  # All other API methods 10/second (100ms)
+        time.sleep(0.5)   # Search/named endpoints: 2 requests/second (500ms delay)
+    elif 'api.scryfall.com' in query:
+        time.sleep(0.1)  # All other API methods: 10 requests/second (100ms delay)
+    # else: No rate limiting needed for direct image downloads from *.scryfall.io CDN
 
     return r
 
