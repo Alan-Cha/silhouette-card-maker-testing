@@ -11,7 +11,7 @@ from .common import remove_nonalphanumeric, ScryfallLanguage, to_scryfall_api_la
 
 double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card', 'meld']
 
-scryfall = requests.Session()
+session = requests.Session()
 
 def append_search_filter(uri: str, filter_term: str) -> str:
     parsed = urlparse(uri)
@@ -40,7 +40,7 @@ def request_scryfall(
     params: dict = None,
     retry_count: int = 0,
 ) -> requests.Response:
-    r = scryfall.get(query, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(query, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Rate limit check - Scryfall requires 30 second wait per their documentation
     if r.status_code == 429:
