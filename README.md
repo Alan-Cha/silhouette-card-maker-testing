@@ -189,7 +189,7 @@ The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Egman E
 
 The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
 
-The [Netrunner plugin](plugins/netrunner/README.md) supports **bbCode** and **Jinteki** formats.
+The [Android: Netrunner plugin](plugins/netrunner/README.md) supports **bbCode** and **Jinteki** formats.
 
 The [One Piece plugin](plugins/one_piece/README.md) supports **Egman Events** and **OPTCG Simulator** formats.
 

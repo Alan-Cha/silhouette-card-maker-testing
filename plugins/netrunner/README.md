@@ -1,4 +1,4 @@
-# Netrunner Plugin
+# Android: Netrunner Plugin
 
 This plugin reads a decklist, fetches the card images from [NRO Proxy](https://proxy.nro.run/), and puts the card images into the proper `game/` directories.
 
