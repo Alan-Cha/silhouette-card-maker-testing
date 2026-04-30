@@ -22,7 +22,7 @@ The following plugins are currently available:
 * [Grand Archive](grand_archive)
 * [Gundam](gundam)
 * [Lorcana](lorcana)
-* [Netrunner](netrunner)
+* [Android: Netrunner](netrunner)
 * [One Piece](one_piece)
 * [Riftbound](riftbound)
 * [Sorcery: Contested Realm](sorcery_contested_realm)
