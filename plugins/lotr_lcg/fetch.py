@@ -7,11 +7,10 @@ from click import Choice, ClickException, argument, command, option
 sys.path.insert(0, path.join(path.dirname(__file__), "..", ".."))
 
 from plugins.lotr_lcg.deck_formats import DeckFormat, parse_deck
-from plugins.lotr_lcg.ringsdb import get_handle_card, install_default_back
+from plugins.lotr_lcg.ringsdb import get_handle_card
 from utilities import ensure_directory
 
 front_directory = path.join("game", "front")
-back_directory = path.join("game", "back")
 double_sided_directory = path.join("game", "double_sided")
 
 
@@ -27,16 +26,7 @@ double_sided_directory = path.join("game", "double_sided")
 )
 def cli(deck_path: str, format: DeckFormat, scenario_mode: str):
     ensure_directory(front_directory)
-    ensure_directory(back_directory)
     ensure_directory(double_sided_directory)
-
-    try:
-        if format == DeckFormat.RINGSDB_SCENARIO:
-            install_default_back(back_directory, "encounter")
-        else:
-            install_default_back(back_directory, "player")
-    except FileNotFoundError as exc:
-        raise ClickException(str(exc)) from exc
 
     parse_deck(
         deck_path,

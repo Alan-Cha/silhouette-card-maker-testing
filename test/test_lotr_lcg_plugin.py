@@ -22,7 +22,6 @@ from plugins.lotr_lcg.deck_formats import (
 from plugins.lotr_lcg.ringsdb import (
     RINGSDB_ALL_CARDS_URL,
     get_handle_card,
-    install_default_back,
     request_ringsdb,
 )
 
@@ -210,25 +209,6 @@ class TestParseDeckRouting:
         ]
 
 
-class TestBackInstallation:
-    def test_install_default_back(self):
-        asset_dir = tempfile.mkdtemp()
-        back_dir = tempfile.mkdtemp()
-        try:
-            asset_path = Path(asset_dir) / "Player Card Back.jpg"
-            with Image.new("RGB", (10, 10), color="white") as image:
-                image.save(asset_path, format="JPEG")
-
-            with patch("plugins.lotr_lcg.ringsdb.ASSET_DIRECTORY", Path(asset_dir)):
-                output_path = install_default_back(back_dir, "player")
-
-            assert output_path.exists()
-            assert output_path.name == "lotr_lcg_player_back.jpg"
-        finally:
-            shutil.rmtree(asset_dir)
-            shutil.rmtree(back_dir)
-
-
 class TestLandscapeRotation:
     @staticmethod
     def make_image_bytes(size: tuple[int, int], color: str) -> bytes:
@@ -342,3 +322,175 @@ class TestFullFetchWorkflow:
 
         assert len(front_files) >= 10
         assert len(double_sided_files) >= 2
+
+
+@pytest.mark.integration
+class TestExampleDecklistsFromDocumentation:
+    """
+    Integration tests that verify the specific example decklists documented in the README.
+    These tests make real API calls to RingsDB and Hall of Beorn.
+    """
+
+    @pytest.fixture
+    def temp_dirs(self):
+        front_dir = tempfile.mkdtemp()
+        double_sided_dir = tempfile.mkdtemp()
+        yield front_dir, double_sided_dir
+        shutil.rmtree(front_dir)
+        shutil.rmtree(double_sided_dir)
+
+    def test_ringsdb_decklist_337_contains_documented_heroes(self, temp_dirs):
+        """
+        Verifies that decklist #337 (Two Player Core Set) contains the heroes
+        documented in the README: Legolas, Thalin, and Éowyn.
+        """
+        front_dir, double_sided_dir = temp_dirs
+        deck_text = "337"
+
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck(deck_text, DeckFormat.RINGSDB, handle_card)
+
+        files = os.listdir(front_dir)
+        filenames_str = " ".join(files)
+
+        # Verify documented heroes are present
+        assert any("Legolas" in f for f in files), "Legolas should be in decklist #337"
+        assert any("Thalin" in f for f in files), "Thalin should be in decklist #337"
+        assert any("owyn" in f or "Eowyn" in f for f in files), "Éowyn should be in decklist #337"
+
+        # Verify some documented player cards are present
+        assert any("Gondorian_Spearman" in f for f in files), "Gondorian Spearman should be in decklist #337"
+        assert any("Gandalf" in f for f in files), "Gandalf should be in decklist #337"
+
+        # Verify total card count matches documented structure
+        # Decklist has 3 heroes + 27 other cards (with quantities)
+        assert len(files) >= 25, f"Expected at least 25 card images, got {len(files)}"
+
+    def test_ringsdb_bare_id_format(self, temp_dirs):
+        """
+        Verifies that bare decklist ID format works as documented in README.
+        """
+        front_dir, double_sided_dir = temp_dirs
+
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck("337", DeckFormat.RINGSDB, handle_card)
+
+        files = os.listdir(front_dir)
+        assert len(files) > 0, "Bare ID '337' should fetch cards"
+
+    def test_ringsdb_fellowship_7100_contains_multiple_decks(self, temp_dirs):
+        """
+        Verifies that fellowship #7100 (Beginner Mono-Sphere Fellowship)
+        contains cards from multiple decks as documented in README.
+        """
+        front_dir, double_sided_dir = temp_dirs
+        fellowship_text = "7100"
+
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck(fellowship_text, DeckFormat.RINGSDB_FELLOWSHIP, handle_card)
+
+        files = os.listdir(front_dir)
+
+        # Fellowship should have cards from multiple decks
+        assert len(files) >= 20, f"Fellowship should have cards from multiple decks, got {len(files)}"
+
+        # Verify images are valid
+        for filename in files[:3]:
+            file_path = os.path.join(front_dir, filename)
+            assert os.path.getsize(file_path) > 1000, f"{filename} should be a valid image file"
+
+    def test_scenario_1_passage_through_mirkwood_structure(self, temp_dirs):
+        """
+        Verifies that scenario #1 (Passage Through Mirkwood) has the structure
+        documented in README: quest cards in double_sided, encounter cards in front.
+        """
+        front_dir, double_sided_dir = temp_dirs
+        scenario_text = "1"
+
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck(
+            scenario_text,
+            DeckFormat.RINGSDB_SCENARIO,
+            handle_card,
+            scenario_mode="normal",
+        )
+
+        front_files = os.listdir(front_dir)
+        double_sided_files = os.listdir(double_sided_dir)
+
+        # Should have encounter cards in front directory
+        assert len(front_files) >= 8, f"Should have encounter cards, got {len(front_files)}"
+
+        # Should have quest cards (double-sided) in double_sided directory
+        assert len(double_sided_files) >= 2, f"Should have quest cards, got {len(double_sided_files)}"
+
+        # Verify some documented encounter cards
+        front_files_str = " ".join(front_files)
+        assert any("Forest_Spider" in f or "forest_spider" in f.lower() for f in front_files), \
+            "Forest Spider should be in scenario #1"
+
+    def test_scenario_mode_variations(self, temp_dirs):
+        """
+        Verifies that different scenario modes (easy, normal, nightmare)
+        produce different card quantities as documented in README.
+        """
+        front_dir, double_sided_dir = temp_dirs
+        scenario_text = "1"
+
+        # Test normal mode
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck(
+            scenario_text,
+            DeckFormat.RINGSDB_SCENARIO,
+            handle_card,
+            scenario_mode="normal",
+        )
+
+        normal_count = len(os.listdir(front_dir))
+
+        # Clean up for easy mode test
+        for f in os.listdir(front_dir):
+            os.remove(os.path.join(front_dir, f))
+        for f in os.listdir(double_sided_dir):
+            os.remove(os.path.join(double_sided_dir, f))
+
+        # Test easy mode
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck(
+            scenario_text,
+            DeckFormat.RINGSDB_SCENARIO,
+            handle_card,
+            scenario_mode="easy",
+        )
+
+        easy_count = len(os.listdir(front_dir))
+
+        # Easy mode should have fewer or equal encounter cards than normal
+        assert easy_count <= normal_count, \
+            f"Easy mode ({easy_count}) should have <= cards than normal ({normal_count})"
+
+    def test_landscape_quest_cards_rotated(self, temp_dirs):
+        """
+        Verifies that landscape quest cards are rotated to portrait orientation
+        as documented in README.
+        """
+        front_dir, double_sided_dir = temp_dirs
+        scenario_text = "1"
+
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck(
+            scenario_text,
+            DeckFormat.RINGSDB_SCENARIO,
+            handle_card,
+            scenario_mode="normal",
+        )
+
+        double_sided_files = os.listdir(double_sided_dir)
+
+        # Check that quest cards are portrait (height > width) after rotation
+        for filename in double_sided_files[:2]:
+            file_path = os.path.join(double_sided_dir, filename)
+            with Image.open(file_path) as img:
+                # Quest cards should be rotated to portrait orientation
+                assert img.height > img.width, \
+                    f"Quest card {filename} should be portrait orientation (rotated from landscape)"

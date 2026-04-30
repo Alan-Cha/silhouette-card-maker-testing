@@ -1,5 +1,4 @@
 import json
-import shutil
 from html import unescape
 from os import path
 from io import BytesIO
@@ -21,15 +20,6 @@ OUTPUT_CARD_ART_FILE_TEMPLATE = "{deck_index}_{card_code}_{card_name}_{quantity_
 FELLOWSHIP_DECK_PATTERN = compile(r"Decks\[\d+\]\s*=\s*(\{.*?\});", flags=0)
 FELLOWSHIP_NAME_PATTERN = compile(r"<h1[^>]*>(.*?)</h1>", flags=0)
 PLUGIN_DIRECTORY = Path(__file__).resolve().parent
-ASSET_DIRECTORY = PLUGIN_DIRECTORY / "assets"
-BACK_ASSET_FILENAMES = {
-    "player": "Player Card Back.jpg",
-    "encounter": "Encounter Card Back.jpg",
-}
-BACK_OUTPUT_FILENAMES = {
-    "player": "lotr_lcg_player_back.jpg",
-    "encounter": "lotr_lcg_encounter_back.jpg",
-}
 
 
 def request_ringsdb(query: str) -> Response:
@@ -198,25 +188,6 @@ def fetch_card(
             back_path = path.join(double_sided_img_dir, back_filename)
             with open(back_path, "wb") as file_handle:
                 file_handle.write(back_art)
-
-
-def install_default_back(back_img_dir: str, back_type: str) -> Path:
-    asset_path = ASSET_DIRECTORY / BACK_ASSET_FILENAMES[back_type]
-    if not asset_path.exists():
-        raise FileNotFoundError(
-            "Missing LOTR back image "
-            f'"{asset_path.name}". Add your local back scans to '
-            f'"{ASSET_DIRECTORY}" as described in plugins/lotr_lcg/assets/README.md.'
-        )
-
-    for output_name in BACK_OUTPUT_FILENAMES.values():
-        existing_path = Path(back_img_dir) / output_name
-        if existing_path.exists():
-            existing_path.unlink()
-
-    output_path = Path(back_img_dir) / BACK_OUTPUT_FILENAMES[back_type]
-    shutil.copyfile(asset_path, output_path)
-    return output_path
 
 
 def get_handle_card(front_img_dir: str, double_sided_img_dir: str | None = None):
