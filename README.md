@@ -187,9 +187,9 @@ The [Grand Archive plugin](plugins/grand_archive/README.md) supports **Omnideck*
 
 The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Egman Events**, **ExBurst**, and **Limitless TCG** formats.
 
-The [Lord of the Rings LCG plugin](plugins/lotr_lcg/README.md) supports **RingsDB decklists**, **RingsDB fellowships**, and **RingsDB scenarios**, using user-supplied local back scans.
-
 The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
+
+The [Lord of the Rings LCG plugin](plugins/lotr_lcg/README.md) supports **RingsDB decklists**, **RingsDB fellowships**, and **RingsDB scenarios**, using user-supplied local back scans.
 
 The [Netrunner plugin](plugins/netrunner/README.md) supports **bbCode** and **Jinteki** formats.
 
