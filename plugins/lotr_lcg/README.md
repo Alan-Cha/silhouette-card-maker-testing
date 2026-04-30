@@ -1,4 +1,4 @@
-# Lord of the Rings LCG Plugin
+# Lord of the Rings: Living Card Game Plugin
 
 This plugin reads decklists, fellowships, and scenarios, automatically fetches the card images from [RingsDB](https://ringsdb.com/) and [Hall of Beorn](https://hallofbeorn.com/), and puts the card images into the proper `game/` directories.
 
@@ -12,7 +12,7 @@ If you're on macOS or Linux, open **Terminal**. If you're on Windows, open **Pow
 
 Create and start your virtual Python environment and install Python dependencies if you have not done so already. See [here](../../README.md#basic-usage) for more information.
 
-**Important:** LOTR LCG uses two different card backs:
+**Important:** Lord of the Rings: Living Card Game uses two different card backs:
 - Player cards use the standard player card back
 - Encounter/scenario cards use the encounter card back
 

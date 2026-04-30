@@ -1,5 +1,5 @@
 ---
-title: 'Lord of the Rings LCG'
+title: 'Lord of the Rings: Living Card Game'
 weight: 85
 ---
 
@@ -15,7 +15,7 @@ If you're on macOS or Linux, open **Terminal**. If you're on Windows, open **Pow
 
 Create and start your virtual Python environment and install Python dependencies if you have not done so already. See [here]({{% ref "../docs/create/#basic-usage" %}}) for more information.
 
-**Important:** LOTR LCG uses two different card backs:
+**Important:** Lord of the Rings: Living Card Game uses two different card backs:
 - Player cards use the standard player card back
 - Encounter/scenario cards use the encounter card back
 

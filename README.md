@@ -189,7 +189,7 @@ The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Egman E
 
 The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
 
-The [Lord of the Rings LCG plugin](plugins/lotr_lcg/README.md) supports **RingsDB decklists**, **RingsDB fellowships**, and **RingsDB scenarios**, using user-supplied local back scans.
+The [Lord of the Rings: Living Card Game plugin](plugins/lotr_lcg/README.md) supports **RingsDB decklists**, **RingsDB fellowships**, and **RingsDB scenarios**, using user-supplied local back scans.
 
 The [Netrunner plugin](plugins/netrunner/README.md) supports **bbCode** and **Jinteki** formats.
 
