@@ -1,7 +1,7 @@
 import json
 from html import unescape
-from os import path
 from io import BytesIO
+from os import path
 from pathlib import Path
 from re import compile, sub
 from time import sleep
@@ -25,8 +25,8 @@ PLUGIN_DIRECTORY = Path(__file__).resolve().parent
 def request_ringsdb(query: str) -> Response:
     response = get(
         query,
-        headers={"user-agent": "silhouette-card-maker/0.1", "accept": "*/*"},
-        timeout=30,
+        headers = {"user-agent": "silhouette-card-maker/0.1", "accept": "*/*"},
+        timeout = 30,
     )
     response.raise_for_status()
     sleep(0.05)
@@ -144,8 +144,8 @@ def build_deck_entries(deck: dict, card_catalog: dict[str, dict]) -> list[dict]:
 
 def fetch_card(
     index: int,
-    card_code: str,
     quantity: int,
+    card_code: str,
     name: str,
     image_url: str,
     front_img_dir: str,
@@ -201,8 +201,8 @@ def get_handle_card(front_img_dir: str, double_sided_img_dir: str | None = None)
     ):
         fetch_card(
             index,
-            card_code,
             quantity,
+            card_code,
             name,
             image_url,
             front_img_dir,

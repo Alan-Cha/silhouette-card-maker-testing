@@ -3,6 +3,8 @@ title: 'Lord of the Rings: Living Card Game'
 weight: 85
 ---
 
+This plugin is for **The Lord of the Rings: The Card Game** (LCG) by Fantasy Flight Games (2011). This cooperative Living Card Game should not be confused with the competitive **Lord of the Rings Trading Card Game** (TCG) by Decipher (2001-2007).
+
 This plugin reads decklists, fellowships, and scenarios, automatically fetches the card images from [RingsDB](https://ringsdb.com/) and [Hall of Beorn](https://hallofbeorn.com/), and puts the card images into the proper `game/` directories.
 
 This plugin supports the `ringsdb_url`, `ringsdb_fellowship_url`, and `ringsdb_scenario_url` formats. To learn more, see [here](#formats).
