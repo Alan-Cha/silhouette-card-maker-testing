@@ -93,7 +93,7 @@ def normalize_card_orientation(card_art: bytes) -> bytes:
         if image.width <= image.height:
             return card_art
 
-        rotated = image.rotate(90, expand=True)
+        rotated = image.rotate(-90, expand=True)
         output = BytesIO()
         save_format = image.format or rotated.format or "PNG"
         rotated.save(output, format=save_format)
