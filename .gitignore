@@ -7,10 +7,8 @@ game/back/*
 !game/back/EMPTY.md
 game/front/*
 !game/front/EMPTY.md
-game/front.zip
 game/double_sided/*
 !game/double_sided/EMPTY.md
-game/double_sided.zip
 game/output/*
 !game/output/EMPTY.md
 game/decklist/*
