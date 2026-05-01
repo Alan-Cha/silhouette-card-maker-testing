@@ -234,9 +234,9 @@ def parse_ringsdb_scenario(
 
 
 class DeckFormat(str, Enum):
-    RINGSDB = "ringsdb"
-    RINGSDB_FELLOWSHIP = "ringsdb_fellowship"
-    RINGSDB_SCENARIO = "ringsdb_scenario"
+    RINGSDB_URL = "ringsdb_url"
+    RINGSDB_FELLOWSHIP_URL = "ringsdb_fellowship_url"
+    RINGSDB_SCENARIO_URL = "ringsdb_scenario_url"
 
 
 def parse_deck(
@@ -245,10 +245,10 @@ def parse_deck(
     handle_card: Callable,
     scenario_mode: str = "normal",
 ) -> None:
-    if format == DeckFormat.RINGSDB:
+    if format == DeckFormat.RINGSDB_URL:
         return parse_ringsdb(deck_text, handle_card)
-    if format == DeckFormat.RINGSDB_FELLOWSHIP:
+    if format == DeckFormat.RINGSDB_FELLOWSHIP_URL:
         return parse_ringsdb_fellowship(deck_text, handle_card)
-    if format == DeckFormat.RINGSDB_SCENARIO:
+    if format == DeckFormat.RINGSDB_SCENARIO_URL:
         return parse_ringsdb_scenario(deck_text, handle_card, scenario_mode)
     raise ValueError("Unrecognized deck format.")

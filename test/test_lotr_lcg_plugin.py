@@ -28,9 +28,9 @@ from plugins.lotr_lcg.ringsdb import (
 
 class TestDeckFormatEnum:
     def test_enum_values(self):
-        assert DeckFormat.RINGSDB.value == "ringsdb"
-        assert DeckFormat.RINGSDB_FELLOWSHIP.value == "ringsdb_fellowship"
-        assert DeckFormat.RINGSDB_SCENARIO.value == "ringsdb_scenario"
+        assert DeckFormat.RINGSDB_URL.value == "ringsdb_url"
+        assert DeckFormat.RINGSDB_FELLOWSHIP_URL.value == "ringsdb_fellowship_url"
+        assert DeckFormat.RINGSDB_SCENARIO_URL.value == "ringsdb_scenario_url"
 
 
 class TestDeckReferenceParsing:
@@ -113,7 +113,7 @@ class TestParseDeckRouting:
         def collect_card(index, card_code, name, image_url, quantity, back_image_url=None):
             seen.append((index, card_code, name, image_url, quantity, back_image_url))
 
-        parse_deck("337", DeckFormat.RINGSDB, collect_card)
+        parse_deck("337", DeckFormat.RINGSDB_URL, collect_card)
 
         assert seen == [
             (
@@ -156,7 +156,7 @@ class TestParseDeckRouting:
         def collect_card(index, card_code, name, image_url, quantity, back_image_url=None):
             seen.append((index, card_code, name, image_url, quantity, back_image_url))
 
-        parse_deck("7100", DeckFormat.RINGSDB_FELLOWSHIP, collect_card)
+        parse_deck("7100", DeckFormat.RINGSDB_FELLOWSHIP_URL, collect_card)
 
         assert seen == [
             (
@@ -195,7 +195,7 @@ class TestParseDeckRouting:
         def collect_card(index, card_code, name, image_url, quantity, back_image_url=None):
             seen.append((index, card_code, name, image_url, quantity, back_image_url))
 
-        parse_deck("1", DeckFormat.RINGSDB_SCENARIO, collect_card, scenario_mode="normal")
+        parse_deck("1", DeckFormat.RINGSDB_SCENARIO_URL, collect_card, scenario_mode="normal")
 
         assert seen == [
             (
@@ -286,7 +286,7 @@ class TestFullFetchWorkflow:
         deck_text = "https://ringsdb.com/decklist/view/337/two-player-core-set-1-2-1.0"
 
         handle_card = get_handle_card(front_dir, double_sided_dir)
-        parse_deck(deck_text, DeckFormat.RINGSDB, handle_card)
+        parse_deck(deck_text, DeckFormat.RINGSDB_URL, handle_card)
 
         files = os.listdir(front_dir)
         assert len(files) >= 10
@@ -300,7 +300,7 @@ class TestFullFetchWorkflow:
         fellowship_text = "https://ringsdb.com/fellowship/view/7100/beginnermono-spherefellowship"
 
         handle_card = get_handle_card(front_dir, double_sided_dir)
-        parse_deck(fellowship_text, DeckFormat.RINGSDB_FELLOWSHIP, handle_card)
+        parse_deck(fellowship_text, DeckFormat.RINGSDB_FELLOWSHIP_URL, handle_card)
 
         files = os.listdir(front_dir)
         assert len(files) >= 20
@@ -312,7 +312,7 @@ class TestFullFetchWorkflow:
         handle_card = get_handle_card(front_dir, double_sided_dir)
         parse_deck(
             scenario_text,
-            DeckFormat.RINGSDB_SCENARIO,
+            DeckFormat.RINGSDB_SCENARIO_URL,
             handle_card,
             scenario_mode="normal",
         )
@@ -348,7 +348,7 @@ class TestExampleDecklistsFromDocumentation:
         deck_text = "337"
 
         handle_card = get_handle_card(front_dir, double_sided_dir)
-        parse_deck(deck_text, DeckFormat.RINGSDB, handle_card)
+        parse_deck(deck_text, DeckFormat.RINGSDB_URL, handle_card)
 
         files = os.listdir(front_dir)
         filenames_str = " ".join(files)
@@ -373,7 +373,7 @@ class TestExampleDecklistsFromDocumentation:
         front_dir, double_sided_dir = temp_dirs
 
         handle_card = get_handle_card(front_dir, double_sided_dir)
-        parse_deck("337", DeckFormat.RINGSDB, handle_card)
+        parse_deck("337", DeckFormat.RINGSDB_URL, handle_card)
 
         files = os.listdir(front_dir)
         assert len(files) > 0, "Bare ID '337' should fetch cards"
@@ -387,7 +387,7 @@ class TestExampleDecklistsFromDocumentation:
         fellowship_text = "7100"
 
         handle_card = get_handle_card(front_dir, double_sided_dir)
-        parse_deck(fellowship_text, DeckFormat.RINGSDB_FELLOWSHIP, handle_card)
+        parse_deck(fellowship_text, DeckFormat.RINGSDB_FELLOWSHIP_URL, handle_card)
 
         files = os.listdir(front_dir)
 
@@ -410,7 +410,7 @@ class TestExampleDecklistsFromDocumentation:
         handle_card = get_handle_card(front_dir, double_sided_dir)
         parse_deck(
             scenario_text,
-            DeckFormat.RINGSDB_SCENARIO,
+            DeckFormat.RINGSDB_SCENARIO_URL,
             handle_card,
             scenario_mode="normal",
         )
@@ -441,7 +441,7 @@ class TestExampleDecklistsFromDocumentation:
         handle_card = get_handle_card(front_dir, double_sided_dir)
         parse_deck(
             scenario_text,
-            DeckFormat.RINGSDB_SCENARIO,
+            DeckFormat.RINGSDB_SCENARIO_URL,
             handle_card,
             scenario_mode="normal",
         )
@@ -458,7 +458,7 @@ class TestExampleDecklistsFromDocumentation:
         handle_card = get_handle_card(front_dir, double_sided_dir)
         parse_deck(
             scenario_text,
-            DeckFormat.RINGSDB_SCENARIO,
+            DeckFormat.RINGSDB_SCENARIO_URL,
             handle_card,
             scenario_mode="easy",
         )
@@ -480,7 +480,7 @@ class TestExampleDecklistsFromDocumentation:
         handle_card = get_handle_card(front_dir, double_sided_dir)
         parse_deck(
             scenario_text,
-            DeckFormat.RINGSDB_SCENARIO,
+            DeckFormat.RINGSDB_SCENARIO_URL,
             handle_card,
             scenario_mode="normal",
         )

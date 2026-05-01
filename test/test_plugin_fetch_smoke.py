@@ -26,7 +26,7 @@ PLUGINS = [
     ('grand_archive', 'plugins.grand_archive.fetch', ['gatcg']),
     ('gundam', 'plugins.gundam.fetch', ['gundam']),
     ('lorcana', 'plugins.lorcana.fetch', ['lorcast']),
-    ('lotr_lcg', 'plugins.lotr_lcg.fetch', ['ringsdb', 'ringsdb_fellowship', 'ringsdb_scenario']),
+    ('lotr_lcg', 'plugins.lotr_lcg.fetch', ['ringsdb_url', 'ringsdb_fellowship_url', 'ringsdb_scenario_url']),
     ('mtg', 'plugins.mtg.fetch', ['moxfield', 'archidekt', 'text']),
     ('netrunner', 'plugins.netrunner.fetch', ['netrunnerdb']),
     ('one_piece', 'plugins.one_piece.fetch', ['one_piece']),
