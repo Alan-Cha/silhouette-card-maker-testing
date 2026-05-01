@@ -18,7 +18,7 @@ double_sided_directory = path.join("game", "double_sided")
 @argument("deck_path")
 @argument("format", type=Choice([t.value for t in DeckFormat], case_sensitive=False))
 @option(
-    "--scenario-mode",
+    "--scenario_mode",
     default="normal",
     type=Choice(["normal", "easy", "nightmare"], case_sensitive=False),
     show_default=True,
