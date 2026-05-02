@@ -21,7 +21,7 @@ Create and start your virtual Python environment and install Python dependencies
 - Player cards use the standard player card back
 - Encounter/scenario cards use the encounter card back
 
-You must manually place the appropriate back image in `game/back` before creating your PDF. The plugin fetches only the card fronts.
+You must manually place the appropriate back image in `game/back` before creating your PDF. The plugin fetches only the front images.
 
 Put your deck reference into a text file in `game/decklist`. In this example, the filename is `deck.txt` and the decklist format is RingsDB (`ringsdb_url`).
 
@@ -35,7 +35,6 @@ Now you can create the PDF using [`create_pdf.py`]({{% ref "../docs/create" %}})
 
 For scenarios, double-sided quest cards are placed into `game/double_sided/` automatically.
 
-Landscape quest/scenario cards and their matching backs are rotated during fetch so they print with the correct sideways card orientation.
 
 ## CLI Options
 
