@@ -16,7 +16,8 @@ from plugins.lotr_lcg.deck_formats import (
     DeckFormat,
     extract_decklist_id,
     extract_fellowship_id,
-    extract_scenario_reference,
+    extract_hallofbeorn_slug,
+    extract_ringsdb_scenario_id,
     parse_deck,
 )
 from plugins.lotr_lcg.ringsdb import (
@@ -31,6 +32,7 @@ class TestDeckFormatEnum:
         assert DeckFormat.RINGSDB_URL.value == "ringsdb_url"
         assert DeckFormat.RINGSDB_FELLOWSHIP_URL.value == "ringsdb_fellowship_url"
         assert DeckFormat.RINGSDB_SCENARIO_URL.value == "ringsdb_scenario_url"
+        assert DeckFormat.HALLOFBEORN_URL.value == "hallofbeorn_url"
 
 
 class TestDeckReferenceParsing:
@@ -66,23 +68,20 @@ class TestFellowshipReferenceParsing:
 
 class TestScenarioReferenceParsing:
     def test_extracts_scenario_id_from_api_url(self):
-        scenario_id, scenario_slug = extract_scenario_reference(
+        scenario_id = extract_ringsdb_scenario_id(
             "https://ringsdb.com/api/public/scenario/1.json"
         )
         assert scenario_id == "1"
-        assert scenario_slug is None
 
     def test_extracts_scenario_slug_from_hall_url(self):
-        scenario_id, scenario_slug = extract_scenario_reference(
+        scenario_slug = extract_hallofbeorn_slug(
             "https://hallofbeorn.com/LotR/Scenarios/passage-through-mirkwood"
         )
-        assert scenario_id is None
         assert scenario_slug == "passage-through-mirkwood"
 
     def test_extracts_scenario_id_from_bare_id(self):
-        scenario_id, scenario_slug = extract_scenario_reference("1")
+        scenario_id = extract_ringsdb_scenario_id("1")
         assert scenario_id == "1"
-        assert scenario_slug is None
 
 
 class TestParseDeckRouting:

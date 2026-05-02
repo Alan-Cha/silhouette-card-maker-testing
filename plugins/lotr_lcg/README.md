@@ -4,7 +4,7 @@ This plugin is for **The Lord of the Rings: The Card Game** (LCG) by Fantasy Fli
 
 This plugin reads decklists, fellowships, and scenarios, automatically fetches the card images from [RingsDB](https://ringsdb.com/) and [Hall of Beorn](https://hallofbeorn.com/), and puts the card images into the proper `game/` directories.
 
-This plugin supports the `ringsdb_url`, `ringsdb_fellowship_url`, and `ringsdb_scenario_url` formats. To learn more, see [here](#formats).
+This plugin supports the `ringsdb_url`, `ringsdb_fellowship_url`, `ringsdb_scenario_url`, and `hallofbeorn_url` formats. To learn more, see [here](#formats).
 
 ## Basic Instructions
 
@@ -36,12 +36,12 @@ For scenarios, double-sided quest cards are placed into `game/double_sided/` aut
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH {ringsdb_url|ringsdb_fellowship_url|ringsdb_scenario_url}
+Usage: fetch.py [OPTIONS] DECK_PATH {ringsdb_url|ringsdb_fellowship_url|ringsdb_scenario_url|hallofbeorn_url}
 
 Options:
   --scenario_mode [normal|easy|nightmare]
                                   Encounter card counts to use when fetching
-                                  RingsDB scenarios.  [default: normal]
+                                  scenarios.  [default: normal]
   --help                          Show this message and exit.
 ```
 
@@ -90,9 +90,9 @@ You can also put the URL or ID in a text file and pass the file path instead.
 
 ### `ringsdb_scenario_url`
 
-RingsDB scenario format accepts published scenarios/quests. The plugin fetches all encounter cards and quest cards needed to play the scenario. Quest cards with two sides are automatically placed in `game/double_sided/`.
+RingsDB scenario format accepts published scenarios/quests from RingsDB. The plugin fetches all encounter cards and quest cards needed to play the scenario. Quest cards with two sides are automatically placed in `game/double_sided/`.
 
-You can provide the scenario in three ways:
+You can provide the scenario in two ways:
 
 **RingsDB scenario API URL:**
 ```sh
@@ -104,11 +104,6 @@ python plugins/lotr_lcg/fetch.py 'https://ringsdb.com/api/public/scenario/1.json
 python plugins/lotr_lcg/fetch.py 1 ringsdb_scenario_url
 ```
 
-**Hall of Beorn scenario URL:**
-```sh
-python plugins/lotr_lcg/fetch.py 'https://hallofbeorn.com/LotR/Scenarios/passage-through-mirkwood' ringsdb_scenario_url
-```
-
 You can also put the URL or ID in a text file and pass the file path instead.
 
 You can specify the difficulty mode (encounter card quantities vary by mode):
@@ -116,4 +111,22 @@ You can specify the difficulty mode (encounter card quantities vary by mode):
 ```sh
 python plugins/lotr_lcg/fetch.py 1 ringsdb_scenario_url --scenario_mode easy
 python plugins/lotr_lcg/fetch.py 1 ringsdb_scenario_url --scenario_mode nightmare
+```
+
+### `hallofbeorn_url`
+
+Hall of Beorn scenario format accepts published scenarios/quests from [Hall of Beorn](https://hallofbeorn.com/). The plugin fetches all encounter cards and quest cards needed to play the scenario. Quest cards with two sides are automatically placed in `game/double_sided/`.
+
+**Hall of Beorn scenario URL:**
+```sh
+python plugins/lotr_lcg/fetch.py 'https://hallofbeorn.com/LotR/Scenarios/passage-through-mirkwood' hallofbeorn_url
+```
+
+You can also put the URL in a text file and pass the file path instead.
+
+You can specify the difficulty mode (encounter card quantities vary by mode):
+
+```sh
+python plugins/lotr_lcg/fetch.py 'https://hallofbeorn.com/LotR/Scenarios/passage-through-mirkwood' hallofbeorn_url --scenario_mode easy
+python plugins/lotr_lcg/fetch.py 'https://hallofbeorn.com/LotR/Scenarios/passage-through-mirkwood' hallofbeorn_url --scenario_mode nightmare
 ```
