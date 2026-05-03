@@ -7,6 +7,7 @@ from click import Choice, ClickException, argument, command, option
 sys.path.insert(0, path.join(path.dirname(__file__), "..", ".."))
 
 from plugins.lotr_lcg.deck_formats import DeckFormat, parse_deck
+from plugins.lotr_lcg.hallofbeorn import ScenarioMode
 from plugins.lotr_lcg.ringsdb import get_handle_card
 from utilities import ensure_directory
 
@@ -19,10 +20,10 @@ double_sided_directory = path.join("game", "double_sided")
 @argument("format", type=Choice([t.value for t in DeckFormat], case_sensitive=False))
 @option(
     "--scenario_mode",
-    default="normal",
-    type=Choice(["normal", "easy", "nightmare"], case_sensitive=False),
+    default=ScenarioMode.NORMAL.value,
+    type=Choice([t.value for t in ScenarioMode], case_sensitive=False),
     show_default=True,
-    help="Encounter card counts to use when fetching RingsDB scenarios.",
+    help="Encounter card counts to use when fetching scenarios.",
 )
 def cli(deck_path: str, format: DeckFormat, scenario_mode: str):
     ensure_directory(front_directory)

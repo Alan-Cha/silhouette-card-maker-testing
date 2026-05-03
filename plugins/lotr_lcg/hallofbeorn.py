@@ -1,3 +1,4 @@
+from enum import Enum
 from html import unescape
 from re import S, compile, search
 from time import sleep
@@ -16,7 +17,12 @@ DETAIL_HREF_PATTERN = compile(
     flags=S,
 )
 CARD_IMAGE_TAG_PATTERN = compile(r'<img[^>]*class="card-image[^"]*"[^>]*>', flags=S)
-SCENARIO_MODE_KEYS = {"normal", "easy", "nightmare"}
+
+
+class ScenarioMode(str, Enum):
+    NORMAL = "normal"
+    EASY = "easy"
+    NIGHTMARE = "nightmare"
 
 
 def request_hall(query: str) -> Response:
@@ -37,11 +43,16 @@ def parse_quantity(value: str) -> int:
     return int(cleaned)
 
 
-def normalize_scenario_mode(value: str) -> str:
-    mode = value.lower()
-    if mode not in SCENARIO_MODE_KEYS:
-        raise ValueError(f"Unsupported scenario mode: {value}")
-    return mode
+def normalize_scenario_mode(value: str | ScenarioMode) -> ScenarioMode:
+    if isinstance(value, ScenarioMode):
+        return value
+
+    mode_str = value.lower()
+    try:
+        return ScenarioMode(mode_str)
+    except ValueError:
+        valid_modes = ", ".join([mode.value for mode in ScenarioMode])
+        raise ValueError(f"Unsupported scenario mode: {value}. Valid modes: {valid_modes}")
 
 
 def scenario_card_code(detail_href: str) -> str:
@@ -58,7 +69,10 @@ def fetch_card_image_urls(detail_href: str) -> list[str]:
     return image_urls
 
 
-def fetch_scenario_entries(scenario_slug: str, scenario_mode: str = "normal") -> list[dict]:
+def fetch_scenario_entries(
+    scenario_slug: str,
+    scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
+) -> list[dict]:
     mode = normalize_scenario_mode(scenario_mode)
     scenario_html = request_hall(
         HALL_SCENARIO_URL_TEMPLATE.format(scenario_slug=scenario_slug)
@@ -68,7 +82,7 @@ def fetch_scenario_entries(scenario_slug: str, scenario_mode: str = "normal") ->
     entries = []
 
     for match in DETAIL_HREF_PATTERN.finditer(scenario_html):
-        quantity = parse_quantity(match.group(mode))
+        quantity = parse_quantity(match.group(mode.value))
         if quantity <= 0:
             continue
 

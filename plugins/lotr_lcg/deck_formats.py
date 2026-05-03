@@ -3,7 +3,7 @@ from enum import Enum
 from re import compile
 from typing import Callable
 
-from plugins.lotr_lcg.hallofbeorn import fetch_scenario_entries
+from plugins.lotr_lcg.hallofbeorn import ScenarioMode, fetch_scenario_entries
 from plugins.lotr_lcg.ringsdb import (
     build_deck_entries,
     fetch_decklist,
@@ -189,7 +189,7 @@ def parse_ringsdb_fellowship(deck_text: str, handle_card: Callable) -> None:
 def parse_ringsdb_scenario_url(
     deck_text: str,
     handle_card: Callable,
-    scenario_mode: str = "normal",
+    scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
     if os.path.isfile(deck_text):
         with open(deck_text, "r", encoding="utf-8") as deck_file:
@@ -240,7 +240,7 @@ def parse_ringsdb_scenario_url(
 def parse_hallofbeorn_url(
     deck_text: str,
     handle_card: Callable,
-    scenario_mode: str = "normal",
+    scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
     if os.path.isfile(deck_text):
         with open(deck_text, "r", encoding="utf-8") as deck_file:
@@ -296,7 +296,7 @@ def parse_deck(
     deck_text: str,
     format: DeckFormat,
     handle_card: Callable,
-    scenario_mode: str = "normal",
+    scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
     if format == DeckFormat.RINGSDB_URL:
         return parse_ringsdb(deck_text, handle_card)
