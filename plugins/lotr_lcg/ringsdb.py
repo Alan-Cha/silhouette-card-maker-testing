@@ -142,6 +142,66 @@ def build_deck_entries(deck: dict, card_catalog: dict[str, dict]) -> list[dict]:
     return entries
 
 
+def save_card_art_copies(
+    card_art: bytes,
+    output_dir: str,
+    index: int,
+    sanitized_code: str,
+    sanitized_name: str,
+    quantity: int,
+    extension: str,
+) -> None:
+    for counter in range(quantity):
+        output_filename = OUTPUT_CARD_ART_FILE_TEMPLATE.format(
+            deck_index=str(index),
+            card_code=sanitized_code,
+            card_name=sanitized_name,
+            quantity_counter=str(counter + 1),
+            extension=extension,
+        )
+        image_path = path.join(output_dir, output_filename)
+        with open(image_path, "wb") as file_handle:
+            file_handle.write(card_art)
+
+
+def fetch_card_art(
+    index: int,
+    quantity: int,
+    sanitized_code: str,
+    sanitized_name: str,
+    image_url: str,
+    extension: str,
+    front_img_dir: str,
+    double_sided_img_dir: str | None = None,
+    back_image_url: str | None = None,
+) -> None:
+    # Fetch and normalize front image
+    card_art = normalize_card_orientation(request_ringsdb(image_url).content)
+    save_card_art_copies(
+        card_art,
+        front_img_dir,
+        index,
+        sanitized_code,
+        sanitized_name,
+        quantity,
+        extension,
+    )
+
+    # Fetch and save back image if provided
+    if back_image_url and double_sided_img_dir:
+        back_art = normalize_card_orientation(request_ringsdb(back_image_url).content)
+        back_extension = Path(back_image_url).suffix or extension
+        save_card_art_copies(
+            back_art,
+            double_sided_img_dir,
+            index,
+            sanitized_code,
+            sanitized_name,
+            quantity,
+            back_extension,
+        )
+
+
 def fetch_card(
     index: int,
     quantity: int,
@@ -152,42 +212,21 @@ def fetch_card(
     double_sided_img_dir: str | None = None,
     back_image_url: str | None = None,
 ):
-    card_art = normalize_card_orientation(request_ringsdb(image_url).content)
     extension = Path(image_url).suffix or ".png"
     sanitized_name = sanitize_card_name(name)
     sanitized_code = sanitize_identifier(card_code)
-    back_art = (
-        normalize_card_orientation(request_ringsdb(back_image_url).content)
-        if back_image_url
-        else None
-    )
-    back_extension = (
-        Path(back_image_url).suffix or extension if back_image_url else extension
-    )
 
-    for counter in range(quantity):
-        output_filename = OUTPUT_CARD_ART_FILE_TEMPLATE.format(
-            deck_index=str(index),
-            card_code=sanitized_code,
-            card_name=sanitized_name,
-            quantity_counter=str(counter + 1),
-            extension=extension,
-        )
-        image_path = path.join(front_img_dir, output_filename)
-        with open(image_path, "wb") as file_handle:
-            file_handle.write(card_art)
-
-        if back_art is not None and double_sided_img_dir:
-            back_filename = OUTPUT_CARD_ART_FILE_TEMPLATE.format(
-                deck_index=str(index),
-                card_code=sanitized_code,
-                card_name=sanitized_name,
-                quantity_counter=str(counter + 1),
-                extension=back_extension,
-            )
-            back_path = path.join(double_sided_img_dir, back_filename)
-            with open(back_path, "wb") as file_handle:
-                file_handle.write(back_art)
+    fetch_card_art(
+        index,
+        quantity,
+        sanitized_code,
+        sanitized_name,
+        image_url,
+        extension,
+        front_img_dir,
+        double_sided_img_dir,
+        back_image_url,
+    )
 
 
 def get_handle_card(front_img_dir: str, double_sided_img_dir: str | None = None):
