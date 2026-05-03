@@ -9,6 +9,8 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+from plugins.lotr_lcg.types import CardEntry
+
 import pytest
 from PIL import Image
 
@@ -88,12 +90,12 @@ class TestParseDeckRouting:
     @patch(
         "plugins.lotr_lcg.deck_formats.build_deck_entries",
         return_value=[
-            {
-                "card_code": "01001",
-                "name": "Aragorn",
-                "image_url": "https://ringsdb.com/bundles/cards/01001.png",
-                "quantity": 1,
-            }
+            CardEntry(
+                card_code="01001",
+                name="Aragorn",
+                image_url="https://ringsdb.com/bundles/cards/01001.png",
+                quantity=1,
+            )
         ],
     )
     @patch(
@@ -128,12 +130,12 @@ class TestParseDeckRouting:
     @patch(
         "plugins.lotr_lcg.deck_formats.build_deck_entries",
         return_value=[
-            {
-                "card_code": "01005",
-                "name": "Legolas",
-                "image_url": "https://ringsdb.com/bundles/cards/01005.png",
-                "quantity": 1,
-            }
+            CardEntry(
+                card_code="01005",
+                name="Legolas",
+                image_url="https://ringsdb.com/bundles/cards/01005.png",
+                quantity=1,
+            )
         ],
     )
     @patch(
@@ -171,13 +173,13 @@ class TestParseDeckRouting:
     @patch(
         "plugins.lotr_lcg.deck_formats.fetch_scenario_entries",
         return_value=[
-            {
-                "card_code": "Forest-Spider-Core",
-                "name": "Forest Spider",
-                "image_url": "https://hallofbeorn.com/Images/Cards/Core-Set/Forest-Spider.jpg",
-                "back_image_url": None,
-                "quantity": 2,
-            }
+            CardEntry(
+                card_code="Forest-Spider-Core",
+                name="Forest Spider",
+                image_url="https://hallofbeorn.com/Images/Cards/Core-Set/Forest-Spider.jpg",
+                quantity=2,
+                back_image_url=None,
+            )
         ],
     )
     @patch(
@@ -474,12 +476,12 @@ class TestExampleDecklistsFromDocumentation:
         as documented in README.
         """
         front_dir, double_sided_dir = temp_dirs
-        scenario_text = "1"
+        scenario_url = "https://hallofbeorn.com/LotR/Scenarios/Passage-Through-Mirkwood-Campaign"
 
         handle_card = get_handle_card(front_dir, double_sided_dir)
         parse_deck(
-            scenario_text,
-            DeckFormat.RINGSDB_SCENARIO_URL,
+            scenario_url,
+            DeckFormat.HALLOFBEORN_URL,
             handle_card,
             scenario_mode="normal",
         )

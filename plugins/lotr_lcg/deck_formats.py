@@ -4,6 +4,7 @@ from re import compile
 from typing import Callable
 
 from plugins.lotr_lcg.hallofbeorn import ScenarioMode, fetch_scenario_entries
+from plugins.lotr_lcg.types import CardEntry
 from plugins.lotr_lcg.ringsdb import (
     build_deck_entries,
     fetch_decklist,
@@ -89,6 +90,10 @@ def extract_hallofbeorn_slug(value: str) -> str | None:
 
 
 def parse_ringsdb(deck_text: str, handle_card: Callable) -> None:
+    """
+    Parse RingsDB decklists using the JSON API.
+    Uses: /api/public/decklist/{id}.json (pure JSON, no parsing needed)
+    """
     if os.path.isfile(deck_text):
         with open(deck_text, "r", encoding="utf-8") as deck_file:
             deck_text = deck_file.read()
@@ -112,31 +117,37 @@ def parse_ringsdb(deck_text: str, handle_card: Callable) -> None:
 
         for entry in build_deck_entries(deck, card_catalog):
             index += 1
-            parts = [f"Index: {index}", f'quantity: {entry["quantity"]}']
-            if entry["name"]:
-                parts.append(f'name: {entry["name"]}')
-            if entry["card_code"]:
-                parts.append(f'code: {entry["card_code"]}')
+            parts = [f"Index: {index}", f'quantity: {entry.quantity}']
+            if entry.name:
+                parts.append(f'name: {entry.name}')
+            if entry.card_code:
+                parts.append(f'code: {entry.card_code}')
             print(", ".join(parts))
 
             try:
                 handle_card(
                     index,
-                    entry["card_code"],
-                    entry["name"],
-                    entry["image_url"],
-                    entry["quantity"],
+                    entry.card_code,
+                    entry.name,
+                    entry.image_url,
+                    entry.quantity,
                     None,
                 )
             except Exception as exc:
                 print(f"Error: {exc}")
-                error_lines.append((entry["card_code"], exc))
+                error_lines.append((entry.card_code, exc))
 
     if len(error_lines) > 0:
         print(f"Errors: {error_lines}")
 
 
 def parse_ringsdb_fellowship(deck_text: str, handle_card: Callable) -> None:
+    """
+    Parse RingsDB fellowships by extracting JSON from JavaScript.
+    Uses: /fellowship/view/{id} (HTML page with embedded JavaScript)
+    Note: No fellowship JSON API exists, so we extract JSON from inline
+    JavaScript variables like: Decks[0] = {...};
+    """
     if os.path.isfile(deck_text):
         with open(deck_text, "r", encoding="utf-8") as deck_file:
             deck_text = deck_file.read()
@@ -162,25 +173,25 @@ def parse_ringsdb_fellowship(deck_text: str, handle_card: Callable) -> None:
             print(f'  Deck: {deck.get("name", "Unnamed Deck")}')
             for entry in build_deck_entries(deck, card_catalog):
                 index += 1
-                parts = [f"Index: {index}", f'quantity: {entry["quantity"]}']
-                if entry["name"]:
-                    parts.append(f'name: {entry["name"]}')
-                if entry["card_code"]:
-                    parts.append(f'code: {entry["card_code"]}')
+                parts = [f"Index: {index}", f'quantity: {entry.quantity}']
+                if entry.name:
+                    parts.append(f'name: {entry.name}')
+                if entry.card_code:
+                    parts.append(f'code: {entry.card_code}')
                 print(", ".join(parts))
 
                 try:
                     handle_card(
                         index,
-                        entry["card_code"],
-                        entry["name"],
-                        entry["image_url"],
-                        entry["quantity"],
+                        entry.card_code,
+                        entry.name,
+                        entry.image_url,
+                        entry.quantity,
                         None,
                     )
                 except Exception as exc:
                     print(f"Error: {exc}")
-                    error_lines.append((entry["card_code"], exc))
+                    error_lines.append((entry.card_code, exc))
 
     if len(error_lines) > 0:
         print(f"Errors: {error_lines}")
@@ -191,6 +202,16 @@ def parse_ringsdb_scenario_url(
     handle_card: Callable,
     scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
+    """
+    Parse RingsDB scenarios by fetching metadata, then scraping Hall of Beorn.
+    Uses: /api/public/scenario/{id}.json for metadata (name, pack, counts)
+    Then: Hall of Beorn HTML scraping for actual card list
+
+    ASSUMPTION: RingsDB's nameCanonical slug can be used to construct a Hall of
+    Beorn URL. This mapping is fragile and not guaranteed - Hall of Beorn URLs
+    may change or diverge from RingsDB slugs. RingsDB's scenario API does not
+    contain the actual card list, only metadata and aggregate counts.
+    """
     if os.path.isfile(deck_text):
         with open(deck_text, "r", encoding="utf-8") as deck_file:
             deck_text = deck_file.read()
@@ -215,23 +236,23 @@ def parse_ringsdb_scenario_url(
 
         for entry in fetch_scenario_entries(scenario_slug, scenario_mode):
             index += 1
-            parts = [f"Index: {index}", f'quantity: {entry["quantity"]}']
-            if entry["name"]:
-                parts.append(f'name: {entry["name"]}')
+            parts = [f"Index: {index}", f'quantity: {entry.quantity}']
+            if entry.name:
+                parts.append(f'name: {entry.name}')
             print(", ".join(parts))
 
             try:
                 handle_card(
                     index,
-                    entry["card_code"],
-                    entry["name"],
-                    entry["image_url"],
-                    entry["quantity"],
-                    entry.get("back_image_url"),
+                    entry.card_code,
+                    entry.name,
+                    entry.image_url,
+                    entry.quantity,
+                    entry.back_image_url,
                 )
             except Exception as exc:
                 print(f"Error: {exc}")
-                error_lines.append((entry["card_code"], exc))
+                error_lines.append((entry.card_code, exc))
 
     if len(error_lines) > 0:
         print(f"Errors: {error_lines}")
@@ -242,6 +263,13 @@ def parse_hallofbeorn_url(
     handle_card: Callable,
     scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
+    """
+    Parse Hall of Beorn scenarios by scraping HTML.
+    Uses: /LotR/Scenarios/{slug} (HTML page)
+    Note: This is the only source for detailed scenario card lists with
+    individual card quantities and image URLs. Parses HTML tables and
+    fetches individual card detail pages.
+    """
     if os.path.isfile(deck_text):
         with open(deck_text, "r", encoding="utf-8") as deck_file:
             deck_text = deck_file.read()
@@ -263,23 +291,23 @@ def parse_hallofbeorn_url(
 
         for entry in fetch_scenario_entries(scenario_slug, scenario_mode):
             index += 1
-            parts = [f"Index: {index}", f'quantity: {entry["quantity"]}']
-            if entry["name"]:
-                parts.append(f'name: {entry["name"]}')
+            parts = [f"Index: {index}", f'quantity: {entry.quantity}']
+            if entry.name:
+                parts.append(f'name: {entry.name}')
             print(", ".join(parts))
 
             try:
                 handle_card(
                     index,
-                    entry["card_code"],
-                    entry["name"],
-                    entry["image_url"],
-                    entry["quantity"],
-                    entry.get("back_image_url"),
+                    entry.card_code,
+                    entry.name,
+                    entry.image_url,
+                    entry.quantity,
+                    entry.back_image_url,
                 )
             except Exception as exc:
                 print(f"Error: {exc}")
-                error_lines.append((entry["card_code"], exc))
+                error_lines.append((entry.card_code, exc))
 
     if len(error_lines) > 0:
         print(f"Errors: {error_lines}")

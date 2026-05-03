@@ -10,6 +10,8 @@ from unicodedata import category, normalize
 from PIL import Image, ImageOps
 from requests import Response, get
 
+from plugins.lotr_lcg.types import CardEntry
+
 RINGSDB_BASE_URL = "https://ringsdb.com"
 RINGSDB_ALL_CARDS_URL = f"{RINGSDB_BASE_URL}/api/public/cards/"
 RINGSDB_CARD_URL_TEMPLATE = f"{RINGSDB_BASE_URL}/api/public/card/{{card_code}}.json"
@@ -51,6 +53,13 @@ def fetch_scenario_metadata(scenario_id: str) -> dict:
 
 
 def fetch_fellowship_decks(fellowship_id: str) -> tuple[str, list[dict]]:
+    """
+    Fetch fellowship decks by extracting JSON from embedded JavaScript.
+
+    RingsDB has no /api/public/fellowship/{id}.json endpoint, so we fetch the
+    HTML page and extract JSON from inline JavaScript variables using regex:
+    Decks[0] = {"id": 123, "name": "...", "slots": {...}, ...};
+    """
     html = request_ringsdb(RINGSDB_FELLOWSHIP_URL_TEMPLATE.format(fellowship_id=fellowship_id)).text
 
     name_match = FELLOWSHIP_NAME_PATTERN.search(html)
@@ -117,7 +126,7 @@ def iter_deck_slots(deck: dict) -> list[tuple[str, int]]:
     return ordered_slots
 
 
-def build_deck_entries(deck: dict, card_catalog: dict[str, dict]) -> list[dict]:
+def build_deck_entries(deck: dict, card_catalog: dict[str, dict]) -> list[CardEntry]:
     entries = []
 
     for card_code, quantity in iter_deck_slots(deck):
@@ -131,12 +140,12 @@ def build_deck_entries(deck: dict, card_catalog: dict[str, dict]) -> list[dict]:
             continue
 
         entries.append(
-            {
-                "card_code": card_code,
-                "name": card.get("name", card_code),
-                "image_url": image_url,
-                "quantity": quantity,
-            }
+            CardEntry(
+                card_code=card_code,
+                name=card.get("name", card_code),
+                image_url=image_url,
+                quantity=quantity,
+            )
         )
 
     return entries

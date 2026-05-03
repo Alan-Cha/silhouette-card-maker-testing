@@ -6,6 +6,8 @@ from urllib.parse import urljoin
 
 from requests import Response, get
 
+from plugins.lotr_lcg.types import CardEntry
+
 HALL_BASE_URL = "https://hallofbeorn.com"
 HALL_SCENARIO_URL_TEMPLATE = f"{HALL_BASE_URL}/LotR/Scenarios/{{scenario_slug}}"
 DETAIL_HREF_PATTERN = compile(
@@ -72,7 +74,15 @@ def fetch_card_image_urls(detail_href: str) -> list[str]:
 def fetch_scenario_entries(
     scenario_slug: str,
     scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
-) -> list[dict]:
+) -> list[CardEntry]:
+    """
+    Fetch scenario card entries by scraping Hall of Beorn HTML.
+
+    Hall of Beorn is the only source for detailed scenario card lists with
+    individual card quantities per difficulty mode (easy/normal/nightmare).
+    Parses HTML to extract card names, quantities, and fetches individual
+    card detail pages for image URLs.
+    """
     mode = normalize_scenario_mode(scenario_mode)
     scenario_html = request_hall(
         HALL_SCENARIO_URL_TEMPLATE.format(scenario_slug=scenario_slug)
@@ -97,13 +107,13 @@ def fetch_scenario_entries(
             raise ValueError(f"Could not find images for Hall of Beorn detail page {detail_href}")
 
         entries.append(
-            {
-                "card_code": scenario_card_code(detail_href),
-                "name": title,
-                "image_url": image_urls[0],
-                "back_image_url": image_urls[1] if len(image_urls) > 1 else None,
-                "quantity": quantity,
-            }
+            CardEntry(
+                card_code=scenario_card_code(detail_href),
+                name=title,
+                image_url=image_urls[0],
+                quantity=quantity,
+                back_image_url=image_urls[1] if len(image_urls) > 1 else None,
+            )
         )
 
     return entries
