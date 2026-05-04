@@ -38,11 +38,11 @@ Options:
 AstraBuilder URL format uses the full URL of a deck from AstraBuilder.
 
 ```
-https://www.astra-builder.com/en/create?deck=122
+https://www.astra-builder.com/en/create?deck=648
 ```
 
 You can also use the URL directly in the command line. Note the single quotes around the URL.
 
 ```sh
-python plugins/echoes_of_astra/fetch.py 'https://www.astra-builder.com/en/create?deck=122' astrabuilder_url
+python plugins/echoes_of_astra/fetch.py 'https://www.astra-builder.com/en/create?deck=648' astrabuilder_url
 ```
