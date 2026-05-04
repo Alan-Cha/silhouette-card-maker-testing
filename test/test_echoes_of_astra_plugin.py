@@ -79,7 +79,7 @@ class TestFullFetchWorkflow:
         """Test fetching cards from an Astra Builder deck URL."""
         front_dir = temp_dirs
 
-        deck_text = "https://www.astra-builder.com/en/create?deck=122"
+        deck_text = "https://www.astra-builder.com/en/create?deck=648"
 
         handle_card = get_handle_card(front_dir)
         parse_deck(deck_text, DeckFormat.ASTRA_URL, handle_card)
