@@ -1072,8 +1072,10 @@ def generate_pdf(
 
         return front_img, back_img
 
-    num_image = 1
-    it = iter(natsorted(list(check_paths_subset(front_set, ds_set))) + natsorted(list(ds_set)))
+    all_files = natsorted(list(check_paths_subset(front_set, ds_set))) + natsorted(list(ds_set))
+    it = iter(all_files)
+    n = 0
+    total = len(all_files)
     while True:
         file_group = list(itertools.islice(it, num_cards - len(clean_skip_indices)))
         if not file_group:
@@ -1104,8 +1106,8 @@ def generate_pdf(
             results = [_process_one(f) for _, f in slots]
 
         for (i, f), (front, back) in zip(slots, results):
-            print(f'Image {num_image}: {f}')
-            num_image += 1
+            n += 1
+            print(f'\r{n}/{total} {f}', end='', flush=True)
 
             images_to_close.append(front)
             front_cards[i] = front
@@ -1157,6 +1159,7 @@ def generate_pdf(
             if back is not None:
                 pages.append(back)
 
+    print()
     for img in images_to_close:
         img.close()
     if single_back_image_preprocessed is not None:
