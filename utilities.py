@@ -701,32 +701,37 @@ def draw_card_layout(
             # No percentage crop and STRETCH mode: just scale to target size
             card_image = card_image.resize((scaled_width, scaled_height))
 
-        # Apply extend_edges: simple crop that affects all edges uniformly
-        if extend_edges_thickness > 0:
+        # Apply extend_edges and extend_corners: both crop the image uniformly
+        # The difference is in how the bleed is generated afterward
+        total_crop_thickness = extend_edges_thickness + extend_corners_thickness
+        if total_crop_thickness > 0:
             card_image = card_image.crop((
-                extend_edges_thickness,
-                extend_edges_thickness,
-                card_image.width - extend_edges_thickness,
-                card_image.height - extend_edges_thickness
+                total_crop_thickness,
+                total_crop_thickness,
+                card_image.width - total_crop_thickness,
+                card_image.height - total_crop_thickness
             ))
 
         if flip and orientation == Orientation.LANDSCAPE:
             card_image = card_image.rotate(180)
 
         # Calculate final position
-        x = base_x + bleed_offset_x + extend_edges_thickness
-        y = base_y + bleed_offset_y + extend_edges_thickness
+        x = base_x + bleed_offset_x + total_crop_thickness
+        y = base_y + bleed_offset_y + total_crop_thickness
+
+        # Calculate total bleed including both synthetic bleed and crop thickness
+        total_bleed_width = synthetic_bleed[0] + total_crop_thickness
+        total_bleed_height = synthetic_bleed[1] + total_crop_thickness
 
         # Use corner-aware bleed if extend_corners is specified, otherwise use regular bleed
         if extend_corners_thickness > 0:
             draw_card_with_corner_bleed(card_image, base_image, x, y,
-                                       synthetic_bleed[0] + extend_edges_thickness,
-                                       synthetic_bleed[1] + extend_edges_thickness,
+                                       total_bleed_width,
+                                       total_bleed_height,
                                        extend_corners_thickness)
         else:
             draw_card_with_bleed(card_image, base_image, x, y,
-                               (synthetic_bleed[0] + extend_edges_thickness,
-                                synthetic_bleed[1] + extend_edges_thickness))
+                               (total_bleed_width, total_bleed_height))
 
 def draw_outline(
     page: Image.Image,
