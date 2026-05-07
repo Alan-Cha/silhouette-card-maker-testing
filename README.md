@@ -300,11 +300,10 @@ Options:
   --extend_edges TEXT             Crop card edges and extend them uniformly to
                                   generate bleed. Like --crop but generates
                                   bleed from cropped edges. Examples: 3mm,
-                                  0.125in. Default: 3mm.
+                                  0.125in.
   --extend_corners TEXT           Fill rounded corner regions to reduce corner
                                   artifacts. Fills cut zones beyond corner
-                                  radius arc. Examples: 3mm, 0.125in. Default:
-                                  3mm.
+                                  radius arc. Examples: 3mm, 0.125in.
   --ppi INTEGER RANGE             Pixels per inch (PPI) when creating PDF.
                                   [default: 300; x>=0]
   --quality INTEGER RANGE         File compression. A higher value corresponds
