@@ -267,6 +267,42 @@ def parse_crop_string(crop_string: str | None, card_width: int, card_height: int
 
     raise ValueError(f"Invalid crop format: '{crop_string}'")
 
+def parse_extend_corners(extend_corners: str | None, ppi: int) -> int:
+    """
+    Parse the extend_corners parameter and return the corner radius in pixels.
+
+    Args:
+        extend_corners: String like "3mm", "0.125in", or "0" to disable
+        ppi: Pixels per inch for the layout
+
+    Returns:
+        Corner radius in pixels
+    """
+    if extend_corners is None or extend_corners == "0":
+        return 0
+
+    extend_corners = extend_corners.strip().lower()
+
+    if extend_corners == "0":
+        return 0
+
+    float_pattern = r"(?:\d+\.\d*|\.\d+|\d+)"
+
+    # Match "3mm" or "3.5mm"
+    mm_match = re.fullmatch(rf"({float_pattern})mm", extend_corners)
+    if mm_match:
+        radius_mm = float(mm_match.group(1))
+        return math.floor(radius_mm / 25.4 * ppi)
+
+    # Match "0.1in" or "0.125in"
+    in_match = re.fullmatch(rf"({float_pattern})in", extend_corners)
+    if in_match:
+        radius_in = float(in_match.group(1))
+        return math.floor(radius_in * ppi)
+
+    raise ValueError(f"Invalid extend_corners format: '{extend_corners}'")
+
+
 def convertInToCrop(crop_in: float, card_width_px: int, card_height_px: int) -> tuple[float, float]:
     # Convert from pixels to physical mm using DPI
     # Card dimensions are based on 300 ppi
@@ -461,6 +497,94 @@ def crop_and_scale_image(
     return card_image, 0, 0, (scaled_bleed_width, scaled_bleed_height)
 
 
+def draw_card_with_corner_bleed(card_image: Image.Image, base_image: Image.Image, x: int, y: int, bleed_width: int, bleed_height: int, corner_radius: int):
+    """
+    Draw a card with bleed that accounts for rounded corners.
+
+    For corners, generate bleed that respects the corner radius.
+    For straight edges, extend normally.
+
+    Args:
+        card_image: The card image to draw
+        base_image: The base image to draw on
+        x, y: Position to place the card
+        bleed_width, bleed_height: Bleed dimensions
+        corner_radius: The radius of rounded corners in pixels
+    """
+    width, height = card_image.size
+    base_image.paste(card_image, (x, y))
+
+    class Axis(int, Enum):
+        X = 0
+        Y = 1
+
+    def extend_edge(crop_box: tuple[int, int, int, int], start: tuple[int, int], bleed: int, axis: Axis):
+        for bleed_i in range(bleed):
+            pos = (
+                start[0] + (bleed_i if axis == Axis.X else 0),
+                start[1] + (bleed_i if axis == Axis.Y else 0)
+            )
+            base_image.paste(card_image.crop(crop_box), pos)
+
+    # For edges that are straight (not in corner regions), extend normally
+    # Top and bottom edges (excluding corners)
+    if corner_radius > 0:
+        # Top edge (excluding corners)
+        extend_edge((corner_radius, 0, width - corner_radius, 1), (x + corner_radius, y - bleed_height), bleed_height, Axis.Y)
+        # Bottom edge (excluding corners)
+        extend_edge((corner_radius, height - 1, width - corner_radius, height), (x + corner_radius, y + height), bleed_height, Axis.Y)
+
+        # Left and right edges (excluding corners)
+        extend_edge((0, corner_radius, 1, height - corner_radius), (x - bleed_width, y + corner_radius), bleed_width, Axis.X)
+        extend_edge((width - 1, corner_radius, width, height - corner_radius), (x + width, y + corner_radius), bleed_width, Axis.X)
+    else:
+        # No corner radius, extend all edges normally
+        extend_edge((0, 0, width, 1), (x, y - bleed_height), bleed_height, Axis.Y)
+        extend_edge((0, height - 1, width, height), (x, y + height), bleed_height, Axis.Y)
+        extend_edge((0, 0, 1, height), (x - bleed_width, y), bleed_width, Axis.X)
+        extend_edge((width - 1, 0, width, height), (x + width, y), bleed_width, Axis.X)
+
+    # For corners with rounded radius, generate bleed that respects the curve
+    if corner_radius > 0:
+        # Define corner regions
+        corners = [
+            # (corner_box, bleed_start, corner_type)
+            ((0, 0, corner_radius, corner_radius), (x - bleed_width, y - bleed_height), 'top-left'),
+            ((width - corner_radius, 0, width, corner_radius), (x + width - corner_radius, y - bleed_height), 'top-right'),
+            ((0, height - corner_radius, corner_radius, height), (x - bleed_width, y + height - corner_radius), 'bottom-left'),
+            ((width - corner_radius, height - corner_radius, width, height), (x + width - corner_radius, y + height - corner_radius), 'bottom-right'),
+        ]
+
+        for corner_box, bleed_start, corner_type in corners:
+            corner_img = card_image.crop(corner_box)
+
+            # For each pixel in the corner bleed region, extend from the nearest edge pixel
+            # This creates a more natural extension for rounded corners
+            for dx in range(-bleed_width if 'left' in corner_type else 0, corner_radius + (bleed_width if 'right' in corner_type else 0)):
+                for dy in range(-bleed_height if 'top' in corner_type else 0, corner_radius + (bleed_height if 'bottom' in corner_type else 0)):
+                    # Clamp to get the nearest pixel from the corner image
+                    src_x = max(0, min(corner_radius - 1, dx))
+                    src_y = max(0, min(corner_radius - 1, dy))
+
+                    pixel = corner_img.getpixel((src_x, src_y))
+                    base_x = bleed_start[0] + dx + (bleed_width if 'left' in corner_type else 0)
+                    base_y = bleed_start[1] + dy + (bleed_height if 'top' in corner_type else 0)
+
+                    try:
+                        base_image.putpixel((base_x, base_y), pixel)
+                    except IndexError:
+                        pass  # Outside image bounds
+    else:
+        # No corner radius, fill corners with single pixel
+        for bleed_width_val, crop_x, pos_x in [(bleed_width, 0, x - bleed_width), (bleed_width, width - 1, x + width)]:
+            for bleed_height_val, crop_y, pos_y in [(bleed_height, 0, y - bleed_height), (bleed_height, height - 1, y + height)]:
+                for x_bleed_i in range(bleed_width_val):
+                    for y_bleed_i in range(bleed_height_val):
+                        base_image.paste(card_image.crop((crop_x, crop_y, crop_x + 1, crop_y + 1)), (pos_x + x_bleed_i, pos_y + y_bleed_i))
+
+    return base_image
+
+
 def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: int, y: int, print_bleed: tuple[int, int]):
     bleed_width, bleed_height = print_bleed
 
@@ -512,7 +636,8 @@ def draw_card_layout(
     crop: tuple[float, float],
     crop_backs: tuple[float, float],
     ppi_ratio: float,
-    extend_corners: int,
+    extend_edges: int,
+    extend_corners_radius: int,
     flip: bool,
     fit: FitMode,
     orientation: Orientation
@@ -521,7 +646,8 @@ def draw_card_layout(
     crop_percent_x, crop_percent_y = crop
     crop_backs_percent_x, crop_backs_percent_y = crop_backs
 
-    extend_corners_thickness = math.floor(extend_corners * ppi_ratio)
+    extend_edges_thickness = math.floor(extend_edges * ppi_ratio)
+    extend_corners_thickness = math.floor(extend_corners_radius * ppi_ratio)
 
     # Calculate the size of the card after scaling: "scaled size"
     scaled_width = math.floor(width * ppi_ratio)
@@ -575,22 +701,32 @@ def draw_card_layout(
             # No percentage crop and STRETCH mode: just scale to target size
             card_image = card_image.resize((scaled_width, scaled_height))
 
-        # Extend the corners if required
-        card_image = card_image.crop((
-            extend_corners_thickness,
-            extend_corners_thickness,
-            card_image.width - extend_corners_thickness,
-            card_image.height - extend_corners_thickness
-        ))
+        # Apply extend_edges: simple crop that affects all edges uniformly
+        if extend_edges_thickness > 0:
+            card_image = card_image.crop((
+                extend_edges_thickness,
+                extend_edges_thickness,
+                card_image.width - extend_edges_thickness,
+                card_image.height - extend_edges_thickness
+            ))
 
         if flip and orientation == Orientation.LANDSCAPE:
             card_image = card_image.rotate(180)
 
         # Calculate final position
-        x = base_x + bleed_offset_x + extend_corners_thickness
-        y = base_y + bleed_offset_y + extend_corners_thickness
+        x = base_x + bleed_offset_x + extend_edges_thickness
+        y = base_y + bleed_offset_y + extend_edges_thickness
 
-        draw_card_with_bleed(card_image, base_image, x, y, (synthetic_bleed[0] + extend_corners_thickness, synthetic_bleed[1] + extend_corners_thickness))
+        # Use corner-aware bleed if extend_corners is specified, otherwise use regular bleed
+        if extend_corners_thickness > 0:
+            draw_card_with_corner_bleed(card_image, base_image, x, y,
+                                       synthetic_bleed[0] + extend_edges_thickness,
+                                       synthetic_bleed[1] + extend_edges_thickness,
+                                       extend_corners_thickness)
+        else:
+            draw_card_with_bleed(card_image, base_image, x, y,
+                               (synthetic_bleed[0] + extend_edges_thickness,
+                                synthetic_bleed[1] + extend_edges_thickness))
 
 def draw_outline(
     page: Image.Image,
@@ -776,7 +912,8 @@ def generate_pdf(
     fit: FitMode,
     crop_string: str | None,
     crop_backs_string: str | None,
-    extend_corners: int,
+    extend_edges: int,
+    extend_corners: str,
     ppi: int,
     quality: int,
     skip_indices: List[int],
@@ -948,6 +1085,9 @@ def generate_pdf(
     crop = parse_crop_string(crop_string, card_width_px, card_height_px)
     crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
 
+    # Parse extend_corners parameter
+    extend_corners_px = parse_extend_corners(extend_corners, layout_config.ppi)
+
     # Convert corner radius to pixels for outline drawing
     effective_card_radius = card_size_def.radius or layout_config.defaults.card_radius
     radius_px = size_convert.size_to_pixel(effective_card_radius, layout_config.ppi)
@@ -1092,7 +1232,8 @@ def generate_pdf(
                 crop,
                 crop_backs,
                 ppi_ratio,
-                extend_corners,
+                extend_edges,
+                extend_corners_px,
                 flip=False,
                 fit=fit,
                 orientation=orientation,
@@ -1113,7 +1254,8 @@ def generate_pdf(
                 crop,
                 crop_backs,
                 ppi_ratio,
-                extend_corners,
+                extend_edges,
+                extend_corners_px,
                 flip=True, # Flip the back sides
                 fit=fit,
                 orientation=orientation,

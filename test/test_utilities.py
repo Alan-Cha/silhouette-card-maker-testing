@@ -849,7 +849,7 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -884,7 +884,7 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -919,7 +919,7 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=True, fit=FitMode.STRETCH,
             orientation=Orientation.LANDSCAPE
         )
@@ -962,7 +962,7 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1011,7 +1011,7 @@ class TestDrawCardLayout:
             width=10, height=10,
             print_bleed=(5, 5),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1058,7 +1058,7 @@ class TestDrawCardLayout:
             width=10, height=10,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=2.0, extend_corners=0,
+            ppi_ratio=2.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1103,7 +1103,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(50, 50), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1139,7 +1139,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(50, 50),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1182,7 +1182,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1225,7 +1225,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.CROP,
             orientation=Orientation.PORTRAIT
         )
@@ -1272,7 +1272,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1315,7 +1315,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.CROP,
             orientation=Orientation.PORTRAIT
         )
@@ -1326,11 +1326,11 @@ class TestDrawCardLayout:
         # Outside card should be empty
         assert base.getpixel((80, 49)) == self.WHITE
 
-    def test_extend_corners_zero_keeps_border(self):
-        """Without extend_corners, the card's blue border is visible.
+    def test_extend_edges_zero_keeps_border(self):
+        """Without extend_edges, the card's blue border is visible.
 
         Card 30x30: blue 10px border, red 10x10 center.
-        Target 30x30 at (15,15), extend_corners=0.
+        Target 30x30 at (15,15), extend_edges=0.
 
         15                44
         BBBBBBBBBBBBBBBBBBBB
@@ -1359,7 +1359,7 @@ class TestDrawCardLayout:
             width=30, height=30,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1371,11 +1371,11 @@ class TestDrawCardLayout:
         # Center should be red
         assert base.getpixel((25, 25)) == self.RED
 
-    def test_extend_corners_removes_border(self):
-        """With extend_corners, the card's blue border is trimmed away.
+    def test_extend_edges_removes_border(self):
+        """With extend_edges, the card's blue border is trimmed away.
 
         Card 30x30: blue 10px border, red 10x10 center.
-        Target 30x30 at (15,15), extend_corners=10.
+        Target 30x30 at (15,15), extend_edges=10.
         Crops 10px from each edge -> 10x10 red card remains.
         Placed at (25,25) with 10px bleed of red around it.
 
@@ -1406,7 +1406,7 @@ class TestDrawCardLayout:
             width=30, height=30,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_corners=10,
+            ppi_ratio=1.0, extend_edges=10, extend_corners_radius=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
