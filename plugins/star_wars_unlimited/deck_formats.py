@@ -36,6 +36,8 @@ def parse_deck_helper(deck_text: str, handle_card: Callable, deck_splitter: Call
     return index
 
 def parse_swudb_json(deck_text: str, handle_card: Callable) -> None:
+    error_lines = []
+
     data = loads(deck_text)
 
     # Get cards from leader, base, deck, and sideboard
@@ -52,14 +54,23 @@ def parse_swudb_json(deck_text: str, handle_card: Callable) -> None:
     for index, card in enumerate(cards, start=1):
         card_id = card.get("id")
         quantity = card.get("count", 1)
-        name, title = fetch_name_and_title(card_id)
 
-        parts = [f'Index: {index}', f'quantity: {quantity}']
-        if card_id: parts.append(f'card ID: {card_id}')
-        if name: parts.append(f'name: {name}')
-        if title: parts.append(f'title: {title}')
-        print(', '.join(parts))
-        handle_card(index, name, title, quantity)
+        try:
+            name, title = fetch_name_and_title(card_id)
+
+            parts = [f'Index: {index}', f'quantity: {quantity}']
+            if card_id: parts.append(f'card ID: {card_id}')
+            if name: parts.append(f'name: {name}')
+            if title: parts.append(f'title: {title}')
+            print(', '.join(parts))
+
+            handle_card(index, name, title, quantity)
+        except Exception as e:
+            print(f'Error: {e}')
+            error_lines.append((card_id, e))
+
+    if len(error_lines) > 0:
+        print(f'Errors: {error_lines}')
 
 def parse_melee(deck_text: str, handle_card: Callable) -> None:
     pattern = compile(r'^(\d+)\s*\|\s*([\w\'\-]+(?:\s+[\w\'\-]+)*)\s*(?:\|\s*(.+))?$') # '{Quantity} {Name} | {Title}'
@@ -82,22 +93,35 @@ def parse_melee(deck_text: str, handle_card: Callable) -> None:
     parse_deck_helper(deck_text, handle_card, split_melee_deck, is_melee_line, extract_melee_card_data)
 
 def parse_picklist(deck_text: str, handle_card: Callable) -> None:
-    pattern = compile(r'^((?:\[\s\]\s*)+)\s*([\w\'\-]+(?:\s+[\w\'\-]+)*)\s*(?:\|\s*(.+))?$') # '{Quantity as [ ]} {Name} | {Title}'
+    # Picklist format: [ ] Name | Title (optional)
+    # followed by a line with card IDs that we skip
+    # Pattern allows for various characters in names and titles
+    pattern = compile(r'^((?:\[\s*\]\s*)+)\s*(.+?)\s*(?:\|\s*(.+))?$')
 
     def split_picklist_deck(deck_text: str):
         return deck_text.strip().split('\n')
 
     def is_picklist_line(line) -> bool:
+        # Skip lines that start with card IDs (e.g., "LAW 003, LAW 267")
+        # Skip separator lines (-----)
+        # Skip header lines
+        stripped = line.strip()
+        if not stripped or stripped.startswith('-') or stripped.startswith('Picklist:'):
+            return False
+        # Skip lines that look like card IDs (start with letters and spaces/numbers)
+        if stripped and not stripped.startswith('[') and compile(r'^\s*[A-Z]{2,}\s+\d').match(stripped):
+            return False
         return bool(pattern.match(line))
 
     def extract_picklist_card_data(line) -> card_data_tuple:
         match = pattern.match(line)
         if match:
+            quantity_group = match.group(1).strip()
             name = match.group(2).strip()
             title = match.group(3)
-            quantity_group = match.group(1).strip()
+            quantity = quantity_group.count('[ ]') if quantity_group else 1
 
-            return (name, '' if title is None else title.strip(), '', quantity_group.count('[ ]'))
+            return (name, '' if title is None else title.strip(), '', quantity)
 
     parse_deck_helper(deck_text, handle_card, split_picklist_deck, is_picklist_line, extract_picklist_card_data)
 

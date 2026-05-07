@@ -2,6 +2,7 @@ from os import path
 from requests import Response, Session
 from time import sleep
 from re import sub, compile
+from urllib.parse import quote
 from PIL import Image
 from typing import Tuple
 
@@ -64,7 +65,8 @@ def fetch_card(
     back_img_dir: str,
 ):
     # Fetch card art by querying name and title.
-    title_query = '' if title == '' else f' title:"{title}"'
+    # URL encode the title to handle special characters like "?" and "&"
+    title_query = '' if title == '' else f' title:"{quote(title)}"'
     printings = request_swudb(SWUDB_NAME_URL_TEMPLATE.format(name=name, title=title_query)).json().get('printings', [])
 
     if not printings:
