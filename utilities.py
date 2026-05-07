@@ -497,6 +497,92 @@ def crop_and_scale_image(
     return card_image, 0, 0, (scaled_bleed_width, scaled_bleed_height)
 
 
+def draw_card_with_corner_only_bleed(card_image: Image.Image, base_image: Image.Image, x: int, y: int, edge_bleed_width: int, edge_bleed_height: int, corner_radius: int):
+    """
+    Draw a card with bleed ONLY in corner regions, leaving straight edges untouched.
+
+    This crops the corner regions and generates bleed only for those areas.
+    Straight edges are left as-is without any bleed or cropping.
+
+    Args:
+        card_image: The card image to draw
+        base_image: The base image to draw on
+        x, y: Position to place the card
+        edge_bleed_width, edge_bleed_height: Bleed dimensions for straight edges (if any)
+        corner_radius: The radius of rounded corners in pixels
+    """
+    width, height = card_image.size
+
+    # First, crop the corners from the card
+    # Create a mask that removes the corner regions
+    mask = Image.new('L', (width, height), 255)
+    draw = ImageDraw.Draw(mask)
+
+    # Black out the corner regions (these will be cropped and replaced with bleed)
+    # Top-left corner
+    draw.pieslice([0, 0, corner_radius * 2, corner_radius * 2], 180, 270, fill=0)
+    # Top-right corner
+    draw.pieslice([width - corner_radius * 2, 0, width, corner_radius * 2], 270, 360, fill=0)
+    # Bottom-left corner
+    draw.pieslice([0, height - corner_radius * 2, corner_radius * 2, height], 90, 180, fill=0)
+    # Bottom-right corner
+    draw.pieslice([width - corner_radius * 2, height - corner_radius * 2, width, height], 0, 90, fill=0)
+
+    # Apply the mask to the card (this makes the corners transparent)
+    card_with_corners_removed = Image.new('RGBA', card_image.size)
+    card_with_corners_removed.paste(card_image, (0, 0))
+    card_with_corners_removed.putalpha(mask)
+
+    # Paste the card (with corners removed) onto the base
+    base_image.paste(card_with_corners_removed, (x, y), card_with_corners_removed)
+
+    # Now generate bleed ONLY in the corner regions
+    corners = [
+        # (corner_box, bleed_start, corner_type, angle_start, angle_end)
+        ((0, 0, corner_radius, corner_radius), (x - corner_radius, y - corner_radius), 'top-left', 180, 270),
+        ((width - corner_radius, 0, width, corner_radius), (x + width - corner_radius, y - corner_radius), 'top-right', 270, 360),
+        ((0, height - corner_radius, corner_radius, height), (x - corner_radius, y + height - corner_radius), 'bottom-left', 90, 180),
+        ((width - corner_radius, height - corner_radius, width, height), (x + width - corner_radius, y + height - corner_radius), 'bottom-right', 0, 90),
+    ]
+
+    for corner_box, bleed_start, corner_type, angle_start, angle_end in corners:
+        corner_img = card_image.crop(corner_box)
+
+        # Generate bleed for this corner region
+        for dx in range(corner_radius * 2):
+            for dy in range(corner_radius * 2):
+                # Calculate position relative to corner center
+                cx = dx - corner_radius
+                cy = dy - corner_radius
+                dist = (cx * cx + cy * cy) ** 0.5
+
+                # Only generate bleed for pixels within the corner radius
+                if dist <= corner_radius:
+                    # Get the angle
+                    import math
+                    angle = math.degrees(math.atan2(cy, cx)) % 360
+
+                    # Check if this angle is in the corner's quadrant
+                    in_quadrant = False
+                    if angle_start < angle_end:
+                        in_quadrant = angle_start <= angle <= angle_end
+                    else:  # Wraps around 360
+                        in_quadrant = angle >= angle_start or angle <= angle_end
+
+                    if in_quadrant:
+                        # Calculate source pixel (clamp to corner image bounds)
+                        src_x = max(0, min(corner_radius - 1, dx if dx < corner_radius else dx - corner_radius))
+                        src_y = max(0, min(corner_radius - 1, dy if dy < corner_radius else dy - corner_radius))
+
+                        try:
+                            pixel = corner_img.getpixel((src_x, src_y))
+                            base_x = bleed_start[0] + dx
+                            base_y = bleed_start[1] + dy
+                            base_image.putpixel((base_x, base_y), pixel)
+                        except (IndexError, ValueError):
+                            pass  # Outside bounds
+
+
 def draw_card_with_corner_bleed(card_image: Image.Image, base_image: Image.Image, x: int, y: int, bleed_width: int, bleed_height: int, corner_radius: int):
     """
     Draw a card with bleed that accounts for rounded corners.
@@ -701,37 +787,38 @@ def draw_card_layout(
             # No percentage crop and STRETCH mode: just scale to target size
             card_image = card_image.resize((scaled_width, scaled_height))
 
-        # Apply extend_edges and extend_corners: both crop the image uniformly
-        # The difference is in how the bleed is generated afterward
-        total_crop_thickness = extend_edges_thickness + extend_corners_thickness
-        if total_crop_thickness > 0:
+        # Apply extend_edges: simple crop that affects all edges uniformly
+        if extend_edges_thickness > 0:
             card_image = card_image.crop((
-                total_crop_thickness,
-                total_crop_thickness,
-                card_image.width - total_crop_thickness,
-                card_image.height - total_crop_thickness
+                extend_edges_thickness,
+                extend_edges_thickness,
+                card_image.width - extend_edges_thickness,
+                card_image.height - extend_edges_thickness
             ))
 
         if flip and orientation == Orientation.LANDSCAPE:
             card_image = card_image.rotate(180)
 
         # Calculate final position
-        x = base_x + bleed_offset_x + total_crop_thickness
-        y = base_y + bleed_offset_y + total_crop_thickness
+        x = base_x + bleed_offset_x + extend_edges_thickness
+        y = base_y + bleed_offset_y + extend_edges_thickness
 
-        # Calculate total bleed including both synthetic bleed and crop thickness
-        total_bleed_width = synthetic_bleed[0] + total_crop_thickness
-        total_bleed_height = synthetic_bleed[1] + total_crop_thickness
+        # Calculate total bleed including synthetic bleed and edge extension
+        edge_bleed_width = synthetic_bleed[0] + extend_edges_thickness
+        edge_bleed_height = synthetic_bleed[1] + extend_edges_thickness
 
-        # Use corner-aware bleed if extend_corners is specified, otherwise use regular bleed
+        # extend_corners: only affects corner regions, not straight edges
+        # We generate corner-specific bleed without cropping straight edges
         if extend_corners_thickness > 0:
-            draw_card_with_corner_bleed(card_image, base_image, x, y,
-                                       total_bleed_width,
-                                       total_bleed_height,
-                                       extend_corners_thickness)
+            # Use corner-only bleed generation
+            draw_card_with_corner_only_bleed(card_image, base_image, x, y,
+                                            edge_bleed_width,
+                                            edge_bleed_height,
+                                            extend_corners_thickness)
         else:
+            # Regular bleed on all sides
             draw_card_with_bleed(card_image, base_image, x, y,
-                               (total_bleed_width, total_bleed_height))
+                               (edge_bleed_width, edge_bleed_height))
 
 def draw_outline(
     page: Image.Image,
