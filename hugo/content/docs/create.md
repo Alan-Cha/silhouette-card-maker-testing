@@ -119,10 +119,30 @@ If your card images have rounded corners, they may be missing print bleed in the
 
 ![Extend corners](/images/extend_corners.jpg)
 
-The `--extend_corners` option can ameliorate this issue. You may need to experiment with the value but I recommend starting with `10`
+The `--extend_corners` option can ameliorate this issue by filling the corner regions beyond the corner radius arc with pixels sampled from the arc edge. This generates bleed that matches the rounded corners.
 
 ```sh
-python create_pdf.py --extend_corners 10
+python create_pdf.py --extend_corners 3mm
+```
+
+You may need to experiment with the corner radius value, but `3mm` is a good starting point for standard playing cards.
+
+## Edge Bleed with --extend_edges
+
+The `--extend_edges` option crops the card edges by a specified amount and then extends those cropped edges outward to generate uniform print bleed. This is useful when you want bleed generated from the interior of your card rather than the existing edges.
+
+```sh
+python create_pdf.py --extend_edges 3mm
+```
+
+**Comparison with --crop:**
+- `--crop`: Removes the outer portion of images (useful if images already have bleed)
+- `--extend_edges`: Crops edges AND generates new bleed from the cropped position
+
+Both `--extend_edges` and `--extend_corners` can be used together:
+
+```sh
+python create_pdf.py --extend_edges 3mm --extend_corners 3mm
 ```
 
 ## Skip Cards
@@ -187,11 +207,18 @@ Options:
                                   ratio by center-cropping.  [default:
                                   stretch]
   --crop TEXT                     Crop the outer portion of front and double-
-                                  sided images. Examples: 3mm, 0.125in, 6.5.
-  --crop_backs TEXT               Crop the outer portion of back images.
-                                  Examples: 3mm, 0.125in, 6.5.
-  --extend_corners INTEGER RANGE  Reduce artifacts produced by rounded corners
-                                  in card images.  [default: 0; x>=0]
+                                  sided images (removes edges). Examples: 3mm,
+                                  0.125in, 6.5.
+  --crop_backs TEXT               Crop the outer portion of back images
+                                  (removes edges). Examples: 3mm, 0.125in, 6.5.
+  --extend_edges TEXT             Crop card edges and extend them uniformly to
+                                  generate bleed. Like --crop but generates
+                                  bleed from cropped edges. Examples: 3mm,
+                                  0.125in. Default: 3mm.
+  --extend_corners TEXT           Fill rounded corner regions to reduce corner
+                                  artifacts. Fills cut zones beyond corner
+                                  radius arc. Examples: 3mm, 0.125in. Default:
+                                  3mm.
   --ppi INTEGER RANGE             Pixels per inch (PPI) when creating PDF.
                                   [default: 300; x>=0]
   --quality INTEGER RANGE         File compression. A higher value corresponds
@@ -224,10 +251,16 @@ Crop the borders of the front and double-sided images by 3 mm on all sides. This
 python create_pdf.py --crop 3mm
 ```
 
-Remove the [rounded corners](#corner-artifacts) from the PDF and load the saved offset from [`offset_pdf.py`]({{% ref "offset.md" %}}).
+Generate print bleed by cropping 3mm from all edges and extending those cropped edges outward. Also fill rounded corner regions with a 3mm corner radius.
 
 ```sh
-python create_pdf.py --extend_corners 10 --load_offset
+python create_pdf.py --extend_edges 3mm --extend_corners 3mm
+```
+
+Remove the [rounded corner artifacts](#corner-artifacts) and load the saved offset from [`offset_pdf.py`]({{% ref "offset.md" %}}).
+
+```sh
+python create_pdf.py --extend_corners 3mm --load_offset
 ```
 
 Produce a 600 pixels per inch (PPI) file with minimal compression.
