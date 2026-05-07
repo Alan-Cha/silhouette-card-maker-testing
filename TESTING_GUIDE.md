@@ -8,11 +8,18 @@ This guide explains how to systematically test the `--extend_corners` and `--ext
 
 The test image (`game/front/test_systematic.png`) is a 63mm x 88mm standard playing card with:
 
-### Concentric Rectangles
+### Concentric Rectangle Bands
 - **Purpose**: Test edge extension
-- **Pattern**: Alternating black and white rectangles
-- **Spacing**: 2mm difference between each rectangle
-- **Usage**: When `--extend_edges` crops N mm, the edge bleed should show the color at N mm inset
+- **Pattern**: Alternating white and black rectangular bands
+- **Band width**: 2mm per band
+- **Band sequence** (from outer to inner):
+  - Band 1 (0-2mm): White
+  - Band 2 (2-4mm): Black
+  - Band 3 (4-6mm): White
+  - Band 4 (6-8mm): Black
+  - Band 5 (8-10mm): White
+  - And so on...
+- **Usage**: When `--extend_edges` crops N mm, the edge should show the color from the band at that inset
 
 ### Corner Circles
 - **Purpose**: Test corner extension
@@ -60,11 +67,11 @@ This generates 19 test PDFs in the `test_results/` directory.
 
 | Test | Command | Expected Edge Color | Expected Corner Color |
 |------|---------|-------------------|---------------------|
-| 06 | `--extend_edges 2mm` | Black | White (original) |
-| 07 | `--extend_edges 4mm` | White | White (original) |
-| 08 | `--extend_edges 6mm` | Black | White (original) |
-| 09 | `--extend_edges 8mm` | White | White (original) |
-| 10 | `--extend_edges 10mm` | Black | White (original) |
+| 06 | `--extend_edges 2mm` | Black (band 2) | White (original) |
+| 07 | `--extend_edges 4mm` | White (band 3) | White (original) |
+| 08 | `--extend_edges 6mm` | Black (band 4) | White (original) |
+| 09 | `--extend_edges 8mm` | White (band 5) | White (original) |
+| 10 | `--extend_edges 10mm` | Black (band 6) | White (original) |
 
 **What to verify:**
 - Edge bleed should match the expected color from concentric rectangles
@@ -75,11 +82,11 @@ This generates 19 test PDFs in the `test_results/` directory.
 
 | Test | Command | Expected Edge Color | Expected Corner Color |
 |------|---------|-------------------|---------------------|
-| 11 | `--extend_edges 2mm --extend_corners 0.5mm` | Black | Red |
-| 12 | `--extend_edges 4mm --extend_corners 1.0mm` | White | Orange |
-| 13 | `--extend_edges 6mm --extend_corners 1.5mm` | Black | Yellow |
-| 14 | `--extend_edges 8mm --extend_corners 2.0mm` | White | Green |
-| 15 | `--extend_edges 10mm --extend_corners 2.5mm` | Black | Blue |
+| 11 | `--extend_edges 2mm --extend_corners 0.5mm` | Black (band 2) | Filled from 0.5mm arc |
+| 12 | `--extend_edges 4mm --extend_corners 1.0mm` | White (band 3) | Filled from 1.0mm arc |
+| 13 | `--extend_edges 6mm --extend_corners 1.5mm` | Black (band 4) | Filled from 1.5mm arc |
+| 14 | `--extend_edges 8mm --extend_corners 2.0mm` | White (band 5) | Filled from 2.0mm arc |
+| 15 | `--extend_edges 10mm --extend_corners 2.5mm` | Black (band 6) | Filled from 2.5mm arc |
 
 **What to verify:**
 - Both edge and corner effects should be visible
@@ -92,9 +99,9 @@ This generates 19 test PDFs in the `test_results/` directory.
 | Test | Command | Expected Result |
 |------|---------|----------------|
 | 16 | `--extend_edges 0 --extend_corners 0` | Original image, no modifications |
-| 17 | `--extend_corners 5mm` | Corners beyond blue circle (white background) |
-| 18 | `--extend_edges 20mm` | White edge (outermost rectangle) |
-| 19 | `--extend_edges 10mm --extend_corners 2.5mm` | Black edges, blue corners |
+| 17 | `--extend_corners 5mm` | Corners filled from 5mm arc |
+| 18 | `--extend_edges 20mm` | Edge from band 11 (white) |
+| 19 | `--extend_edges 10mm --extend_corners 2.5mm` | Black edges (band 6), corners filled from 2.5mm arc |
 
 **What to verify:**
 - Extreme values don't cause crashes
@@ -130,9 +137,9 @@ For each test PDF, verify:
 ### Example Analysis
 
 For test `13_edges_6mm_corners_1.5mm`:
-1. **Edge**: 6mm inset → 3rd rectangle from outside → BLACK ✓
-2. **Corner**: 1.5mm radius → 3rd circle → YELLOW ✓
-3. **Bleed**: Should extend black from edges and yellow from corners ✓
+1. **Edge**: 6mm inset → band 4 (6-8mm) → BLACK ✓
+2. **Corner**: 1.5mm radius → corners filled from pixels at 1.5mm arc → varies by position ✓
+3. **Bleed**: Should extend black from edges and filled colors from corners ✓
 
 ## Automated Verification (Future Enhancement)
 
