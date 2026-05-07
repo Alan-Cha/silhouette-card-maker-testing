@@ -787,18 +787,16 @@ def draw_card_layout(
         edge_bleed_width = synthetic_bleed[0] + extend_edges_thickness
         edge_bleed_height = synthetic_bleed[1] + extend_edges_thickness
 
-        # extend_corners: only affects corner regions, not straight edges
-        # We generate corner-specific bleed without cropping straight edges
+        # Always generate the normal edge bleed first
+        draw_card_with_bleed(card_image, base_image, x, y,
+                           (edge_bleed_width, edge_bleed_height))
+
+        # If extend_corners is specified, ALSO fill the corner regions with corner-specific bleed
         if extend_corners_thickness > 0:
-            # Use corner-only bleed generation
             draw_card_with_corner_only_bleed(card_image, base_image, x, y,
                                             edge_bleed_width,
                                             edge_bleed_height,
                                             extend_corners_thickness)
-        else:
-            # Regular bleed on all sides
-            draw_card_with_bleed(card_image, base_image, x, y,
-                               (edge_bleed_width, edge_bleed_height))
 
 def draw_outline(
     page: Image.Image,
