@@ -208,10 +208,10 @@ If your card images have rounded corners, they may be missing print bleed in the
 The `--extend_corners` option can ameliorate this issue by filling the corner regions beyond the corner radius arc with pixels sampled from the arc edge. This generates bleed that matches the rounded corners.
 
 ```sh
-python create_pdf.py --extend_corners 3mm
+python create_pdf.py --extend_corners 3.5mm
 ```
 
-You may need to experiment with the corner radius value, but `3mm` is a good starting point for standard playing cards.
+You may need to experiment with the corner radius value, but `3.5mm` is a good starting point for standard playing cards.
 
 ### Edge Bleed with --extend_edges
 
