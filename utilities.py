@@ -497,18 +497,77 @@ def crop_and_scale_image(
     return card_image, 0, 0, (scaled_bleed_width, scaled_bleed_height)
 
 
-def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: int, y: int, print_bleed: tuple[int, int], corner_radius: int = 0):
+def fill_rounded_corners(card_image: Image.Image, corner_radius: int) -> Image.Image:
     """
-    Draw a card with bleed on all edges, optionally filling rounded corners.
+    Fill the rounded corner regions of a card image with bleed.
+
+    Assumes the card has rounded corners with the specified radius.
+    Pixels in the "cut zone" (outside the corner radius arc) are filled
+    by extending from the nearest pixel on the arc.
+
+    Args:
+        card_image: The card image to modify
+        corner_radius: The radius of the rounded corners in pixels
+
+    Returns:
+        A new image with filled corners
+    """
+    import math
+
+    # Create a copy so we don't modify the original
+    result = card_image.copy()
+    width, height = result.size
+
+    # Define the four corners: (corner_point, center_of_arc)
+    corners = [
+        ((0, 0), (corner_radius, corner_radius)),  # top-left
+        ((width, 0), (width - corner_radius, corner_radius)),  # top-right
+        ((0, height), (corner_radius, height - corner_radius)),  # bottom-left
+        ((width, height), (width - corner_radius, height - corner_radius)),  # bottom-right
+    ]
+
+    for (corner_x, corner_y), (arc_cx, arc_cy) in corners:
+        # Determine the bounds of this corner's square
+        square_x_start = 0 if corner_x == 0 else width - corner_radius
+        square_y_start = 0 if corner_y == 0 else height - corner_radius
+        square_x_end = corner_radius if corner_x == 0 else width
+        square_y_end = corner_radius if corner_y == 0 else height
+
+        for local_x in range(square_x_start, square_x_end):
+            for local_y in range(square_y_start, square_y_end):
+                # Calculate distance from the arc center
+                dist = math.sqrt((local_x - arc_cx) ** 2 + (local_y - arc_cy) ** 2)
+
+                # If distance > corner_radius, this pixel is in the "cut zone"
+                if dist > corner_radius:
+                    # Extend from the nearest pixel on the arc
+                    angle = math.atan2(local_y - arc_cy, local_x - arc_cx)
+                    src_x = int(arc_cx + corner_radius * math.cos(angle))
+                    src_y = int(arc_cy + corner_radius * math.sin(angle))
+
+                    # Clamp to image bounds
+                    src_x = max(0, min(width - 1, src_x))
+                    src_y = max(0, min(height - 1, src_y))
+
+                    try:
+                        pixel = result.getpixel((src_x, src_y))
+                        result.putpixel((local_x, local_y), pixel)
+                    except (IndexError, ValueError):
+                        pass
+
+    return result
+
+
+def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: int, y: int, print_bleed: tuple[int, int]):
+    """
+    Draw a card with bleed on all edges.
 
     Args:
         card_image: The card image to draw
         base_image: The base image to draw on
         x, y: Position to place the card
         print_bleed: Tuple of (bleed_width, bleed_height) in pixels
-        corner_radius: If > 0, also fills the rounded corner regions with corner-specific bleed
     """
-    import math
     bleed_width, bleed_height = print_bleed
 
     width, height = card_image.size
@@ -541,45 +600,6 @@ def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: in
             for x_bleed_i in range(bleed_w):
                 for y_bleed_i in range(bleed_h):
                     base_image.paste(card_image.crop((crop_x, crop_y, crop_x + 1, crop_y + 1)), (pos_x + x_bleed_i, pos_y + y_bleed_i))
-
-    # If corner_radius is specified, also fill the rounded corner regions
-    if corner_radius > 0:
-        # Define the four corners: (corner_point, center_of_arc)
-        corners = [
-            ((0, 0), (corner_radius, corner_radius)),  # top-left
-            ((width, 0), (width - corner_radius, corner_radius)),  # top-right
-            ((0, height), (corner_radius, height - corner_radius)),  # bottom-left
-            ((width, height), (width - corner_radius, height - corner_radius)),  # bottom-right
-        ]
-
-        for (corner_x, corner_y), (arc_cx, arc_cy) in corners:
-            # Determine the bounds of this corner's square
-            square_x_start = 0 if corner_x == 0 else width - corner_radius
-            square_y_start = 0 if corner_y == 0 else height - corner_radius
-            square_x_end = corner_radius if corner_x == 0 else width
-            square_y_end = corner_radius if corner_y == 0 else height
-
-            for local_x in range(square_x_start, square_x_end):
-                for local_y in range(square_y_start, square_y_end):
-                    # Calculate distance from the arc center
-                    dist = math.sqrt((local_x - arc_cx) ** 2 + (local_y - arc_cy) ** 2)
-
-                    # If distance > corner_radius, this pixel is in the "cut zone"
-                    if dist > corner_radius:
-                        # Extend from the nearest pixel on the arc
-                        angle = math.atan2(local_y - arc_cy, local_x - arc_cx)
-                        src_x = int(arc_cx + corner_radius * math.cos(angle))
-                        src_y = int(arc_cy + corner_radius * math.sin(angle))
-
-                        # Clamp to image bounds
-                        src_x = max(0, min(width - 1, src_x))
-                        src_y = max(0, min(height - 1, src_y))
-
-                        try:
-                            pixel = card_image.getpixel((src_x, src_y))
-                            base_image.putpixel((x + local_x, y + local_y), pixel)
-                        except (IndexError, ValueError):
-                            pass
 
     return base_image
 
@@ -671,6 +691,11 @@ def draw_card_layout(
                 card_image.height - extend_edges_thickness
             ))
 
+        # If extend_corners is specified, fill the corner regions FIRST
+        # This modifies the card image so the bleed will be generated from the filled corners
+        if extend_corners_thickness > 0:
+            card_image = fill_rounded_corners(card_image, extend_corners_thickness)
+
         if flip and orientation == Orientation.LANDSCAPE:
             card_image = card_image.rotate(180)
 
@@ -682,10 +707,9 @@ def draw_card_layout(
         edge_bleed_width = synthetic_bleed[0] + extend_edges_thickness
         edge_bleed_height = synthetic_bleed[1] + extend_edges_thickness
 
-        # Generate edge bleed and optionally corner-specific bleed
+        # Generate edge bleed (from the modified card if corners were filled)
         draw_card_with_bleed(card_image, base_image, x, y,
-                           (edge_bleed_width, edge_bleed_height),
-                           corner_radius=extend_corners_thickness)
+                           (edge_bleed_width, edge_bleed_height))
 
 def draw_outline(
     page: Image.Image,
