@@ -28,34 +28,24 @@ print(f"Creating test image: {width_px}x{height_px} pixels ({CARD_WIDTH_MM}x{CAR
 img = Image.new('RGB', (width_px, height_px), 'white')
 draw = ImageDraw.Draw(img)
 
-# Draw concentric rectangles as BANDS (not filled), alternating black/white
-# Each band is 2mm wide
-colors = ['black', 'white']
+# Draw concentric rectangles (2mm steps, alternating white/black)
+# Draw from smallest to largest so each covers the previous, leaving bands
+colors = ['white', 'black']  # i=1 -> black, i=2 -> white, i=3 -> black, ...
+max_rectangles = min(width_px, height_px) // mm_to_px(4)
 
-print(f"\nDrawing concentric rectangle bands (2mm width):")
-# Start from outermost and work inward, drawing bands
-i = 1
-while True:
-    outer_inset = mm_to_px(2 * (i - 1))  # Outer edge of this band
-    inner_inset = mm_to_px(2 * i)        # Inner edge of this band
-    color = colors[i % 2]  # i=1 -> black, i=2 -> white, i=3 -> black, ...
+print(f"\nDrawing concentric rectangles (2mm steps):")
+for i in range(1, max_rectangles + 1):
+    inset = mm_to_px(2 * i)
+    color = colors[i % 2]
 
-    # Check if band fits
-    if inner_inset >= width_px // 2 or inner_inset >= height_px // 2:
-        break
+    x1 = inset
+    y1 = inset
+    x2 = width_px - inset
+    y2 = height_px - inset
 
-    # Draw the band as 4 rectangles (top, bottom, left, right)
-    # Top band
-    draw.rectangle([outer_inset, outer_inset, width_px - outer_inset, inner_inset], fill=color)
-    # Bottom band
-    draw.rectangle([outer_inset, height_px - inner_inset, width_px - outer_inset, height_px - outer_inset], fill=color)
-    # Left band (between top and bottom)
-    draw.rectangle([outer_inset, inner_inset, inner_inset, height_px - inner_inset], fill=color)
-    # Right band (between top and bottom)
-    draw.rectangle([width_px - inner_inset, inner_inset, width_px - outer_inset, height_px - inner_inset], fill=color)
-
-    print(f"  Band {i}: {color} from {outer_inset}px to {inner_inset}px ({2*(i-1)}mm to {2*i}mm)")
-    i += 1
+    if x2 > x1 and y2 > y1:
+        draw.rectangle([x1, y1, x2, y2], fill=color)
+        print(f"  Rectangle {i}: {color} at inset {inset}px ({2*i}mm)")
 
 # Draw circles in corners (1mm diameter difference)
 # Colors: red, orange, yellow, green, blue
