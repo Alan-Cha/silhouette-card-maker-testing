@@ -33,8 +33,8 @@ specialty_choices = get_all_specialty_layout_names(layout_config)
 
 @click.option("--crop", help="Crop the outer portion of front and double-sided images. Examples: 3mm, 0.125in, 6.5.")
 @click.option("--crop_backs", help="Crop the outer portion of back images. Examples: 3mm, 0.125in, 6.5.")
-@click.option("--extend_edges", default=0, type=click.IntRange(min=0), show_default=True, help="Shrink card and extend edges to generate bleed while preserving card content.")
-@click.option("--extend_corners", default="3mm", help="Extend corners based on corner radius to reduce rounded corner artifacts. Examples: 3mm, 0.125in. Set to 0 to disable.")
+@click.option("--extend_edges", help="Shrink card and extend edges uniformly to generate bleed. Examples: 3mm, 0.125in, 6.5. Set to 0 to disable.")
+@click.option("--extend_corners", help="Extend corners based on corner radius to reduce rounded corner artifacts. Examples: 3mm, 0.125in. Set to 0 to disable.")
 
 @click.option("--ppi", default=300, type=click.IntRange(min=0), show_default=True, help="Pixels per inch (PPI) when creating PDF.")
 @click.option("--quality", default=100, type=click.IntRange(min=0, max=100), show_default=True, help="File compression. A higher value corresponds to better quality and larger file size.")
