@@ -352,7 +352,7 @@ It's pivotal to ensure that your card fronts and backs are aligned. The front an
 
 First, you must determine the offset by using the [calibration sheets](calibration/).
 
-`<paper size>_calibration.pdf` has a front page and a back page.
+`<paper size>-calibration.pdf` has a front page and a back page.
 
 ![Calibration](hugo/static/images/calibration.png)
 
@@ -372,7 +372,7 @@ The back page is the same grid of squares, except each square has a slight offse
 | (-2, -2) | (-1, -2) | ( 0, -2) | ( 1, -2) | ( 2, -2) |
 ```
 
-To determine the required offset, print out `<paper size>_calibration.pdf` with the card stock you plan to use.
+To determine the required offset, print out `<paper size>-calibration.pdf` with the card stock you plan to use.
 
 Shine a strong light on the front so you can see the shadows on the back. Determine which set of front and back squares are aligned. This set will provide your offset.
 
@@ -397,10 +397,10 @@ If no square on your calibration sheet matches, then you'll need to create a new
 To create an offset calibration sheet, use the `--pdf_path` option, targeting the calibration sheet of your paper size. For example:
 
 ```sh
-python offset_pdf.py --pdf_path calibration/letter_calibration.pdf --x_offset 30 --y_offset -10
+python offset_pdf.py --pdf_path calibration/letter-calibration.pdf --x_offset 30 --y_offset -10
 ```
 
-This will produce `calibration/letter_calibration_offset.pdf`, which is the same as calibration sheet but with an offset of (30, -10).
+This will produce `calibration/letter-calibration_offset.pdf`, which is the same as calibration sheet but with an offset of (30, -10).
 
 Print this out and determine which set of front and back squares are aligned. If none are aligned, try generating another offset calibration sheet with a different arbitrary offset.
 
@@ -412,10 +412,10 @@ Let's say there is a set of a front and back squares and the offset is (5, 5). Y
 
 The true offset if (35, -5).
 
-You can verify this is true by generating a offset calibration sheet using this offset.
+You can verify this is true by generating an offset calibration sheet using this offset.
 
 ```sh
-python offset_pdf.py --pdf_path calibration/letter_calibration.pdf --x_offset 35 --y_offset -5
+python offset_pdf.py --pdf_path calibration/letter-calibration.pdf --x_offset 35 --y_offset -5
 ```
 
 Print this out and the center set of front and back squares, (0, 0), should be aligned.
