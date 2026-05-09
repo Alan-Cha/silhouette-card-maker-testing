@@ -223,6 +223,9 @@ You can find the PDF in `game/output/game.pdf` and it should look similar to the
 
 Print the PDF with `actual size` scale. Ensure the print **exactly matches** the PDF and pay close attention to the white margins. If the print does not match, your cards will be the wrong size or registration will fail entirely.
 
+> [!IMPORTANT]
+> If you're using duplex printing (double-sided printing), make sure to use **long side flip** (also called "flip on long edge"). This ensures the backs align correctly with the fronts.
+
 ![Print](/images/lamination.jpg)
 
 Laminate the sheets. Because cardstock is thicker than printer paper, you may need to use a **higher setting** on your laminator. If not, you could have cloudy lamination or delamination issues.

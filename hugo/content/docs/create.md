@@ -67,6 +67,9 @@ python create_pdf.py --paper_size a4
 
 Get your PDF at `game/output/game.pdf`.
 
+> [!IMPORTANT]
+> When printing the PDF with duplex printing (double-sided), use **long side flip** (flip on long edge) to ensure proper front and back alignment.
+
 ## Plugins
 
 Plugins streamline the process for acquiring card images for various games.

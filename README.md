@@ -195,6 +195,8 @@ python create_pdf.py --paper_size a4
 
 Get your PDF at `game/output/game.pdf`.
 
+**Note:** When printing the PDF with duplex printing (double-sided), use **long side flip** (flip on long edge) to ensure proper front and back alignment.
+
 ### Double-Sided Cards
 
 To create double-sided cards, put front images in the `game/front/` folder and back images in the `game/double_sided/` folder. The filenames (and file extensions) must match for each pair.
