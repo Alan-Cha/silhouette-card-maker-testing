@@ -67,18 +67,17 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('createPdfBtn').onclick = async function() {
         const args = document.getElementById('pdfArgs').value;
-        const spinner = document.getElementById('spinner');
-        spinner.classList.remove('hidden');
-        spinner.classList.add('flex');
+        window.showLoadingOverlay({
+            title: 'Creating PDF',
+            message: 'Processing card images...'
+        });
         
         try {
             const result = await ipcRenderer.invoke('run-create-pdf', args);
-            spinner.classList.remove('flex');
-            spinner.classList.add('hidden');
+            window.hideLoadingOverlay();
             location.href = '../Utilities/pdf_viewer.html';
         } catch (err) {
-            spinner.classList.remove('flex');
-            spinner.classList.add('hidden');
+            window.hideLoadingOverlay();
             alert('Error creating PDF:\n' + err);
         }
     }

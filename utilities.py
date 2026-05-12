@@ -27,6 +27,7 @@ asset_directory = os.path.join(base_path, 'assets')
 
 layouts_filename = 'layouts.json'
 layouts_path = os.path.join(asset_directory, layouts_filename)
+mana_symbols_manifest_path = os.path.join(asset_directory, 'mana_symbols_manifest.json')
 
 class CardSize(str, Enum):
     STANDARD = "standard"
@@ -67,6 +68,13 @@ class Layouts(BaseModel):
     paper_layouts: Dict[PaperSize, PaperLayout]
 
 MD_INLINE_STYLE_PATTERN = re.compile(r"(\*\*[^*]+\*\*|\*[^*]+\*)")
+MANA_SYMBOL_TOKEN_PATTERN = re.compile(r"(\{[^{}\s]+\})")
+
+Run = Tuple[str, str, str]  # (value, style, kind) where kind is "text" or "symbol"
+
+_mana_symbol_manifest: Dict[str, str] | None = None
+_mana_symbol_base_cache: Dict[str, Image.Image | None] = {}
+_mana_symbol_sized_cache: Dict[Tuple[str, int], Image.Image | None] = {}
 
 # Known junk files across OSes
 EXTRANEOUS_FILES = {
@@ -308,18 +316,48 @@ def parse_markdown_entries(input_path: str) -> List[str]:
     entries = re.split(r"^\s*---\s*$", content, flags=re.MULTILINE)
     return [entry.strip() for entry in entries if entry.strip()]
 
-def _get_text_box_font_path(font_filename: str) -> str:
-    font_path = os.path.join(asset_directory, font_filename)
-    if os.path.exists(font_path):
-        return font_path
+def _load_first_available_font(font_candidates: List[str], font_size: int) -> ImageFont.FreeTypeFont:
+    for candidate in font_candidates:
+        try:
+            return ImageFont.truetype(candidate, font_size)
+        except OSError:
+            continue
 
-    return os.path.join(asset_directory, 'arial.ttf')
+    # Last-resort fallback keeps rendering functional even on minimal systems.
+    return ImageFont.load_default()
 
 def _load_text_box_fonts(font_size: int) -> Dict[str, ImageFont.FreeTypeFont]:
-    regular_font = ImageFont.truetype(_get_text_box_font_path('arial.ttf'), font_size)
-    bold_font = ImageFont.truetype(_get_text_box_font_path('arialbd.ttf'), font_size)
-    italic_font = ImageFont.truetype(_get_text_box_font_path('ariali.ttf'), font_size)
-    header_font = ImageFont.truetype(_get_text_box_font_path('arialbd.ttf'), font_size + 2)
+    regular_font = _load_first_available_font([
+        os.path.join(asset_directory, 'arial.ttf'),
+        os.path.join(asset_directory, 'Arial.ttf'),
+        'arial.ttf',
+        'Arial.ttf',
+        'DejaVuSans.ttf',
+    ], font_size)
+
+    bold_font = _load_first_available_font([
+        os.path.join(asset_directory, 'arialbd.ttf'),
+        os.path.join(asset_directory, 'Arial Bold.ttf'),
+        'arialbd.ttf',
+        'Arial Bold.ttf',
+        'DejaVuSans-Bold.ttf',
+    ], font_size)
+
+    italic_font = _load_first_available_font([
+        os.path.join(asset_directory, 'ariali.ttf'),
+        os.path.join(asset_directory, 'Arial Italic.ttf'),
+        'ariali.ttf',
+        'Arial Italic.ttf',
+        'DejaVuSans-Oblique.ttf',
+    ], font_size)
+
+    header_font = _load_first_available_font([
+        os.path.join(asset_directory, 'arialbd.ttf'),
+        os.path.join(asset_directory, 'Arial Bold.ttf'),
+        'arialbd.ttf',
+        'Arial Bold.ttf',
+        'DejaVuSans-Bold.ttf',
+    ], font_size + 2)
 
     return {
         'regular': regular_font,
@@ -332,24 +370,136 @@ def _measure_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeType
     left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
     return right - left, bottom - top
 
-def _measure_runs(draw: ImageDraw.ImageDraw, runs: List[Tuple[str, str]], fonts: Dict[str, ImageFont.FreeTypeFont]) -> Tuple[int, int]:
+def _extract_mana_symbol_name(token: str) -> str | None:
+    if len(token) >= 3 and token.startswith('{') and token.endswith('}'):
+        return token[1:-1].strip().upper()
+    return None
+
+def _load_mana_symbol_manifest() -> Dict[str, str]:
+    global _mana_symbol_manifest
+    if _mana_symbol_manifest is not None:
+        return _mana_symbol_manifest
+
+    if not os.path.exists(mana_symbols_manifest_path):
+        _mana_symbol_manifest = {}
+        return _mana_symbol_manifest
+
+    try:
+        with open(mana_symbols_manifest_path, 'r', encoding='utf-8') as manifest_file:
+            data = json.load(manifest_file)
+            if isinstance(data, dict):
+                _mana_symbol_manifest = {
+                    str(symbol_name).upper(): str(relative_path)
+                    for symbol_name, relative_path in data.items()
+                    if isinstance(relative_path, str)
+                }
+            else:
+                _mana_symbol_manifest = {}
+    except Exception:
+        _mana_symbol_manifest = {}
+
+    return _mana_symbol_manifest
+
+def _fetch_mana_symbol_base(symbol_name: str) -> Image.Image | None:
+    if symbol_name in _mana_symbol_base_cache:
+        return _mana_symbol_base_cache[symbol_name]
+
+    try:
+        symbol_manifest = _load_mana_symbol_manifest()
+        relative_path = symbol_manifest.get(symbol_name.upper())
+        if relative_path is None:
+            _mana_symbol_base_cache[symbol_name] = None
+            return None
+
+        symbol_path = os.path.join(asset_directory, relative_path)
+        if not os.path.exists(symbol_path):
+            _mana_symbol_base_cache[symbol_name] = None
+            return None
+
+        with Image.open(symbol_path) as symbol_image:
+            image = symbol_image.convert('RGBA')
+
+        _mana_symbol_base_cache[symbol_name] = image
+        return image
+    except Exception:
+        _mana_symbol_base_cache[symbol_name] = None
+        return None
+
+def _get_mana_symbol_image(token: str, pixel_size: int) -> Image.Image | None:
+    symbol_name = _extract_mana_symbol_name(token)
+    if symbol_name is None:
+        return None
+
+    safe_size = max(1, pixel_size)
+    cache_key = (symbol_name, safe_size)
+    if cache_key in _mana_symbol_sized_cache:
+        return _mana_symbol_sized_cache[cache_key]
+
+    base = _fetch_mana_symbol_base(symbol_name)
+    if base is None:
+        _mana_symbol_sized_cache[cache_key] = None
+        return None
+
+    resized = base.resize((safe_size, safe_size), Image.Resampling.LANCZOS)
+    _mana_symbol_sized_cache[cache_key] = resized
+    return resized
+
+def _measure_run(
+    draw: ImageDraw.ImageDraw,
+    run: Run,
+    fonts: Dict[str, ImageFont.FreeTypeFont],
+) -> Tuple[int, int]:
+    value, style, kind = run
+    if kind == 'text':
+        return _measure_text(draw, value, fonts[style])
+
+    _, style_height = _measure_text(draw, 'Ag', fonts[style])
+    symbol_size = max(1, int(style_height * 1.05))
+    symbol_image = _get_mana_symbol_image(value, symbol_size)
+    if symbol_image is None:
+        return _measure_text(draw, value, fonts[style])
+
+    return symbol_image.width, symbol_image.height
+
+def _measure_runs(draw: ImageDraw.ImageDraw, runs: List[Run], fonts: Dict[str, ImageFont.FreeTypeFont]) -> Tuple[int, int]:
     line_width = 0
     line_height = 0
 
-    for text, style in runs:
-        if len(text) == 0:
+    for run in runs:
+        value, _, _ = run
+        if len(value) == 0:
             continue
 
-        text_width, text_height = _measure_text(draw, text, fonts[style])
-        line_width += text_width
-        line_height = max(line_height, text_height)
+        run_width, run_height = _measure_run(draw, run, fonts)
+        line_width += run_width
+        line_height = max(line_height, run_height)
 
     if line_height == 0:
         _, line_height = _measure_text(draw, 'Ag', fonts['regular'])
 
     return line_width, line_height
 
-def _split_markdown_line_runs(line: str) -> List[Tuple[str, str]]:
+def _split_mana_runs(text: str, style: str) -> List[Run]:
+    if len(text) == 0:
+        return []
+
+    runs: List[Run] = []
+    cursor = 0
+    for match in MANA_SYMBOL_TOKEN_PATTERN.finditer(text):
+        start, end = match.span()
+        if start > cursor:
+            runs.append((text[cursor:start], style, 'text'))
+
+        token = match.group(0)
+        runs.append((token, style, 'symbol'))
+        cursor = end
+
+    if cursor < len(text):
+        runs.append((text[cursor:], style, 'text'))
+
+    return [(value, run_style, kind) for value, run_style, kind in runs if len(value) > 0]
+
+def _split_markdown_line_runs(line: str) -> List[Run]:
     if len(line) == 0:
         return []
 
@@ -357,29 +507,29 @@ def _split_markdown_line_runs(line: str) -> List[Tuple[str, str]]:
     if is_header:
         line = line[4:].strip()
 
-    runs: List[Tuple[str, str]] = []
+    runs: List[Run] = []
     cursor = 0
     for match in MD_INLINE_STYLE_PATTERN.finditer(line):
         start, end = match.span()
         if start > cursor:
             style = 'header' if is_header else 'regular'
-            runs.append((line[cursor:start], style))
+            runs.extend(_split_mana_runs(line[cursor:start], style))
 
         token = match.group(0)
         if token.startswith('**') and token.endswith('**'):
             style = 'header' if is_header else 'bold'
-            runs.append((token[2:-2], style))
+            runs.extend(_split_mana_runs(token[2:-2], style))
         elif token.startswith('*') and token.endswith('*'):
             style = 'header' if is_header else 'italic'
-            runs.append((token[1:-1], style))
+            runs.extend(_split_mana_runs(token[1:-1], style))
 
         cursor = end
 
     if cursor < len(line):
         style = 'header' if is_header else 'regular'
-        runs.append((line[cursor:], style))
+        runs.extend(_split_mana_runs(line[cursor:], style))
 
-    return [(text, style) for text, style in runs if len(text) > 0]
+    return [(value, style, kind) for value, style, kind in runs if len(value) > 0]
 
 def _split_long_run(
     draw: ImageDraw.ImageDraw,
@@ -410,17 +560,31 @@ def _split_long_run(
 
 def _wrap_runs(
     draw: ImageDraw.ImageDraw,
-    runs: List[Tuple[str, str]],
+    runs: List[Run],
     fonts: Dict[str, ImageFont.FreeTypeFont],
     max_width: int,
-) -> List[List[Tuple[str, str]]]:
+) -> List[List[Run]]:
     if len(runs) == 0:
         return [[]]
 
-    wrapped_lines: List[List[Tuple[str, str]]] = []
-    current_line: List[Tuple[str, str]] = []
+    wrapped_lines: List[List[Run]] = []
+    current_line: List[Run] = []
 
-    for run_text, style in runs:
+    for run_text, style, kind in runs:
+        if kind == 'symbol':
+            probe_line = current_line + [(run_text, style, kind)]
+            probe_width, _ = _measure_runs(draw, probe_line, fonts)
+            if probe_width <= max_width:
+                current_line = probe_line
+                continue
+
+            if len(current_line) > 0:
+                wrapped_lines.append(current_line)
+                current_line = []
+
+            current_line = [(run_text, style, kind)]
+            continue
+
         parts = re.split(r'(\s+)', run_text)
         for part in parts:
             if len(part) == 0:
@@ -433,7 +597,7 @@ def _wrap_runs(
             if part == ' ' and len(current_line) == 0:
                 continue
 
-            probe_line = current_line + [(part, style)]
+            probe_line = current_line + [(part, style, 'text')]
             probe_width, _ = _measure_runs(draw, probe_line, fonts)
             if probe_width <= max_width:
                 current_line = probe_line
@@ -448,17 +612,17 @@ def _wrap_runs(
 
             part_width, _ = _measure_text(draw, part, fonts[style])
             if part_width <= max_width:
-                current_line = [(part, style)]
+                current_line = [(part, style, 'text')]
                 continue
 
             long_chunks = _split_long_run(draw, part, style, fonts, max_width)
             if len(long_chunks) == 0:
                 continue
 
-            current_line = [(long_chunks[0], style)]
+            current_line = [(long_chunks[0], style, 'text')]
             for chunk in long_chunks[1:]:
                 wrapped_lines.append(current_line)
-                current_line = [(chunk, style)]
+                current_line = [(chunk, style, 'text')]
 
     wrapped_lines.append(current_line)
     return wrapped_lines
@@ -468,47 +632,50 @@ def _build_wrapped_lines(
     entry: str,
     fonts: Dict[str, ImageFont.FreeTypeFont],
     max_width: int,
-) -> List[List[Tuple[str, str]]]:
+) -> List[List[Run]]:
     lines = entry.splitlines()
     if len(lines) == 0:
         return [[]]
 
     wrapped_lines: List[List[Tuple[str, str]]] = []
     for line in lines:
-        runs = _split_markdown_line_runs(line.strip())
+        runs = _split_markdown_line_runs(line.rstrip('\r'))
         wrapped_lines.extend(_wrap_runs(draw, runs, fonts, max_width))
 
     return wrapped_lines
 
 def _append_ellipsis_to_last_line(
     draw: ImageDraw.ImageDraw,
-    line: List[Tuple[str, str]],
+    line: List[Run],
     fonts: Dict[str, ImageFont.FreeTypeFont],
     max_width: int,
-) -> List[Tuple[str, str]]:
+) -> List[Run]:
     ellipsis = '...'
     if len(line) == 0:
-        return [(ellipsis, 'regular')]
+        return [(ellipsis, 'regular', 'text')]
 
     result = list(line)
-    text, style = result[-1]
+    text, style, kind = result[-1]
+    if kind != 'text':
+        return result + [(ellipsis, style, 'text')]
+
     for i in range(len(text), -1, -1):
-        result[-1] = (text[:i].rstrip() + ellipsis, style)
+        result[-1] = (text[:i].rstrip() + ellipsis, style, 'text')
         width, _ = _measure_runs(draw, result, fonts)
         if width <= max_width:
             return result
 
-    return [(ellipsis, 'regular')]
+    return [(ellipsis, 'regular', 'text')]
 
 def _truncate_wrapped_lines(
     draw: ImageDraw.ImageDraw,
-    lines: List[List[Tuple[str, str]]],
+    lines: List[List[Run]],
     fonts: Dict[str, ImageFont.FreeTypeFont],
     max_width: int,
     max_height: int,
     line_gap: int,
-) -> List[List[Tuple[str, str]]]:
-    kept_lines: List[List[Tuple[str, str]]] = []
+) -> List[List[Run]]:
+    kept_lines: List[List[Run]] = []
     used_height = 0
 
     for line in lines:
@@ -540,7 +707,7 @@ def fit_text_to_box(
     box_height: int,
     min_font_size: int = 6,
     max_font_size: int = 24,
-) -> Tuple[int, List[List[Tuple[str, str]]], Dict[str, ImageFont.FreeTypeFont], int, bool]:
+) -> Tuple[int, List[List[Run]], Dict[str, ImageFont.FreeTypeFont], int, bool]:
     def try_size(font_size: int):
         fonts = _load_text_box_fonts(font_size)
         lines = _build_wrapped_lines(draw, entry, fonts, box_width)
@@ -575,6 +742,7 @@ def fit_text_to_box(
     return min_font_size, truncated_lines, fonts, line_gap, True
 
 def draw_text_box(
+    page: Image.Image,
     draw: ImageDraw.ImageDraw,
     entry: str,
     x: int,
@@ -601,13 +769,23 @@ def draw_text_box(
         if i > 0:
             y_cursor += line_gap
 
-        for text, style in line:
-            if len(text) == 0:
+        for value, style, kind in line:
+            if len(value) == 0:
                 continue
 
+            if kind == 'symbol':
+                _, style_height = _measure_text(draw, 'Ag', fonts[style])
+                symbol_size = max(1, int(style_height * 1.05))
+                symbol_image = _get_mana_symbol_image(value, symbol_size)
+                if symbol_image is not None:
+                    symbol_y = y_cursor + max(0, (line_height - symbol_image.height) // 2)
+                    page.paste(symbol_image, (x_cursor, symbol_y), symbol_image)
+                    x_cursor += symbol_image.width
+                    continue
+
             font = fonts[style]
-            draw.text((x_cursor, y_cursor), text, fill=(0, 0, 0), font=font)
-            text_width_px, _ = _measure_text(draw, text, font)
+            draw.text((x_cursor, y_cursor), value, fill=(0, 0, 0), font=font)
+            text_width_px, _ = _measure_text(draw, value, font)
             x_cursor += text_width_px
 
         y_cursor += line_height
@@ -658,13 +836,29 @@ def generate_md_pdf(
     num_cards_per_page = num_rows * num_cols
 
     ppi_ratio = ppi / 300
-    blank_filename = f'{paper_size}_blank.jpg'
-    blank_path = os.path.join(asset_directory, blank_filename)
+    # Match card-generator style visual separation: approximately 16px horizontal
+    # and 12px vertical total gap at 300 PPI (8px/6px inset per side).
+    text_box_spacing_x = max(1, math.floor(8 * ppi_ratio))
+    text_box_spacing_y = max(1, math.floor(6 * ppi_ratio))
+    registration_filename = f'{paper_size}_registration.jpg'
+    registration_path = os.path.join(asset_directory, registration_filename)
 
-    with Image.open(blank_path) as blank_image:
-        base_page = blank_image.resize([
-            math.floor(blank_image.width * ppi_ratio),
-            math.floor(blank_image.height * ppi_ratio),
+    # Pre-compute cut guide line positions at cell boundaries.
+    # These fall in the ~16px/12px gap between adjacent text boxes, not through content.
+    grid_x_cuts = [math.floor(card_layout.x_pos[c] * ppi_ratio) for c in range(num_cols)]
+    grid_x_cuts.append(math.floor((card_layout.x_pos[-1] + card_layout_size.width) * ppi_ratio))
+    grid_y_cuts = [math.floor(card_layout.y_pos[r] * ppi_ratio) for r in range(num_rows)]
+    grid_y_cuts.append(math.floor((card_layout.y_pos[-1] + card_layout_size.height) * ppi_ratio))
+    grid_x_start = grid_x_cuts[0]
+    grid_x_end = grid_x_cuts[-1]
+    grid_y_start = grid_y_cuts[0]
+    grid_y_end = grid_y_cuts[-1]
+    cut_line_width = max(2, math.floor(2 * ppi_ratio))
+
+    with Image.open(registration_path) as registration_image:
+        base_page = registration_image.resize([
+            math.floor(registration_image.width * ppi_ratio),
+            math.floor(registration_image.height * ppi_ratio),
         ])
 
         pages: List[Image.Image] = []
@@ -685,11 +879,23 @@ def generate_md_pdf(
                 width = math.floor(card_layout_size.width * ppi_ratio)
                 height = math.floor(card_layout_size.height * ppi_ratio)
 
-                draw_text_box(draw, entry, x, y, width, height, ppi_ratio)
+                x += text_box_spacing_x
+                y += text_box_spacing_y
+                width = max(1, width - (2 * text_box_spacing_x))
+                height = max(1, height - (2 * text_box_spacing_y))
+
+                draw_text_box(page, draw, entry, x, y, width, height, ppi_ratio)
                 placed_count += 1
 
             if placed_count == 0:
                 break
+
+            # Draw cut guide lines at cell boundaries (in the gap between text boxes).
+            # 2px lines survive JPEG compression at quality=75 on a white background.
+            for x_cut in grid_x_cuts:
+                draw.line([(x_cut, grid_y_start), (x_cut, grid_y_end)], fill=(0, 0, 0), width=cut_line_width)
+            for y_cut in grid_y_cuts:
+                draw.line([(grid_x_start, y_cut), (grid_x_end, y_cut)], fill=(0, 0, 0), width=cut_line_width)
 
             pages.append(page)
 

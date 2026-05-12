@@ -7,7 +7,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const ppiInput = document.getElementById('ppi');
     const qualityInput = document.getElementById('quality');
     const generatePdfBtn = document.getElementById('generatePdfBtn');
-    const spinner = document.getElementById('spinner');
 
     const savedText = sessionStorage.getItem('mtg-md-text');
     if (savedText) {
@@ -39,8 +38,10 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         generatePdfBtn.disabled = true;
-        spinner.classList.remove('hidden');
-        spinner.classList.add('flex');
+        window.showLoadingOverlay({
+            title: 'Generating PDF',
+            message: 'Translating markdown text to printable cards...'
+        });
 
         try {
             await ipcRenderer.invoke('run-md-to-pdf', {
@@ -55,8 +56,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             alert('Error creating PDF:\n' + error);
         } finally {
-            spinner.classList.remove('flex');
-            spinner.classList.add('hidden');
+            window.hideLoadingOverlay();
             generatePdfBtn.disabled = false;
         }
     });

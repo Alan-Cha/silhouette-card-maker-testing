@@ -2,6 +2,7 @@
 <html>
   <head>
     <script src="../shared/navbar.js"></script>
+    <script src="../shared/loadingOverlay.js"></script>
     <script type="module" src="text_translation.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,11 +64,5 @@
       </section>
     </main>
 
-    <div id="spinner" class="fixed inset-0 bg-surface-dark/95 flex-col items-center justify-center z-50 hidden">
-      <div class="paper-element p-8 flex flex-col items-center gap-4">
-        <h3 class="text-lg font-medium">Generating PDF</h3>
-        <p class="text-content-light">Translating markdown text to printable cards...</p>
-      </div>
-    </div>
   </body>
 </html>

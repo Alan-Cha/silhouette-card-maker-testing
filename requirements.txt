@@ -1,4 +1,5 @@
 click==8.1.8
+cairosvg==2.9.0
 natsort==8.4.0
 numpy==2.1.1
 Pillow==11.3.0
