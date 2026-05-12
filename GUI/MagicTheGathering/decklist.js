@@ -1,6 +1,6 @@
 const { getFrontDir } = require('../shared/constants');
-let cardData = [];
-let parsedCards = []; // Array of { name, setCode, setNumber, qty }
+// Unified card structure: each card contains user input + fetched data + selected set
+let cards = []; // Array of { name, qty, requestedSetCode, requestedSetNumber, cardData, selectedSetCode, selectedSetNumber }
 
 async function fetchCardData(name, setCode = null, setNumber = null) {
     let url;
@@ -34,17 +34,15 @@ window.onload = function () {
         document.getElementById('longText').value = savedDecklist;
     }
     
-    // Restore cached card data from sessionStorage
-    const savedCardData = sessionStorage.getItem('mtg-cardData');
-    const savedParsedCards = sessionStorage.getItem('mtg-parsedCards');
-    if (savedCardData && savedParsedCards) {
+    // Restore cached cards from sessionStorage
+    const savedCards = sessionStorage.getItem('mtg-cards');
+    if (savedCards) {
         try {
-            cardData = JSON.parse(savedCardData);
-            parsedCards = JSON.parse(savedParsedCards);
+            cards = JSON.parse(savedCards);
             // Render the cached card results
             renderCardResults();
         } catch (e) {
-            console.error('Error restoring cached card data:', e);
+            console.error('Error restoring cached cards:', e);
         }
     }
     
@@ -72,8 +70,8 @@ window.onload = function () {
     });
     // Next: Create PDF button - export images to folder then navigate
     document.getElementById('nextCreatePdfBtn').addEventListener('click', async function () {
-        // Only export if we have card data
-        if (cardData.length > 0) {
+        // Only export if we have cards
+        if (cards.length > 0) {
             const fs = window.require ? window.require('fs') : require('fs');
             const path = window.require ? window.require('path') : require('path');
             const frontDir = getFrontDir();
@@ -94,8 +92,8 @@ window.onload = function () {
             }
             
             let imgCount = 1;
-            for (let i = 0; i < cardData.length; i++) {
-                const data = cardData[i];
+            for (let i = 0; i < cards.length; i++) {
+                const data = cards[i].cardData;
                 if (data.error) continue;
                 // Handle double-faced cards
                 if (data.card_faces && Array.isArray(data.card_faces) && data.card_faces.length > 1) {
@@ -135,19 +133,19 @@ window.onload = function () {
     });
     // Export decklist button logic
     document.getElementById('exportBtn').addEventListener('click', function () {
-        // Export parsedCards as text
-        let exportLines = parsedCards.map(card => {
+        // Export cards as text
+        let exportLines = cards.map(card => {
             let line = '';
             let qty = card.qty || 1;
             if (qty > 1) {
                 line += qty + 'x ';
             }
             line += card.name;
-            if (card.setCode) {
-                line += ` (${card.setCode})`;
+            if (card.selectedSetCode) {
+                line += ` (${card.selectedSetCode})`;
             }
-            if (card.setNumber) {
-                line += ` ${card.setNumber}`;
+            if (card.selectedSetNumber) {
+                line += ` ${card.selectedSetNumber}`;
             }
             return line;
         });
@@ -163,7 +161,7 @@ window.onload = function () {
     });
     function regenerateTextboxFromCardData() {
         const longText = document.getElementById('longText');
-        let newLines = parsedCards.map(card => {
+        let newLines = cards.map(card => {
             console.log('Regenerating card:', card);
             let line = '';
             let qty = card.qty || 1;
@@ -171,11 +169,11 @@ window.onload = function () {
                 line += qty + 'x ';
             }
             line += card.name;
-            if (card.setCode) {
-                line += ` (${card.setCode})`;
+            if (card.selectedSetCode) {
+                line += ` (${card.selectedSetCode})`;
             }
-            if (card.setNumber) {
-                line += ` ${card.setNumber}`;
+            if (card.selectedSetNumber) {
+                line += ` ${card.selectedSetNumber}`;
             }
             return line;
         });
@@ -187,11 +185,9 @@ window.onload = function () {
         }
     }
 
-    // Clear arrays when input field is manually changed
+    // Clear array when input field is manually changed
     document.getElementById('longText').addEventListener('input', function () {
-        parsedCards = [];
-        cardData = [];
-        cardNames = [];
+        cards = [];
     });
 
     document.getElementById('longForm').addEventListener('submit', async function (e) {
@@ -205,6 +201,7 @@ window.onload = function () {
         
         console.log('Raw input:', text);
         // Parse each line for quantity, card name, set code, and set number
+        cards = [];
         text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0).forEach(line => {
             // Flexible parsing: always extract card name, optionally extract quantity, set code, set number, ignore category info
             // Examples:
@@ -241,24 +238,22 @@ window.onload = function () {
             // todo: bug for boggart trawler // boggart bog (mdfc)
             name = line.split(/\s*\[/)[0].trim();
             for (let i = 0; i < qty; i++) {
-                parsedCards.push({ name, setCode, setNumber, qty });
+                cards.push({ name, requestedSetCode: setCode, requestedSetNumber: setNumber, qty, cardData: null, selectedSetCode: setCode, selectedSetNumber: setNumber });
             }
         });
-        console.log('Parsed cards:', parsedCards);
-        cardData = [];
+        console.log('Parsed cards:', cards);
         document.getElementById('output').innerText = 'Loading...';
         // Parallelize fetchCardData calls
-        const fetchPromises = parsedCards.map(card => fetchCardData(card.name, card.setCode, card.setNumber));
+        const fetchPromises = cards.map(card => fetchCardData(card.name, card.requestedSetCode, card.requestedSetNumber));
         const results = await Promise.all(fetchPromises);
         results.forEach((json, i) => {
-            cardData.push(json);
-            parsedCards[i].setCode = json.set ? json.set.toUpperCase() : parsedCards[i].setCode;
-            parsedCards[i].setNumber = json.collector_number || parsedCards[i].setNumber;
+            cards[i].cardData = json;
+            cards[i].selectedSetCode = json.set ? json.set.toUpperCase() : cards[i].selectedSetCode;
+            cards[i].selectedSetNumber = json.collector_number || cards[i].selectedSetNumber;
         });
         
-        // Save card data and parsed cards to sessionStorage
-        sessionStorage.setItem('mtg-cardData', JSON.stringify(cardData));
-        sessionStorage.setItem('mtg-parsedCards', JSON.stringify(parsedCards));
+        // Save cards to sessionStorage
+        sessionStorage.setItem('mtg-cards', JSON.stringify(cards));
         
         regenerateTextboxFromCardData();
         renderCardResults();
@@ -267,9 +262,9 @@ window.onload = function () {
 
 function renderCardResults() {
         let html = '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">';
-        for (let i = 0; i < cardData.length; i++) {
-            const data = cardData[i];
-            const card = parsedCards[i];
+        for (let i = 0; i < cards.length; i++) {
+            const data = cards[i].cardData;
+            const card = cards[i];
             if (data.error) {
                 html += `
                     <div class="flex flex-col p-4 bg-red-50 border border-red-200 rounded-lg" id="card-li-${i}">
@@ -278,7 +273,7 @@ function renderCardResults() {
                     </div>`;
             } else {
                 let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
-                let setCode = data.set ? data.set.toUpperCase() : '';
+                let setCode = card.selectedSetCode || (data.set ? data.set.toUpperCase() : '');
                 let availableSets = (data.prints_search_uri ? data.prints_search_uri : null);
                 html += `
                     <div class="flex flex-col" id="card-li-${i}">
@@ -318,8 +313,8 @@ function renderCardResults() {
         document.getElementById('output').innerHTML = html;
 
         // Set up flip buttons for double-faced cards
-        for (let i = 0; i < cardData.length; i++) {
-            const data = cardData[i];
+        for (let i = 0; i < cards.length; i++) {
+            const data = cards[i].cardData;
             if (!data.error && data.card_faces && data.card_faces.length > 1) {
                 const flipBtn = document.getElementById(`flip-btn-${i}`);
                 if (flipBtn) {
@@ -343,8 +338,9 @@ function renderCardResults() {
         }
 
         // For each card, fetch available sets and create dropdown
-        for (let i = 0; i < cardData.length; i++) {
-            const data = cardData[i];
+        for (let i = 0; i < cards.length; i++) {
+            const data = cards[i].cardData;
+            const cardObj = cards[i];
             if (!data.error && data.prints_search_uri) {
                 fetch(data.prints_search_uri)
                     .then(resp => resp.json())
@@ -364,7 +360,7 @@ function renderCardResults() {
                             const option = document.createElement('option');
                             option.value = setCode;
                             option.text = `${sets[setCode]} [${setCode.toUpperCase()}]`;
-                            if (setCode.toUpperCase() === (data.set ? data.set.toUpperCase() : '')) {
+                            if (setCode.toUpperCase() === cardObj.selectedSetCode) {
                                 option.selected = true;
                             }
                             dropdown.appendChild(option);
@@ -377,9 +373,13 @@ function renderCardResults() {
                             document.getElementById(`card-img-${i}`).src = newImgUrl || '';
                             document.getElementById(`card-set-${i}`).textContent = `[${newSetCode}]`;
 
-                            // Update parsedCards with the new set code and number
-                            parsedCards[i].setCode = newSetCode;
-                            parsedCards[i].setNumber = newData.collector_number ? newData.collector_number : parsedCards[i].setNumber;
+                            // Update the unified card object with new data and selected set
+                            cardObj.cardData = newData;
+                            cardObj.selectedSetCode = newSetCode;
+                            cardObj.selectedSetNumber = newData.collector_number || cardObj.selectedSetNumber;
+                            
+                            // Save to sessionStorage and regenerate textbox
+                            sessionStorage.setItem('mtg-cards', JSON.stringify(cards));
                             regenerateTextboxFromCardData();
                         });
                         const setDropdownContainer = document.getElementById(`set-dropdown-container-${i}`);
@@ -423,12 +423,6 @@ function renderCardResults() {
                             setDropdownContainer.classList.add('hidden');
                             setDropdownContainer.classList.remove('block');
                             document.getElementById(`setcode-dropdown-wrap-${i}`).classList.remove('hidden');
-                        });
-                        dropdown.addEventListener('change', async function () {
-                            const newSet = this.value;
-                            const newData = await fetchCardData(data.name, newSet);
-                            let newImgUrl = newData.image_uris ? newData.image_uris.png : (newData.card_faces && newData.card_faces[0].image_uris ? newData.card_faces[0].image_uris.png : null);
-                            let newSetCode = newData.set ? newData.set.toUpperCase() : '';
                         });
                     });
             }
