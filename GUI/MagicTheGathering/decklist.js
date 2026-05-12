@@ -27,6 +27,33 @@ async function fetchCardData(name, setCode = null, setNumber = null) {
         return { error: `Error fetching: ${name}` };
     }
 }
+
+function regenerateTextboxFromCardData() {
+    const longText = document.getElementById('longText');
+    if (!longText) return;
+
+    const newLines = cards.map(card => {
+        let line = '';
+        const qty = card.qty || 1;
+        if (qty > 1) {
+            line += qty + 'x ';
+        }
+        line += card.name;
+        if (card.selectedSetCode) {
+            line += ` (${card.selectedSetCode})`;
+        }
+        if (card.selectedSetNumber) {
+            line += ` ${card.selectedSetNumber}`;
+        }
+        return line;
+    });
+
+    longText.value = newLines.join('\n');
+    if (longText.value) {
+        sessionStorage.setItem('mtg-decklist', longText.value);
+    }
+}
+
 window.onload = function () {
     // Restore decklist from sessionStorage if available
     const savedDecklist = sessionStorage.getItem('mtg-decklist');
@@ -70,66 +97,82 @@ window.onload = function () {
     });
     // Next: Create PDF button - export images to folder then navigate
     document.getElementById('nextCreatePdfBtn').addEventListener('click', async function () {
-        // Only export if we have cards
-        if (cards.length > 0) {
-            const fs = window.require ? window.require('fs') : require('fs');
-            const path = window.require ? window.require('path') : require('path');
-            const frontDir = getFrontDir();
-            if (!fs.existsSync(frontDir)) {
-                fs.mkdirSync(frontDir, { recursive: true });
-            }
-            
-            // Check if there are existing images in the front folder
-            const existingFiles = fs.readdirSync(frontDir).filter(f => f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.jpeg'));
-            if (existingFiles.length > 0) {
-                const shouldClear = confirm(`There are ${existingFiles.length} image(s) already in the front folder. Would you like to clear them before adding new images?`);
-                if (shouldClear) {
-                    // Clear existing images
-                    for (const file of existingFiles) {
-                        fs.unlinkSync(path.join(frontDir, file));
+        if (typeof window.showLoadingOverlay === 'function') {
+            window.showLoadingOverlay({
+                title: 'Preparing Cards',
+                message: 'Exporting card images for PDF...'
+            });
+        }
+
+        try {
+            // Only export if we have cards
+            if (cards.length > 0) {
+                const fs = window.require ? window.require('fs') : require('fs');
+                const path = window.require ? window.require('path') : require('path');
+                const frontDir = getFrontDir();
+                if (!fs.existsSync(frontDir)) {
+                    fs.mkdirSync(frontDir, { recursive: true });
+                }
+                
+                // Check if there are existing images in the front folder
+                const existingFiles = fs.readdirSync(frontDir).filter(f => f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.jpeg'));
+                if (existingFiles.length > 0) {
+                    const shouldClear = confirm(`There are ${existingFiles.length} image(s) already in the front folder. Would you like to clear them before adding new images?`);
+                    if (shouldClear) {
+                        // Clear existing images
+                        for (const file of existingFiles) {
+                            fs.unlinkSync(path.join(frontDir, file));
+                        }
                     }
                 }
-            }
-            
-            let imgCount = 1;
-            for (let i = 0; i < cards.length; i++) {
-                const data = cards[i].cardData;
-                if (data.error) continue;
-                // Handle double-faced cards
-                if (data.card_faces && Array.isArray(data.card_faces) && data.card_faces.length > 1) {
-                    for (let f = 0; f < data.card_faces.length; f++) {
-                        let imgUrl = data.card_faces[f].image_uris ? data.card_faces[f].image_uris.png : null;
+                
+                let imgCount = 1;
+                for (let i = 0; i < cards.length; i++) {
+                    const data = cards[i].cardData;
+                    if (data.error) continue;
+                    // Handle double-faced cards
+                    if (data.card_faces && Array.isArray(data.card_faces) && data.card_faces.length > 1) {
+                        for (let f = 0; f < data.card_faces.length; f++) {
+                            let imgUrl = data.card_faces[f].image_uris ? data.card_faces[f].image_uris.png : null;
+                            if (!imgUrl) continue;
+                            let faceName = data.card_faces[f].name.replace(/[^a-zA-Z0-9]/g, ' ');
+                            faceName = faceName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
+                            faceName = faceName.replace(/\s+/g, '');
+                            let filename = path.join(frontDir, `${imgCount}${faceName}1.png`);
+                            const response = await fetch(imgUrl);
+                            const buffer = Buffer.from(await response.arrayBuffer());
+                            fs.writeFileSync(filename, buffer);
+                            imgCount++;
+                        }
+                    } else {
+                        let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
                         if (!imgUrl) continue;
-                        let faceName = data.card_faces[f].name.replace(/[^a-zA-Z0-9]/g, ' ');
-                        faceName = faceName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
-                        faceName = faceName.replace(/\s+/g, '');
-                        let filename = path.join(frontDir, `${imgCount}${faceName}1.png`);
+                        let cardName = data.name.replace(/[^a-zA-Z0-9]/g, ' ');
+                        cardName = cardName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
+                        cardName = cardName.replace(/\s+/g, '');
+                        let filename = path.join(frontDir, `${imgCount}${cardName}1.png`);
                         const response = await fetch(imgUrl);
                         const buffer = Buffer.from(await response.arrayBuffer());
                         fs.writeFileSync(filename, buffer);
                         imgCount++;
                     }
-                } else {
-                    let imgUrl = data.image_uris ? data.image_uris.png : (data.card_faces && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.png : null);
-                    if (!imgUrl) continue;
-                    let cardName = data.name.replace(/[^a-zA-Z0-9]/g, ' ');
-                    cardName = cardName.split(' ').map((w, idx) => idx === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
-                    cardName = cardName.replace(/\s+/g, '');
-                    let filename = path.join(frontDir, `${imgCount}${cardName}1.png`);
-                    const response = await fetch(imgUrl);
-                    const buffer = Buffer.from(await response.arrayBuffer());
-                    fs.writeFileSync(filename, buffer);
-                    imgCount++;
                 }
             }
+
+            // Save decklist to sessionStorage before navigating
+            const decklistText = document.getElementById('longText').value;
+            if (decklistText) {
+                sessionStorage.setItem('mtg-decklist', decklistText);
+            }
+
+            // Navigate to Create PDF page (no alert)
+            location.href = '../CreatePDF/create.html';
+        } catch (err) {
+            if (typeof window.hideLoadingOverlay === 'function') {
+                window.hideLoadingOverlay();
+            }
+            alert('Error preparing card images:\n' + err);
         }
-        // Save decklist to sessionStorage before navigating
-        const decklistText = document.getElementById('longText').value;
-        if (decklistText) {
-            sessionStorage.setItem('mtg-decklist', decklistText);
-        }
-        // Navigate to Create PDF page (no alert)
-        location.href = '../CreatePDF/create.html';
     });
     // Export decklist button logic
     document.getElementById('exportBtn').addEventListener('click', function () {
@@ -159,32 +202,6 @@ window.onload = function () {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     });
-    function regenerateTextboxFromCardData() {
-        const longText = document.getElementById('longText');
-        let newLines = cards.map(card => {
-            console.log('Regenerating card:', card);
-            let line = '';
-            let qty = card.qty || 1;
-            if (qty > 1) {
-                line += qty + 'x ';
-            }
-            line += card.name;
-            if (card.selectedSetCode) {
-                line += ` (${card.selectedSetCode})`;
-            }
-            if (card.selectedSetNumber) {
-                line += ` ${card.selectedSetNumber}`;
-            }
-            return line;
-        });
-        longText.value = newLines.join('\n');
-        
-        // Save to sessionStorage after regenerating
-        if (longText.value) {
-            sessionStorage.setItem('mtg-decklist', longText.value);
-        }
-    }
-
     // Clear array when input field is manually changed
     document.getElementById('longText').addEventListener('input', function () {
         cards = [];
@@ -377,6 +394,8 @@ function renderCardResults() {
                             cardObj.cardData = newData;
                             cardObj.selectedSetCode = newSetCode;
                             cardObj.selectedSetNumber = newData.collector_number || cardObj.selectedSetNumber;
+                            cardObj.requestedSetCode = newSetCode || cardObj.requestedSetCode;
+                            cardObj.requestedSetNumber = newData.collector_number || cardObj.requestedSetNumber;
                             
                             // Save to sessionStorage and regenerate textbox
                             sessionStorage.setItem('mtg-cards', JSON.stringify(cards));
