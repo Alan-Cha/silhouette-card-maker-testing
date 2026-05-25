@@ -245,6 +245,12 @@ python create_pdf.py --registration 4
 
 However, Silhouette Cameo 5 Alpha users can still use the 3-corner registration mark pattern by setting machine to **Cameo 5** in Silhouette Studio.
 
+To use a different registration mark orientation than the card layout, use the `--registration_orientation` option. This can be useful when printing a landscape card layout on paper loaded as portrait.
+
+```sh
+python create_pdf.py --registration_orientation portrait
+```
+
 ### CLI Options
 
 ```
@@ -266,6 +272,9 @@ Options:
   --paper_size [letter|tabloid|a4|a3|arch_b|ansi_a|ansi_b]
                                   The desired paper size.  [default: letter]
   --registration [3|4]            The desired registration.  [default: 3]
+  --registration_orientation, --rotate_registration [portrait|landscape]
+                                  Override the registration mark orientation
+                                  without changing the card layout.
   --only_fronts                   Only use the card fronts, exclude the card
                                   backs.
   --fit [stretch|crop]            How to fit images to card size. 'stretch'

@@ -226,6 +226,18 @@ def template_name(paper_size: str, card_size: str, variant: Variant, version: in
         return f"{paper_size}-{card_size}-{variant.value}-v{version}"
 
 
+def template_name_with_registration_orientation(
+    template: str,
+    registration_orientation: Orientation,
+) -> str:
+    """Add registration orientation to the printed template label."""
+    suffix = f"-{registration_orientation.value}"
+    version_match = re.search(r"-v\d+$", template)
+    if version_match is None:
+        return f"{template}{suffix}"
+    return f"{template[:version_match.start()]}{suffix}{template[version_match.start():]}"
+
+
 # Known junk files across OSes
 EXTRANEOUS_FILES = {
     ".DS_Store",
@@ -801,6 +813,7 @@ def generate_pdf(
     show_outline: bool = False,
     specialty: Optional[str] = None,
     borderless: bool = False,
+    registration_orientation_override: Optional[str] = None,
 ):
     # Sanity checks for the different directories
     f_path = Path(front_dir_path)
@@ -853,6 +866,11 @@ def generate_pdf(
 
     layout_config = load_layout_config()
     default_reg = layout_config.defaults.registration.default
+    registration_orientation_override = (
+        Orientation(registration_orientation_override)
+        if registration_orientation_override is not None
+        else None
+    )
 
     if borderless and specialty:
         raise Exception('Cannot use --borderless with --specialty. Specialty layouts define their own geometry.')
@@ -892,7 +910,11 @@ def generate_pdf(
 
         orientation = spec.orientation
         registration_orientation = spec.registration_orientation or orientation
+        if registration_orientation_override is not None:
+            registration_orientation = registration_orientation_override
         template = f"{specialty}-v{spec.version}"
+        if registration_orientation_override is not None:
+            template = template_name_with_registration_orientation(template, registration_orientation)
 
         lr = spec.registration or RegistrationSettings()
         effective_inset = lr.inset or default_reg.inset
@@ -926,6 +948,8 @@ def generate_pdf(
         layout_def = card_layouts[variant.value]
         orientation = layout_def.orientation
         registration_orientation = layout_def.registration_orientation or orientation
+        if registration_orientation_override is not None:
+            registration_orientation = registration_orientation_override
         version = layout_def.version
 
         # Effective registration: merge per-layout overrides on top of variant defaults
@@ -938,6 +962,8 @@ def generate_pdf(
             effective_inset = lr.inset or layout_config.defaults.registration.default.inset
 
         template = template_name(paper_size, card_size, variant, version)
+        if registration_orientation_override is not None:
+            template = template_name_with_registration_orientation(template, registration_orientation)
 
     effective_thickness = lr.thickness or default_reg.thickness
     effective_length = lr.length or default_reg.length
