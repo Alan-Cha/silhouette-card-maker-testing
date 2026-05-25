@@ -400,7 +400,6 @@
             "standard": {
                 "default": {
                     "orientation": "landscape",
-                    "registration_orientation": "portrait",
                     "version": 6,
                     "num_rows": 2,
                     "num_cols": 4,
