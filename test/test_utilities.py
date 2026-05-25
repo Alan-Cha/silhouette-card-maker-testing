@@ -23,10 +23,37 @@ from utilities import (
     draw_card_with_bleed,
     draw_card_layout,
     add_front_back_pages,
+    align_registration_page,
     FitMode,
     asset_directory,
 )
 from enums import Orientation
+
+
+class TestRegistrationOrientation:
+    def test_portrait_registration_aligns_to_landscape_page(self):
+        page = Image.new("RGB", (20, 30), "white")
+        for x in range(2, 7):
+            for y in range(3, 8):
+                page.putpixel((x, y), (0, 0, 0))
+
+        aligned = align_registration_page(
+            page,
+            page_orientation=Orientation.LANDSCAPE,
+            registration_orientation=Orientation.PORTRAIT,
+        )
+
+        assert aligned.size == (30, 20)
+        black_pixels = [
+            (x, y)
+            for y in range(aligned.height)
+            for x in range(aligned.width)
+            if aligned.getpixel((x, y)) == (0, 0, 0)
+        ]
+        xs = [x for x, _ in black_pixels]
+        ys = [y for _, y in black_pixels]
+        assert min(xs) >= 22
+        assert max(ys) <= 6
 
 
 class TestParseCropString:
@@ -1663,5 +1690,4 @@ class TestAddFrontBackPages:
             orientation=Orientation.PORTRAIT, label_margin_px=10, borderless=False
         )
         assert len(pages) == 2
-
 

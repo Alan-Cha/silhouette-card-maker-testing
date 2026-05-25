@@ -96,6 +96,7 @@ class SpecialtyLayoutDef(BaseModel):
     card_size: SpecialtyCardSizeDef
     paper_size: SpecialtyPaperSizeDef
     orientation: Orientation = Orientation.LANDSCAPE
+    registration_orientation: Optional[Orientation] = None
     version: int = 1
     num_rows: Optional[int] = None
     num_cols: Optional[int] = None
@@ -125,6 +126,7 @@ class PaperSizeDef(BaseModel):
 
 class CardLayout(BaseModel):
     orientation: Orientation
+    registration_orientation: Optional[Orientation] = None
     version: int
     num_rows: Optional[int] = None
     num_cols: Optional[int] = None
@@ -809,6 +811,20 @@ def draw_outline(
                 width=1,
             )
 
+def align_registration_page(
+    reg_page: Image.Image,
+    page_orientation: Orientation,
+    registration_orientation: Orientation,
+) -> Image.Image:
+    """Rotate registration marks into the page orientation when configured separately."""
+    if registration_orientation == page_orientation:
+        return reg_page
+    if registration_orientation == Orientation.PORTRAIT and page_orientation == Orientation.LANDSCAPE:
+        return reg_page.rotate(-90, expand=True)
+    if registration_orientation == Orientation.LANDSCAPE and page_orientation == Orientation.PORTRAIT:
+        return reg_page.rotate(90, expand=True)
+    return reg_page
+
 def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, label: str, orientation: Orientation, label_margin_px: int, borderless: bool):
     font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 40 * ppi_ratio)
 
@@ -1073,6 +1089,7 @@ def generate_pdf(
             )
 
         orientation = spec.orientation
+        registration_orientation = spec.registration_orientation or orientation
         template = f"{specialty}-v{spec.version}"
 
         lr = spec.registration or RegistrationSettings()
@@ -1106,6 +1123,7 @@ def generate_pdf(
 
         layout_def = card_layouts[variant.value]
         orientation = layout_def.orientation
+        registration_orientation = layout_def.registration_orientation or orientation
         version = layout_def.version
 
         # Effective registration: merge per-layout overrides on top of variant defaults
@@ -1200,8 +1218,9 @@ def generate_pdf(
         effective_length,
         layout_config.ppi,
         registration,
-        orientation,
+        registration_orientation,
     ) as reg_im:
+        reg_im = align_registration_page(reg_im, orientation, registration_orientation)
         reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
 
         # Create the array that will store the filled templates
@@ -1335,7 +1354,7 @@ def generate_pdf(
                 flip=True, # Flip the back sides
                 fit=fit,
                 fit_backs=fit_backs_mode,
-                orientation=orientation,
+                orientation=registration_orientation,
             )
 
             # Draw cutting path outlines on top of the card images
