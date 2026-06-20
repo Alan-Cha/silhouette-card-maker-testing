@@ -17,6 +17,7 @@ When distributing or sharing SCM cutting templates, it is **strongly recommended
 1. **Reference the source**: Clearly indicate that the template is sourced from [Silhouette Card Maker (SCM)](https://alan-cha.github.io/silhouette-card-maker/)
 2. **Provide a link**: Include a link to the [SCM project repository](https://github.com/Alan-Cha/silhouette-card-maker-testing)
 3. **Preserve filenames**: Keep the original SCM filename to enable users to match templates with their [source](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/cutting_templates)
+4. **Suggest the Discord**: The [SCM Discord](https://discord.gg/jhsKmAgbXc) is an important resource for debugging cutting issues.
 
 **Why this matters:**
 - Helps users find documentation and support for the template format
@@ -75,7 +76,7 @@ The maximum bleed is half the card distance, which is **6.125 mm**.
 
 ### Corner Radius
 
-The default corner radius of cards is 3 mm. 
+The default corner radius of cards is 3 mm.
 
 If you prefer to use a different corner radius, you can [create a new template](#creating-custom-templates). Because the other parameters are the same, you do not need to make changes to the PDF generator, simply use a new template to cut.
 
@@ -120,16 +121,14 @@ SCM supports two registration patterns. The arrangement of marks depends on both
 
 **Mark placement** (described clockwise from top-left):
 
-- **Landscape orientation**: **L** (top-left) → **Square** (top-right, along long edge) → **L** (bottom-right, along short edge)
-- **Portrait orientation**: **L** (top-left) → **Square** (top-right, along short edge) → **L** (bottom-right, along long edge)
+- **Landscape orientation**: **L** → short edge → **Square** → long edge → **L**
+- **Portrait orientation**: **L** → long edge → **Square** → short edge → **L**
 
 #### FOUR-Mark Registration Pattern
 
 **Machine compatibility**: Introduced and used by the Silhouette Cameo 5 Alpha machine.
 
-**Mark placement**: L-shaped marks at all four corners (top-left, top-right, bottom-right, bottom-left)
-
-**Arrangement** (same for both orientations): **L** → **L** → **L** → **L** (clockwise from top-left)
+**Mark placement**: L-shaped marks at all four corners
 
 ## Creating Custom Templates
 
