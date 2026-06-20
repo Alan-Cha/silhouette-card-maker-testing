@@ -53,7 +53,8 @@ TEST_CASES = [
     ('label-tabloid', ['--label', 'Test Label', '--paper_size', 'tabloid', '--only_fronts']),
 
     ('crop', ['--crop', '3mm', '--only_fronts']),
-    ('extend_edges', ['--extend_edges', '10mm', '--only_fronts']),
+    ('extend_edges', ['--extend_edges', '3mm', '--only_fronts']),
+    ('extend_corners', ['--extend_corners', '3.5mm', '--only_fronts']),
     ('fit_crop', ['--card_size', 'domino', '--fit', 'crop', '--only_fronts']),
     ('skip', ['--skip', '0', '--skip', '4']),
 

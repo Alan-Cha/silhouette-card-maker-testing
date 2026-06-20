@@ -102,14 +102,12 @@ def parse_picklist(deck_text: str, handle_card: Callable) -> None:
         return deck_text.strip().split('\n')
 
     def is_picklist_line(line) -> bool:
-        # Skip lines that start with card IDs (e.g., "LAW 003, LAW 267")
-        # Skip separator lines (-----)
-        # Skip header lines
+        # Skip empty lines, separator lines (-----), and header lines
         stripped = line.strip()
         if not stripped or stripped.startswith('-') or stripped.startswith('Picklist:'):
             return False
-        # Skip lines that look like card IDs (start with letters and spaces/numbers)
-        if stripped and not stripped.startswith('[') and compile(r'^\s*[A-Z]{2,}\s+\d').match(stripped):
+        # Skip card ID lines (e.g., "LAW 003, LAW 267")
+        if not stripped.startswith('[') and compile(r'^[A-Z]{2,}\s+\d').match(stripped):
             return False
         return bool(pattern.match(line))
 

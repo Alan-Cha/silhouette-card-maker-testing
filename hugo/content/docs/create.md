@@ -129,15 +129,19 @@ You may need to experiment with the corner radius value, but `3.5mm` is a good s
 
 ## Edge Bleed with --extend_edges
 
-The `--extend_edges` option crops the card edges by a specified amount and then extends those cropped edges outward to generate uniform print bleed. This is useful when you want bleed generated from the interior of your card rather than the existing edges.
+The `--extend_edges` option addresses a common issue when card images are stored in a grid/mosaic and there's a miscut when extracting individual cards. For example, if a red card is next to a blue card in the grid, a slight miscut can leave a thin (often 1-pixel) blue border on the red card. While barely visible in the original image, this incorrect edge color becomes very noticeable when extended as bleed, creating unusable bleed that doesn't match the card.
+
+The `--extend_edges` option solves this by first cropping the edges by a specified amount (removing the miscut border), then extending those corrected edges outward to generate clean, uniform print bleed.
 
 ```sh
 python create_pdf.py --extend_edges 3mm
 ```
 
 **Comparison with --crop:**
-- `--crop`: Removes the outer portion of images (useful if images already have bleed)
+- `--crop`: Only removes the outer portion of images (useful if images already have bleed)
 - `--extend_edges`: Crops edges AND generates new bleed from the cropped position
+
+![Comparison of crop vs extend_edges](/images/crop_vs_extend_edges.jpg)
 
 Both `--extend_edges` and `--extend_corners` can be used together:
 

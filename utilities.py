@@ -267,40 +267,50 @@ def parse_crop_string(crop_string: str | None, card_width: int, card_height: int
 
     raise ValueError(f"Invalid crop format: '{crop_string}'")
 
-def parse_extend_corners(extend_corners: str | None, ppi: int) -> int:
+def parse_dimension_string(dimension_string: str | None, ppi: int) -> int:
     """
-    Parse the extend_corners parameter and return the corner radius in pixels.
+    Parse a dimension string and return the value in pixels.
+
+    Supports the same formats as --crop for consistency:
+    - Physical units: "3mm", "0.125in"
+    - Pixels: "6.5", "10"
+    - Disabled: "0" or None
 
     Args:
-        extend_corners: String like "3mm", "0.125in", or "0" to disable
+        dimension_string: String like "3mm", "0.125in", "6.5" (pixels), or "0" to disable
         ppi: Pixels per inch for the layout
 
     Returns:
-        Corner radius in pixels
+        Dimension in pixels
     """
-    if extend_corners is None or extend_corners == "0":
+    if dimension_string is None or dimension_string == "0":
         return 0
 
-    extend_corners = extend_corners.strip().lower()
+    dimension_string = dimension_string.strip().lower()
 
-    if extend_corners == "0":
+    if dimension_string == "0":
         return 0
 
     float_pattern = r"(?:\d+\.\d*|\.\d+|\d+)"
 
     # Match "3mm" or "3.5mm"
-    mm_match = re.fullmatch(rf"({float_pattern})mm", extend_corners)
+    mm_match = re.fullmatch(rf"({float_pattern})mm", dimension_string)
     if mm_match:
-        radius_mm = float(mm_match.group(1))
-        return math.floor(radius_mm / 25.4 * ppi)
+        value_mm = float(mm_match.group(1))
+        return math.floor(value_mm / 25.4 * ppi)
 
     # Match "0.1in" or "0.125in"
-    in_match = re.fullmatch(rf"({float_pattern})in", extend_corners)
+    in_match = re.fullmatch(rf"({float_pattern})in", dimension_string)
     if in_match:
-        radius_in = float(in_match.group(1))
-        return math.floor(radius_in * ppi)
+        value_in = float(in_match.group(1))
+        return math.floor(value_in * ppi)
 
-    raise ValueError(f"Invalid extend_corners format: '{extend_corners}'")
+    # Match single float like "6.5" or "4.5" (pixels)
+    single_match = re.fullmatch(float_pattern, dimension_string)
+    if single_match:
+        return int(float(dimension_string))
+
+    raise ValueError(f"Invalid dimension format: '{dimension_string}'")
 
 
 def convertInToCrop(crop_in: float, card_width_px: int, card_height_px: int) -> tuple[float, float]:
@@ -527,28 +537,37 @@ def fill_rounded_corners(card_image: Image.Image, corner_radius: int) -> Image.I
     ]
 
     for (corner_x, corner_y), (arc_cx, arc_cy) in corners:
-        # Determine the bounds of this corner's square
+        # Each rounded corner has a square region of size (corner_radius x corner_radius)
+        # that contains both the rounded arc and the "cut zone" beyond it
         square_x_start = 0 if corner_x == 0 else width - corner_radius
         square_y_start = 0 if corner_y == 0 else height - corner_radius
         square_x_end = corner_radius if corner_x == 0 else width
         square_y_end = corner_radius if corner_y == 0 else height
 
+        # Process each pixel in this corner's square
         for local_x in range(square_x_start, square_x_end):
             for local_y in range(square_y_start, square_y_end):
-                # Calculate distance from the arc center
+                # Calculate distance from this pixel to the arc's center point
                 dist = math.sqrt((local_x - arc_cx) ** 2 + (local_y - arc_cy) ** 2)
 
-                # If distance > corner_radius, this pixel is in the "cut zone"
+                # Pixels beyond the corner_radius are in the "cut zone" - the area that
+                # will be removed when the card is die-cut with rounded corners
                 if dist > corner_radius:
-                    # Extend from the nearest pixel on the arc
+                    # Use polar coordinates to find the nearest point on the arc:
+                    # 1. Calculate the angle from the arc center to this cut-zone pixel
                     angle = math.atan2(local_y - arc_cy, local_x - arc_cx)
+
+                    # 2. Project that angle onto the arc at exactly corner_radius distance
+                    # This gives us the nearest "good" pixel on the rounded corner edge
                     src_x = int(arc_cx + corner_radius * math.cos(angle))
                     src_y = int(arc_cy + corner_radius * math.sin(angle))
 
-                    # Clamp to image bounds
+                    # Clamp to image bounds for safety
                     src_x = max(0, min(width - 1, src_x))
                     src_y = max(0, min(height - 1, src_y))
 
+                    # Copy the arc pixel into the cut zone, extending the card image
+                    # radially outward to fill what would otherwise be white corners
                     try:
                         pixel = result.getpixel((src_x, src_y))
                         result.putpixel((local_x, local_y), pixel)
@@ -1069,8 +1088,8 @@ def generate_pdf(
     crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
 
     # Parse extend_edges and extend_corners parameters
-    extend_edges_px = parse_extend_corners(extend_edges, layout_config.ppi)
-    extend_corners_px = parse_extend_corners(extend_corners, layout_config.ppi)
+    extend_edges_px = parse_dimension_string(extend_edges, layout_config.ppi)
+    extend_corners_px = parse_dimension_string(extend_corners, layout_config.ppi)
 
     # Convert corner radius to pixels for outline drawing
     effective_card_radius = card_size_def.radius or layout_config.defaults.card_radius
