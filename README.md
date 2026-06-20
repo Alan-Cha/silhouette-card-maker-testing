@@ -201,7 +201,7 @@ To create double-sided cards, put front images in the `game/front/` folder and b
 
 ### Corner Artifacts
 
-If your card images have rounded corners, they may be missing print bleed in the PDF. Because of the missing print bleed, when the cards are cut, they may have a sliver of white on the corners.
+If your card images have rounded corners, they they may be missing print bleed in the PDF. Because of the missing bleed, when the cards are cut, they may have a sliver of white on the corners.
 
 ![Extend corners](hugo/static/images/extend_corners.jpg)
 
@@ -215,25 +215,15 @@ You may need to experiment with the corner radius value, but `3.5mm` is a good s
 
 ### Edge Bleed with --extend_edges
 
-The `--extend_edges` option addresses a common issue when card images are stored in a grid/mosaic and there's a miscut when extracting individual cards. For example, if a red card is next to a blue card in the grid, a slight miscut can leave a thin (often 1-pixel) blue border on the red card. While barely visible in the original image, this incorrect edge color becomes very noticeable when extended as bleed, creating unusable bleed that doesn't match the card.
+If your print bleed does not match your card image, then there may be an issue with your your card image.
 
-The `--extend_edges` option solves this by first cropping the edges by a specified amount (removing the miscut border), then extending those corrected edges outward to generate clean, uniform print bleed.
-
-```sh
-python create_pdf.py --extend_edges 3mm
-```
-
-**Comparison with --crop:**
-- `--crop`: Only removes the outer portion of images (useful if images already have bleed)
-- `--extend_edges`: Crops edges AND generates new bleed from the cropped position
-
-![Comparison of crop vs extend_edges](hugo/static/images/crop_vs_extend_edges.jpg)
-
-Both `--extend_edges` and `--extend_corners` can be used together:
+This typically occurs when there is a thin border (often 1 pixel) on one or more sides of your card image. The border is difficult to see but because the print bleed is generated from the border, the print bleed will not match the card image.
 
 ```sh
-python create_pdf.py --extend_edges 3mm --extend_corners 3mm
+python create_pdf.py --extend_edges 3
 ```
+
+You may need to experiment with the corner radius value, but `3` (pixels) is a good starting point for standard playing cards.
 
 ### Skip Cards
 
@@ -340,16 +330,10 @@ Crop the borders of the front and double-sided images by 3 mm on all sides. This
 python create_pdf.py --crop 3mm
 ```
 
-Generate print bleed by cropping 3mm from all edges and extending those cropped edges outward. Also fill rounded corner regions with a 3mm corner radius.
-
-```sh
-python create_pdf.py --extend_edges 3mm --extend_corners 3mm
-```
-
 Remove the [rounded corner artifacts](#corner-artifacts) and load the saved offset from [`offset_pdf.py`](#offset_pdfpy).
 
 ```sh
-python create_pdf.py --extend_corners 3mm --load_offset
+python create_pdf.py --extend_corners 3.5mm --load_offset
 ```
 
 Produce a 600 pixels per inch (PPI) file with minimal compression.
