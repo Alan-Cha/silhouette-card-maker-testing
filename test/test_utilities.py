@@ -849,7 +849,7 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -884,7 +884,7 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -919,7 +919,7 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=True, fit=FitMode.STRETCH,
             orientation=Orientation.LANDSCAPE
         )
@@ -962,7 +962,7 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1011,7 +1011,7 @@ class TestDrawCardLayout:
             width=10, height=10,
             print_bleed=(5, 5),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1058,7 +1058,7 @@ class TestDrawCardLayout:
             width=10, height=10,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=2.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=2.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1103,7 +1103,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(50, 50), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1139,7 +1139,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(50, 50),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1182,7 +1182,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1225,7 +1225,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.CROP,
             orientation=Orientation.PORTRAIT
         )
@@ -1272,7 +1272,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1315,7 +1315,7 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.CROP,
             orientation=Orientation.PORTRAIT
         )
@@ -1359,7 +1359,7 @@ class TestDrawCardLayout:
             width=30, height=30,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1406,7 +1406,7 @@ class TestDrawCardLayout:
             width=30, height=30,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=10, extend_corners_radius=0,
+            ppi_ratio=1.0, extend_edges=10, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
@@ -1424,6 +1424,166 @@ class TestDrawCardLayout:
         # Outside bleed should be empty
         assert base.getpixel((14, 25)) == self.WHITE
         assert base.getpixel((25, 14)) == self.WHITE
+
+    def test_extend_bleed_extends_top_row_top_edge(self):
+        """extend_bleed should extend the top edge of cards in the top row.
+
+        Base 300x400, 2x2 grid, extend_bleed=10:
+
+        Top row cards (row 0) should have extra 10px bleed on top edge.
+        Bottom row cards (row 1) should have extra 10px bleed on bottom edge.
+        Left column cards (col 0) should have extra 10px bleed on left edge.
+        Right column cards (col 1) should have extra 10px bleed on right edge.
+        """
+        red_card = Image.new('RGB', (100, 140), color='red')
+        blue_card = Image.new('RGB', (100, 140), color='blue')
+        green_card = Image.new('RGB', (100, 140), color='green')
+        yellow_card = Image.new('RGB', (100, 140), color='yellow')
+        back = Image.new('RGB', (100, 140), color='gray')
+        base = Image.new('RGB', (300, 400), color='white')
+
+        draw_card_layout(
+            card_images=[red_card, blue_card, green_card, yellow_card],
+            single_back_image=back,
+            base_image=base,
+            num_rows=2, num_cols=2,
+            x_pos=[10, 150], y_pos=[20, 200],
+            width=100, height=140,
+            print_bleed=(5, 5),
+            crop=(0, 0), crop_backs=(0, 0),
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=10,
+            flip=False, fit=FitMode.STRETCH,
+            orientation=Orientation.PORTRAIT
+        )
+
+        # Top-left card (red, row 0, col 0): extended top (15px total) and left (15px total)
+        # Normal bleed: 5px, extended: 10px, total: 15px
+        # Card is at (10, 20), size 100x140
+        # Top edge bleed should extend from y=5 (20-15) to y=19
+        assert base.getpixel((10, 5)) == self.RED  # Extended top bleed
+        assert base.getpixel((10, 19)) == self.RED  # Just above card
+
+        # Left edge bleed should extend from x=-5 (10-15) but clamped to 0
+        assert base.getpixel((0, 20)) == self.RED  # Extended left bleed (clamped)
+
+        # Top-right card (blue, row 0, col 1): extended top (15px) and right (15px)
+        # Card is at (150, 20), size 100x140
+        assert base.getpixel((150, 5)) == self.BLUE  # Extended top bleed
+
+        # Right edge bleed: card ends at x=250, bleed extends to x=265
+        assert base.getpixel((264, 20)) == self.BLUE  # Extended right bleed
+
+        # Bottom-left card (green, row 1, col 0): extended bottom (15px) and left (15px)
+        # Card is at (10, 200), ends at (110, 340)
+        # Bottom edge bleed extends 15 pixels: from y=340 to y=354 (range gives 0-14)
+        assert base.getpixel((10, 354)) == self.GREEN  # Extended bottom bleed
+        assert base.getpixel((10, 355)) == self.WHITE  # Outside bleed
+        assert base.getpixel((0, 200)) == self.GREEN  # Extended left bleed (clamped)
+
+        # Bottom-right card (yellow, row 1, col 1): extended bottom (15px) and right (15px)
+        # Card is at (150, 200), ends at (250, 340)
+        assert base.getpixel((150, 354)) == self.YELLOW  # Extended bottom bleed
+        assert base.getpixel((264, 200)) == self.YELLOW  # Extended right bleed
+
+    def test_extend_bleed_zero_no_extra_bleed(self):
+        """extend_bleed=0 should behave the same as not having the feature."""
+        card = Image.new('RGB', (100, 140), color='red')
+        back = Image.new('RGB', (100, 140), color='blue')
+        base = Image.new('RGB', (300, 400), color='white')
+
+        draw_card_layout(
+            card_images=[card],
+            single_back_image=back,
+            base_image=base,
+            num_rows=1, num_cols=1,
+            x_pos=[50], y_pos=[50],
+            width=100, height=140,
+            print_bleed=(10, 10),
+            crop=(0, 0), crop_backs=(0, 0),
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH,
+            orientation=Orientation.PORTRAIT
+        )
+
+        # Card at (50, 50), size 100x140, normal bleed 10px
+        # Top bleed: 10 pixels from y=(50-10)=40 to y=49
+        assert base.getpixel((50, 40)) == self.RED  # Normal top bleed
+        assert base.getpixel((50, 39)) == self.WHITE  # Outside bleed
+
+        # Bottom bleed: card ends at y=190, 10 pixels from y=190 to y=199
+        assert base.getpixel((50, 199)) == self.RED  # Normal bottom bleed
+        assert base.getpixel((50, 200)) == self.WHITE  # Outside bleed
+
+    def test_extend_bleed_center_cards_no_extra(self):
+        """Center cards in a 3x3 grid should not get extended bleed."""
+        cards = [Image.new('RGB', (50, 70), color='red') for _ in range(9)]
+        cards[4] = Image.new('RGB', (50, 70), color='blue')  # Center card
+        back = Image.new('RGB', (50, 70), color='gray')
+        base = Image.new('RGB', (300, 400), color='white')
+
+        draw_card_layout(
+            card_images=cards,
+            single_back_image=back,
+            base_image=base,
+            num_rows=3, num_cols=3,
+            x_pos=[10, 80, 150], y_pos=[10, 100, 190],
+            width=50, height=70,
+            print_bleed=(5, 5),
+            crop=(0, 0), crop_backs=(0, 0),
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=10,
+            flip=False, fit=FitMode.STRETCH,
+            orientation=Orientation.PORTRAIT
+        )
+
+        # Center card (blue) is at row=1, col=1, position (80, 100)
+        # Should only have normal 5px bleed on all sides (no extended bleed)
+        # Top bleed: 5 pixels from y=(100-5)=95 to y=99
+        assert base.getpixel((80, 95)) == self.BLUE  # Normal top bleed
+        assert base.getpixel((80, 94)) == self.WHITE  # No extended bleed
+
+        # Bottom bleed: card ends at y=170, 5 pixels from y=170 to y=174
+        assert base.getpixel((80, 174)) == self.BLUE  # Normal bottom bleed
+        assert base.getpixel((80, 175)) == self.WHITE  # No extended bleed
+
+    def test_extend_bleed_single_card_all_edges_extended(self):
+        """A single card (1x1 grid) should get extended bleed on all four edges."""
+        card = Image.new('RGB', (100, 140), color='red')
+        back = Image.new('RGB', (100, 140), color='blue')
+        base = Image.new('RGB', (300, 400), color='white')
+
+        draw_card_layout(
+            card_images=[card],
+            single_back_image=back,
+            base_image=base,
+            num_rows=1, num_cols=1,
+            x_pos=[50], y_pos=[50],
+            width=100, height=140,
+            print_bleed=(5, 5),
+            crop=(0, 0), crop_backs=(0, 0),
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=10,
+            flip=False, fit=FitMode.STRETCH,
+            orientation=Orientation.PORTRAIT
+        )
+
+        # Single card is both first and last row/col, so all edges extended
+        # Card at (50, 50), size 100x140
+        # Normal bleed: 5px, extended: 10px, total: 15px
+
+        # Top: extends 15 pixels from y=(50-15)=35 to y=49 (range 0-14)
+        assert base.getpixel((50, 35)) == self.RED
+        assert base.getpixel((50, 34)) == self.WHITE
+
+        # Bottom: card ends at y=190, extends 15 pixels from y=190 to y=204
+        assert base.getpixel((50, 204)) == self.RED
+        assert base.getpixel((50, 205)) == self.WHITE
+
+        # Left: extends 15 pixels from x=(50-15)=35 to x=49
+        assert base.getpixel((35, 50)) == self.RED
+        assert base.getpixel((34, 50)) == self.WHITE
+
+        # Right: card ends at x=150, extends 15 pixels from x=150 to x=164
+        assert base.getpixel((164, 50)) == self.RED
+        assert base.getpixel((165, 50)) == self.WHITE
 
 
 class TestAddFrontBackPages:
