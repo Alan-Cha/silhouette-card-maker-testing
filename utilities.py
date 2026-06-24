@@ -660,10 +660,13 @@ def draw_card_layout(
     crop_backs: tuple[float, float],
     ppi_ratio: float,
     extend_edges: int,
+    extend_edges_backs: int,
     extend_corners_radius: int,
+    extend_corners_backs_radius: int,
     extend_bleed: int,
     flip: bool,
     fit: FitMode,
+    fit_backs: FitMode,
     orientation: Orientation
 ):
     num_cards = num_rows * num_cols
@@ -671,7 +674,9 @@ def draw_card_layout(
     crop_backs_percent_x, crop_backs_percent_y = crop_backs
 
     extend_edges_thickness = math.floor(extend_edges * ppi_ratio)
+    extend_edges_backs_thickness = math.floor(extend_edges_backs * ppi_ratio)
     extend_corners_thickness = math.floor(extend_corners_radius * ppi_ratio)
+    extend_corners_backs_thickness = math.floor(extend_corners_backs_radius * ppi_ratio)
     extend_bleed_thickness = math.floor(extend_bleed * ppi_ratio)
 
     # Calculate the size of the card after scaling: "scaled size"
@@ -704,14 +709,20 @@ def draw_card_layout(
         bleed_offset_y = 0
         synthetic_bleed = (scaled_bleed_width, scaled_bleed_height)
 
-        # Determine which crop percentages to use
+        # Determine which crop percentages, fit mode, extend_edges, and extend_corners to use
         if card_image is single_back_image:
             active_crop_x, active_crop_y = crop_backs_percent_x, crop_backs_percent_y
+            active_fit = fit_backs
+            active_extend_edges_thickness = extend_edges_backs_thickness
+            active_extend_corners_thickness = extend_corners_backs_thickness
         else:
             active_crop_x, active_crop_y = crop_percent_x, crop_percent_y
+            active_fit = fit
+            active_extend_edges_thickness = extend_edges_thickness
+            active_extend_corners_thickness = extend_corners_thickness
 
         # Apply cropping, scaling, and fit mode
-        if active_crop_x > 0 or active_crop_y > 0 or fit == FitMode.CROP:
+        if active_crop_x > 0 or active_crop_y > 0 or active_fit == FitMode.CROP:
             card_image, bleed_offset_x, bleed_offset_y, synthetic_bleed = crop_and_scale_image(
                 card_image,
                 active_crop_x,
@@ -720,36 +731,36 @@ def draw_card_layout(
                 scaled_height,
                 scaled_bleed_width,
                 scaled_bleed_height,
-                fit
+                active_fit
             )
         else:
             # No percentage crop and STRETCH mode: just scale to target size
             card_image = card_image.resize((scaled_width, scaled_height))
 
         # Apply extend_edges: simple crop that affects all edges uniformly
-        if extend_edges_thickness > 0:
+        if active_extend_edges_thickness > 0:
             card_image = card_image.crop((
-                extend_edges_thickness,
-                extend_edges_thickness,
-                card_image.width - extend_edges_thickness,
-                card_image.height - extend_edges_thickness
+                active_extend_edges_thickness,
+                active_extend_edges_thickness,
+                card_image.width - active_extend_edges_thickness,
+                card_image.height - active_extend_edges_thickness
             ))
 
         # If extend_corners is specified, fill the corner regions FIRST
         # This modifies the card image so the bleed will be generated from the filled corners
-        if extend_corners_thickness > 0:
-            card_image = fill_rounded_corners(card_image, extend_corners_thickness)
+        if active_extend_corners_thickness > 0:
+            card_image = fill_rounded_corners(card_image, active_extend_corners_thickness)
 
         if flip and orientation == Orientation.LANDSCAPE:
             card_image = card_image.rotate(180)
 
         # Calculate final position
-        x = base_x + bleed_offset_x + extend_edges_thickness
-        y = base_y + bleed_offset_y + extend_edges_thickness
+        x = base_x + bleed_offset_x + active_extend_edges_thickness
+        y = base_y + bleed_offset_y + active_extend_edges_thickness
 
         # Calculate total bleed including synthetic bleed and edge extension
-        edge_bleed_width = synthetic_bleed[0] + extend_edges_thickness
-        edge_bleed_height = synthetic_bleed[1] + extend_edges_thickness
+        edge_bleed_width = synthetic_bleed[0] + active_extend_edges_thickness
+        edge_bleed_height = synthetic_bleed[1] + active_extend_edges_thickness
 
         # Determine if this card is on an outer edge and should have extended bleed
         # extra_bleed format: (top, right, bottom, left)
@@ -950,10 +961,13 @@ def generate_pdf(
     registration: Registration,
     only_fronts: bool,
     fit: FitMode,
+    fit_backs: str | None,
     crop_string: str | None,
     crop_backs_string: str | None,
     extend_edges: str | None,
+    extend_edges_backs: str | None,
     extend_corners: str | None,
+    extend_corners_backs: str | None,
     extend_bleed: str | None,
     extend_bleed_backs: str | None,
     ppi: int,
@@ -1127,13 +1141,16 @@ def generate_pdf(
     crop = parse_crop_string(crop_string, card_width_px, card_height_px)
     crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
 
-    # Parse extend_edges and extend_corners parameters
+    # Parse extend_edges, extend_corners, and extend_bleed parameters
     extend_edges_px = parse_dimension_string(extend_edges, layout_config.ppi)
+    extend_edges_backs_px = parse_dimension_string(extend_edges_backs, layout_config.ppi)
     extend_corners_px = parse_dimension_string(extend_corners, layout_config.ppi)
-
-    # Parse extend_bleed parameters
+    extend_corners_backs_px = parse_dimension_string(extend_corners_backs, layout_config.ppi)
     extend_bleed_px = parse_dimension_string(extend_bleed, layout_config.ppi)
     extend_bleed_backs_px = parse_dimension_string(extend_bleed_backs, layout_config.ppi)
+
+    # Parse fit_backs parameter - if not specified, use the same fit mode as fronts
+    fit_backs_mode = FitMode(fit_backs) if fit_backs is not None else fit
 
     # Convert corner radius to pixels for outline drawing
     effective_card_radius = card_size_def.radius or layout_config.defaults.card_radius
@@ -1280,10 +1297,13 @@ def generate_pdf(
                 crop_backs,
                 ppi_ratio,
                 extend_edges_px,
+                extend_edges_backs_px,
                 extend_corners_px,
+                extend_corners_backs_px,
                 extend_bleed_px,
                 flip=False,
                 fit=fit,
+                fit_backs=fit_backs_mode,
                 orientation=orientation,
             )
 
@@ -1303,10 +1323,13 @@ def generate_pdf(
                 crop_backs,
                 ppi_ratio,
                 extend_edges_px,
+                extend_edges_backs_px,
                 extend_corners_px,
+                extend_corners_backs_px,
                 extend_bleed_backs_px,
                 flip=True, # Flip the back sides
                 fit=fit,
+                fit_backs=fit_backs_mode,
                 orientation=orientation,
             )
 

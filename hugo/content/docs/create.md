@@ -130,6 +130,12 @@ python create_pdf.py --extend_corners 3.5mm
 
 You may need to experiment with the corner radius value, but `3.5mm` is a good starting point for standard playing cards.
 
+If you need different corner extension for back images only, you can use the `--extend_corners_backs` option:
+
+```sh
+python create_pdf.py --extend_corners 3.5mm --extend_corners_backs 2mm
+```
+
 ## Edge Bleed with --extend_edges
 
 If your print bleed does not match your card image, then there may be an issue with your your card image.
@@ -141,6 +147,12 @@ python create_pdf.py --extend_edges 3
 ```
 
 You may need to experiment with the corner radius value, but `3` (pixels) is a good starting point for standard playing cards.
+
+If you need different edge extension for back images only, you can use the `--extend_edges_backs` option:
+
+```sh
+python create_pdf.py --extend_edges 3 --extend_edges_backs 2
+```
 
 ## Extended Outer Bleed
 
@@ -154,6 +166,7 @@ python create_pdf.py --extend_bleed 2mm --extend_bleed_backs 2mm
 ```
 
 These options only affect cards at the edges of the layout grid (top row, bottom row, leftmost column, rightmost column) and only extend the bleed on the sides that face outward from the layout.
+
 
 ## Skip Cards
 
@@ -212,22 +225,34 @@ Options:
   --registration [3|4]            The desired registration.  [default: 3]
   --only_fronts                   Only use the card fronts, exclude the card
                                   backs.
-  --fit [stretch|crop]            How to fit images to card size. 'stretch'
-                                  allows distortion, 'crop' preserves aspect
-                                  ratio by center-cropping.  [default:
-                                  stretch]
+  --fit [stretch|crop]            How to fit front and double-sided images to
+                                  card size. 'stretch' allows distortion,
+                                  'crop' preserves aspect ratio by center-
+                                  cropping.  [default: stretch]
+  --fit_backs [stretch|crop]      How to fit back images to card size. If not
+                                  specified, uses the value from --fit.
   --crop TEXT                     Crop the outer portion of front and double-
                                   sided images (removes edges). Examples: 3mm,
                                   0.125in, 6.5.
   --crop_backs TEXT               Crop the outer portion of back images
-                                  (removes edges). Examples: 3mm, 0.125in, 6.5.
+                                  (removes edges). Examples: 3mm, 0.125in,
+                                  6.5.
   --extend_edges TEXT             Crop card edges and extend them uniformly to
-                                  generate bleed. Like --crop but generates
-                                  bleed from cropped edges. Examples: 3mm,
-                                  0.125in.
+                                  generate bleed for front and double-sided
+                                  images. Like --crop but generates bleed from
+                                  cropped edges. Examples: 3mm, 0.125in.
+  --extend_edges_backs TEXT       Crop card edges and extend them uniformly to
+                                  generate bleed for back images only. Like
+                                  --crop but generates bleed from cropped
+                                  edges. Examples: 3mm, 0.125in.
   --extend_corners TEXT           Fill rounded corner regions to reduce corner
-                                  artifacts. Fills cut zones beyond corner
-                                  radius arc. Examples: 3mm, 0.125in.
+                                  artifacts for front and double-sided images.
+                                  Fills cut zones beyond corner radius arc.
+                                  Examples: 3mm, 0.125in.
+  --extend_corners_backs TEXT     Fill rounded corner regions to reduce corner
+                                  artifacts for back images only. Fills cut
+                                  zones beyond corner radius arc. Examples:
+                                  3mm, 0.125in.
   --extend_bleed TEXT             Extend the outer bleed of outer cards on
                                   front pages (odd-numbered pages). Only
                                   affects edges facing outward from the layout.
