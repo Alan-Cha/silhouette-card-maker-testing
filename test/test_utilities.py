@@ -849,8 +849,8 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
         assert base.getpixel((50, 50)) == self.RED
@@ -884,8 +884,8 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
         assert list(base.tobytes()) == original_data
@@ -919,8 +919,13 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
+<<<<<<< HEAD
             ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=True, fit=FitMode.STRETCH,
+=======
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_edges_backs=0, extend_corners_backs_radius=0,
+            flip=True, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
+>>>>>>> dfde2f3 (Update tests for new backs-specific parameters)
             orientation=Orientation.LANDSCAPE
         )
         # With flip: card 0 (red) goes to row 1 (y=250), card 1 (blue) to row 0 (y=50)
@@ -962,8 +967,8 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
         # Card 0 (red) at top-left
@@ -1011,8 +1016,8 @@ class TestDrawCardLayout:
             width=10, height=10,
             print_bleed=(5, 5),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
         # Card area
@@ -1058,8 +1063,13 @@ class TestDrawCardLayout:
             width=10, height=10,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
+<<<<<<< HEAD
             ppi_ratio=2.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
+=======
+            ppi_ratio=2.0, extend_edges=0, extend_corners_radius=0, extend_edges_backs=0, extend_corners_backs_radius=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
+>>>>>>> dfde2f3 (Update tests for new backs-specific parameters)
             orientation=Orientation.PORTRAIT
         )
         # Card at scaled position (20,20) with scaled size 20x20
@@ -1103,8 +1113,13 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(50, 50), crop_backs=(0, 0),
+<<<<<<< HEAD
             ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
+=======
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_edges_backs=0, extend_corners_backs_radius=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
+>>>>>>> dfde2f3 (Update tests for new backs-specific parameters)
             orientation=Orientation.PORTRAIT
         )
         # Card area should be red (cropped to center, then stretched)
@@ -1139,8 +1154,13 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(50, 50),
+<<<<<<< HEAD
             ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
+=======
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_edges_backs=0, extend_corners_backs_radius=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
+>>>>>>> dfde2f3 (Update tests for new backs-specific parameters)
             orientation=Orientation.PORTRAIT
         )
         # Card area should be red (crop_backs applied to center)
@@ -1182,8 +1202,8 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
         # Left edge should be blue (stretched but preserved)
@@ -1225,8 +1245,13 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
+<<<<<<< HEAD
             ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.CROP,
+=======
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_edges_backs=0, extend_corners_backs_radius=0,
+            flip=False, fit=FitMode.CROP, fit_backs=FitMode.CROP,
+>>>>>>> dfde2f3 (Update tests for new backs-specific parameters)
             orientation=Orientation.PORTRAIT
         )
         # All edges should be red (blue/green sides were cropped off)
@@ -1272,8 +1297,8 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
         # Top edge should be blue (stretched but preserved)
@@ -1315,8 +1340,13 @@ class TestDrawCardLayout:
             width=100, height=100,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
+<<<<<<< HEAD
             ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.CROP,
+=======
+            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_edges_backs=0, extend_corners_backs_radius=0,
+            flip=False, fit=FitMode.CROP, fit_backs=FitMode.CROP,
+>>>>>>> dfde2f3 (Update tests for new backs-specific parameters)
             orientation=Orientation.PORTRAIT
         )
         # All edges should be red (blue/green sides were cropped off)
@@ -1359,8 +1389,8 @@ class TestDrawCardLayout:
             width=30, height=30,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
         # Edges of card should be blue (border preserved)
@@ -1406,8 +1436,13 @@ class TestDrawCardLayout:
             width=30, height=30,
             print_bleed=(0, 0),
             crop=(0, 0), crop_backs=(0, 0),
+<<<<<<< HEAD
             ppi_ratio=1.0, extend_edges=10, extend_corners_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH,
+=======
+            ppi_ratio=1.0, extend_edges=10, extend_corners_radius=0, extend_edges_backs=0, extend_corners_backs_radius=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
+>>>>>>> dfde2f3 (Update tests for new backs-specific parameters)
             orientation=Orientation.PORTRAIT
         )
         # Card area (25,25)-(34,34) should be red (border trimmed)
