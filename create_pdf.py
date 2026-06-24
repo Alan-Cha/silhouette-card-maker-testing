@@ -35,6 +35,8 @@ specialty_choices = get_all_specialty_layout_names(layout_config)
 @click.option("--crop_backs", help="Crop the outer portion of back images (removes edges). Examples: 3mm, 0.125in, 6.5.")
 @click.option("--extend_edges", help="Crop card edges and extend them uniformly to generate bleed. Like --crop but generates bleed from cropped edges. Examples: 3mm, 0.125in.")
 @click.option("--extend_corners", help="Fill rounded corner regions to reduce corner artifacts. Fills cut zones beyond corner radius arc. Examples: 3mm, 0.125in.")
+@click.option("--extend_bleed", help="Extend the outer bleed of outer cards on front pages (odd-numbered pages). Only affects edges facing outward from the layout. Examples: 2mm, 0.08in.")
+@click.option("--extend_bleed_backs", help="Extend the outer bleed of outer cards on back pages (even-numbered pages). Only affects edges facing outward from the layout. Examples: 2mm, 0.08in.")
 
 @click.option("--ppi", default=300, type=click.IntRange(min=0), show_default=True, help="Pixels per inch (PPI) when creating PDF.")
 @click.option("--quality", default=100, type=click.IntRange(min=0, max=100), show_default=True, help="File compression. A higher value corresponds to better quality and larger file size.")
@@ -63,6 +65,8 @@ def cli(
     crop_backs,
     extend_edges,
     extend_corners,
+    extend_bleed,
+    extend_bleed_backs,
     ppi,
     quality,
     skip,
@@ -86,6 +90,8 @@ def cli(
         crop_backs,
         extend_edges,
         extend_corners,
+        extend_bleed,
+        extend_bleed_backs,
         ppi,
         quality,
         skip,

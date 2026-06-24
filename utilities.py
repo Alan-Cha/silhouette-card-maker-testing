@@ -577,7 +577,14 @@ def fill_rounded_corners(card_image: Image.Image, corner_radius: int) -> Image.I
     return result
 
 
-def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: int, y: int, print_bleed: tuple[int, int]):
+def draw_card_with_bleed(
+    card_image: Image.Image,
+    base_image: Image.Image,
+    x: int,
+    y: int,
+    print_bleed: tuple[int, int],
+    extra_bleed: tuple[int, int, int, int] = (0, 0, 0, 0)
+):
     """
     Draw a card with bleed on all edges.
 
@@ -586,8 +593,16 @@ def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: in
         base_image: The base image to draw on
         x, y: Position to place the card
         print_bleed: Tuple of (bleed_width, bleed_height) in pixels
+        extra_bleed: Additional bleed for outer edges (top, right, bottom, left) in pixels
     """
     bleed_width, bleed_height = print_bleed
+    extra_top, extra_right, extra_bottom, extra_left = extra_bleed
+
+    # Calculate total bleed for each edge
+    bleed_top = bleed_height + extra_top
+    bleed_bottom = bleed_height + extra_bottom
+    bleed_left = bleed_width + extra_left
+    bleed_right = bleed_width + extra_right
 
     width, height = card_image.size
     base_image.paste(card_image, (x, y))
@@ -606,16 +621,22 @@ def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: in
 
     # Extend the edges of the cards to create print bleed
     # Top and bottom
-    extend_edge((0, 0, width, 1), (x, y - bleed_height), bleed_height, Axis.Y)
-    extend_edge((0, height - 1, width, height), (x, y + height), bleed_height, Axis.Y)
+    extend_edge((0, 0, width, 1), (x, y - bleed_top), bleed_top, Axis.Y)
+    extend_edge((0, height - 1, width, height), (x, y + height), bleed_bottom, Axis.Y)
 
     # Left and right
-    extend_edge((0, 0, 1, height), (x - bleed_width, y), bleed_width, Axis.X)
-    extend_edge((width - 1, 0, width, height), (x + width, y), bleed_width, Axis.X)
+    extend_edge((0, 0, 1, height), (x - bleed_left, y), bleed_left, Axis.X)
+    extend_edge((width - 1, 0, width, height), (x + width, y), bleed_right, Axis.X)
 
-    # Corners
-    for bleed_w, crop_x, pos_x in [(bleed_width, 0, x - bleed_width), (bleed_width, width - 1, x + width)]:
-        for bleed_h, crop_y, pos_y in [(bleed_height, 0, y - bleed_height), (bleed_height, height - 1, y + height)]:
+    # Corners - use the appropriate bleed amounts for each corner
+    for (bleed_w, is_right), crop_x, pos_x in [
+        ((bleed_left, False), 0, x - bleed_left),
+        ((bleed_right, True), width - 1, x + width)
+    ]:
+        for (bleed_h, is_bottom), crop_y, pos_y in [
+            ((bleed_top, False), 0, y - bleed_top),
+            ((bleed_bottom, True), height - 1, y + height)
+        ]:
             for x_bleed_i in range(bleed_w):
                 for y_bleed_i in range(bleed_h):
                     base_image.paste(card_image.crop((crop_x, crop_y, crop_x + 1, crop_y + 1)), (pos_x + x_bleed_i, pos_y + y_bleed_i))
@@ -638,6 +659,7 @@ def draw_card_layout(
     ppi_ratio: float,
     extend_edges: int,
     extend_corners_radius: int,
+    extend_bleed: int,
     flip: bool,
     fit: FitMode,
     orientation: Orientation
@@ -648,6 +670,7 @@ def draw_card_layout(
 
     extend_edges_thickness = math.floor(extend_edges * ppi_ratio)
     extend_corners_thickness = math.floor(extend_corners_radius * ppi_ratio)
+    extend_bleed_thickness = math.floor(extend_bleed * ppi_ratio)
 
     # Calculate the size of the card after scaling: "scaled size"
     scaled_width = math.floor(width * ppi_ratio)
@@ -726,9 +749,22 @@ def draw_card_layout(
         edge_bleed_width = synthetic_bleed[0] + extend_edges_thickness
         edge_bleed_height = synthetic_bleed[1] + extend_edges_thickness
 
+        # Determine if this card is on an outer edge and should have extended bleed
+        # extra_bleed format: (top, right, bottom, left)
+        extra_bleed_top = extend_bleed_thickness if row == 0 else 0
+        extra_bleed_bottom = extend_bleed_thickness if row == num_rows - 1 else 0
+        extra_bleed_left = extend_bleed_thickness if col == 0 else 0
+        extra_bleed_right = extend_bleed_thickness if col == num_cols - 1 else 0
+
         # Generate edge bleed (from the modified card if corners were filled)
-        draw_card_with_bleed(card_image, base_image, x, y,
-                           (edge_bleed_width, edge_bleed_height))
+        draw_card_with_bleed(
+            card_image,
+            base_image,
+            x,
+            y,
+            (edge_bleed_width, edge_bleed_height),
+            (extra_bleed_top, extra_bleed_right, extra_bleed_bottom, extra_bleed_left)
+        )
 
 def draw_outline(
     page: Image.Image,
@@ -916,6 +952,8 @@ def generate_pdf(
     crop_backs_string: str | None,
     extend_edges: str | None,
     extend_corners: str | None,
+    extend_bleed: str | None,
+    extend_bleed_backs: str | None,
     ppi: int,
     quality: int,
     skip_indices: List[int],
@@ -1091,6 +1129,10 @@ def generate_pdf(
     extend_edges_px = parse_dimension_string(extend_edges, layout_config.ppi)
     extend_corners_px = parse_dimension_string(extend_corners, layout_config.ppi)
 
+    # Parse extend_bleed parameters
+    extend_bleed_px = parse_dimension_string(extend_bleed, layout_config.ppi)
+    extend_bleed_backs_px = parse_dimension_string(extend_bleed_backs, layout_config.ppi)
+
     # Convert corner radius to pixels for outline drawing
     effective_card_radius = card_size_def.radius or layout_config.defaults.card_radius
     radius_px = size_convert.size_to_pixel(effective_card_radius, layout_config.ppi)
@@ -1237,6 +1279,7 @@ def generate_pdf(
                 ppi_ratio,
                 extend_edges_px,
                 extend_corners_px,
+                extend_bleed_px,
                 flip=False,
                 fit=fit,
                 orientation=orientation,
@@ -1259,6 +1302,7 @@ def generate_pdf(
                 ppi_ratio,
                 extend_edges_px,
                 extend_corners_px,
+                extend_bleed_backs_px,
                 flip=True, # Flip the back sides
                 fit=fit,
                 orientation=orientation,

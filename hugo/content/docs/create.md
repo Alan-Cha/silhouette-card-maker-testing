@@ -141,6 +141,20 @@ python create_pdf.py --extend_edges 3
 ```
 
 You may need to experiment with the corner radius value, but `3` (pixels) is a good starting point for standard playing cards.
+
+## Extended Outer Bleed
+
+The distance between cards in a layout is fixed at exactly 1.25 mm. While this spacing is precise, extending the outer bleed of the outer cards can help reduce the possibility of white edges appearing on the final cut cards.
+
+The `--extend_bleed` option extends the bleed on the outer edges of outer cards on **front pages** (odd-numbered pages), while `--extend_bleed_backs` extends the bleed on **back pages** (even-numbered pages).
+
+```sh
+python create_pdf.py --extend_bleed 2mm
+python create_pdf.py --extend_bleed 2mm --extend_bleed_backs 2mm
+```
+
+These options only affect cards at the edges of the layout grid (top row, bottom row, leftmost column, rightmost column) and only extend the bleed on the sides that face outward from the layout.
+
 ## Skip Cards
 
 One solution for registration issues is to use a Post-It note to cover up cards near the registration marks.
@@ -214,6 +228,14 @@ Options:
   --extend_corners TEXT           Fill rounded corner regions to reduce corner
                                   artifacts. Fills cut zones beyond corner
                                   radius arc. Examples: 3mm, 0.125in.
+  --extend_bleed TEXT             Extend the outer bleed of outer cards on
+                                  front pages (odd-numbered pages). Only
+                                  affects edges facing outward from the layout.
+                                  Examples: 2mm, 0.08in.
+  --extend_bleed_backs TEXT       Extend the outer bleed of outer cards on
+                                  back pages (even-numbered pages). Only
+                                  affects edges facing outward from the layout.
+                                  Examples: 2mm, 0.08in.
   --ppi INTEGER RANGE             Pixels per inch (PPI) when creating PDF.
                                   [default: 300; x>=0]
   --quality INTEGER RANGE         File compression. A higher value corresponds
