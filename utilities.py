@@ -709,7 +709,9 @@ def draw_card_layout(
         bleed_offset_y = 0
         synthetic_bleed = (scaled_bleed_width, scaled_bleed_height)
 
-        # Determine which crop percentages, fit mode, extend_edges, and extend_corners to use
+        # Select parameters based on card type (front vs back).
+        # Renaming to active_* allows us to use a single processing path below
+        # instead of duplicating the entire image processing logic for fronts and backs.
         if card_image is single_back_image:
             active_crop_x, active_crop_y = crop_backs_percent_x, crop_backs_percent_y
             active_fit = fit_backs
