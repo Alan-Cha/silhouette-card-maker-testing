@@ -1450,8 +1450,8 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(5, 5),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=10,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=10,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
 
@@ -1490,8 +1490,8 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(10, 10),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=0,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
 
@@ -1520,8 +1520,8 @@ class TestDrawCardLayout:
             width=50, height=70,
             print_bleed=(5, 5),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=10,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=10,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
 
@@ -1550,8 +1550,8 @@ class TestDrawCardLayout:
             width=100, height=140,
             print_bleed=(5, 5),
             crop=(0, 0), crop_backs=(0, 0),
-            ppi_ratio=1.0, extend_edges=0, extend_corners_radius=0, extend_bleed=10,
-            flip=False, fit=FitMode.STRETCH,
+            ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=10,
+            flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
             orientation=Orientation.PORTRAIT
         )
 
