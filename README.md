@@ -300,7 +300,7 @@ Options:
                                   The desired paper size.  [default: letter]
   --registration [3|4]            The desired registration pattern.  [default:
                                   3]
-  --registration_orientation, --rotate_registration [portrait|landscape]
+  --registration_orientation [portrait|landscape]
                                   Override the registration mark orientation
                                   without changing the card layout.
   --specialty [a4-commander|letter-commander]
