@@ -619,6 +619,15 @@ def draw_card_with_bleed(
             )
             base_image.paste(card_image.crop(crop_box), pos)
 
+    def fill_corner(corner_pixel_x: int, corner_pixel_y: int,
+                    corner_x: int, corner_y: int,
+                    width: int, height: int):
+        """Fill a corner bleed region by tiling a single pixel."""
+        pixel = card_image.crop((corner_pixel_x, corner_pixel_y, corner_pixel_x + 1, corner_pixel_y + 1))
+        for dx in range(width):
+            for dy in range(height):
+                base_image.paste(pixel, (corner_x + dx, corner_y + dy))
+
     # Extend the edges of the cards to create print bleed
     # Top and bottom
     extend_edge((0, 0, width, 1), (x, y - bleed_top), bleed_top, Axis.Y)
@@ -628,18 +637,11 @@ def draw_card_with_bleed(
     extend_edge((0, 0, 1, height), (x - bleed_left, y), bleed_left, Axis.X)
     extend_edge((width - 1, 0, width, height), (x + width, y), bleed_right, Axis.X)
 
-    # Corners - use the appropriate bleed amounts for each corner
-    for bleed_w, crop_x, pos_x in [
-        (bleed_left, 0, x - bleed_left),
-        (bleed_right, width - 1, x + width)
-    ]:
-        for bleed_h, crop_y, pos_y in [
-            (bleed_top, 0, y - bleed_top),
-            (bleed_bottom, height - 1, y + height)
-        ]:
-            for x_bleed_i in range(bleed_w):
-                for y_bleed_i in range(bleed_h):
-                    base_image.paste(card_image.crop((crop_x, crop_y, crop_x + 1, crop_y + 1)), (pos_x + x_bleed_i, pos_y + y_bleed_i))
+    # Fill four corners with tiled pixels from card corners
+    fill_corner(0, 0, x - bleed_left, y - bleed_top, bleed_left, bleed_top)  # Top-left
+    fill_corner(width - 1, 0, x + width, y - bleed_top, bleed_right, bleed_top)  # Top-right
+    fill_corner(0, height - 1, x - bleed_left, y + height, bleed_left, bleed_bottom)  # Bottom-left
+    fill_corner(width - 1, height - 1, x + width, y + height, bleed_right, bleed_bottom)  # Bottom-right
 
     return base_image
 
