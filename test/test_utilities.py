@@ -1425,15 +1425,14 @@ class TestDrawCardLayout:
         assert base.getpixel((14, 25)) == self.WHITE
         assert base.getpixel((25, 14)) == self.WHITE
 
-    def test_extend_bleed_extends_top_row_top_edge(self):
-        """extend_bleed should extend the top edge of cards in the top row.
+    def test_extend_bleed_outer_edges_extended(self):
+        """Outer edges of cards in a 2x2 grid should get extended bleed.
 
-        Base 300x400, 2x2 grid, extend_bleed=10:
-
-        Top row cards (row 0) should have extra 10px bleed on top edge.
-        Bottom row cards (row 1) should have extra 10px bleed on bottom edge.
-        Left column cards (col 0) should have extra 10px bleed on left edge.
-        Right column cards (col 1) should have extra 10px bleed on right edge.
+        Normal bleed: 5px, extended: 10px, total outer bleed: 15px
+        - Top row: extended top edge (y=5 to y=19)
+        - Bottom row: extended bottom edge (y=340 to y=354)
+        - Left column: extended left edge (x=0 to x=9, clamped from x=-5)
+        - Right column: extended right edge (x=250 to x=264)
         """
         red_card = Image.new('RGB', (100, 140), color='red')
         blue_card = Image.new('RGB', (100, 140), color='blue')
@@ -1456,34 +1455,25 @@ class TestDrawCardLayout:
             orientation=Orientation.PORTRAIT
         )
 
-        # Top-left card (red, row 0, col 0): extended top (15px total) and left (15px total)
-        # Normal bleed: 5px, extended: 10px, total: 15px
-        # Card is at (10, 20), size 100x140
-        # Top edge bleed should extend from y=5 (20-15) to y=19
-        assert base.getpixel((10, 5)) == self.RED  # Extended top bleed
-        assert base.getpixel((10, 19)) == self.RED  # Just above card
+        # Top-left card (red): extended top and left
+        assert base.getpixel((10, 5)) == self.RED      # Extended top bleed start
+        assert base.getpixel((10, 19)) == self.RED     # Extended top bleed end
+        assert base.getpixel((0, 20)) == self.RED      # Extended left bleed (clamped from x=-5)
 
-        # Left edge bleed should extend from x=-5 (10-15) but clamped to 0
-        assert base.getpixel((0, 20)) == self.RED  # Extended left bleed (clamped)
+        # Top-right card (blue): extended top and right
+        assert base.getpixel((150, 5)) == self.BLUE    # Extended top bleed start
+        assert base.getpixel((150, 19)) == self.BLUE   # Extended top bleed end
+        assert base.getpixel((264, 20)) == self.BLUE   # Extended right bleed end (x=250+14)
 
-        # Top-right card (blue, row 0, col 1): extended top (15px) and right (15px)
-        # Card is at (150, 20), size 100x140
-        assert base.getpixel((150, 5)) == self.BLUE  # Extended top bleed
+        # Bottom-left card (green): extended bottom and left
+        assert base.getpixel((10, 354)) == self.GREEN  # Extended bottom bleed end (y=340+14)
+        assert base.getpixel((10, 355)) == self.WHITE  # Outside extended bleed
+        assert base.getpixel((0, 200)) == self.GREEN   # Extended left bleed (clamped)
 
-        # Right edge bleed: card ends at x=250, bleed extends to x=265
-        assert base.getpixel((264, 20)) == self.BLUE  # Extended right bleed
-
-        # Bottom-left card (green, row 1, col 0): extended bottom (15px) and left (15px)
-        # Card is at (10, 200), ends at (110, 340)
-        # Bottom edge bleed extends 15 pixels: from y=340 to y=354 (range gives 0-14)
-        assert base.getpixel((10, 354)) == self.GREEN  # Extended bottom bleed
-        assert base.getpixel((10, 355)) == self.WHITE  # Outside bleed
-        assert base.getpixel((0, 200)) == self.GREEN  # Extended left bleed (clamped)
-
-        # Bottom-right card (yellow, row 1, col 1): extended bottom (15px) and right (15px)
-        # Card is at (150, 200), ends at (250, 340)
-        assert base.getpixel((150, 354)) == self.YELLOW  # Extended bottom bleed
-        assert base.getpixel((264, 200)) == self.YELLOW  # Extended right bleed
+        # Bottom-right card (yellow): extended bottom and right
+        assert base.getpixel((150, 354)) == self.YELLOW  # Extended bottom bleed end
+        assert base.getpixel((150, 355)) == self.WHITE   # Outside extended bleed
+        assert base.getpixel((264, 200)) == self.YELLOW  # Extended right bleed end
 
     def test_extend_bleed_zero_no_extra_bleed(self):
         """extend_bleed=0 should behave the same as not having the feature."""
