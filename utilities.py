@@ -629,13 +629,13 @@ def draw_card_with_bleed(
     extend_edge((width - 1, 0, width, height), (x + width, y), bleed_right, Axis.X)
 
     # Corners - use the appropriate bleed amounts for each corner
-    for (bleed_w, is_right), crop_x, pos_x in [
-        ((bleed_left, False), 0, x - bleed_left),
-        ((bleed_right, True), width - 1, x + width)
+    for bleed_w, crop_x, pos_x in [
+        (bleed_left, 0, x - bleed_left),
+        (bleed_right, width - 1, x + width)
     ]:
-        for (bleed_h, is_bottom), crop_y, pos_y in [
-            ((bleed_top, False), 0, y - bleed_top),
-            ((bleed_bottom, True), height - 1, y + height)
+        for bleed_h, crop_y, pos_y in [
+            (bleed_top, 0, y - bleed_top),
+            (bleed_bottom, height - 1, y + height)
         ]:
             for x_bleed_i in range(bleed_w):
                 for y_bleed_i in range(bleed_h):
