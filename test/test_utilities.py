@@ -39,8 +39,8 @@ class TestRegistrationOrientation:
 
         aligned = align_registration_page(
             page,
-            page_orientation=Orientation.LANDSCAPE,
-            registration_orientation=Orientation.PORTRAIT,
+            card_card_orientation=Orientation.LANDSCAPE,
+            registration_card_orientation=Orientation.PORTRAIT,
         )
 
         assert aligned.size == (30, 20)
@@ -878,7 +878,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         assert base.getpixel((50, 50)) == self.RED
         assert base.getpixel((100, 100)) == self.RED
@@ -913,7 +913,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         assert list(base.tobytes()) == original_data
 
@@ -948,7 +948,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=True, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.LANDSCAPE
+            card_orientation=Orientation.LANDSCAPE
         )
         # With flip: card 0 (red) goes to row 1 (y=250), card 1 (blue) to row 0 (y=50)
         # Images are rotated 180 degrees, but still the same color
@@ -991,7 +991,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Card 0 (red) at top-left
         assert base.getpixel((10, 10)) == self.RED
@@ -1040,7 +1040,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Card area
         assert base.getpixel((15, 15)) == self.RED
@@ -1087,7 +1087,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=2.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Card at scaled position (20,20) with scaled size 20x20
         assert base.getpixel((20, 20)) == self.RED
@@ -1132,7 +1132,7 @@ class TestDrawCardLayout:
             crop=(50, 50), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Card area should be red (cropped to center, then stretched)
         assert base.getpixel((50, 50)) == self.RED
@@ -1168,7 +1168,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(50, 50),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Card area should be red (crop_backs applied to center)
         assert base.getpixel((50, 50)) == self.RED
@@ -1211,7 +1211,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Left edge should be blue (stretched but preserved)
         assert base.getpixel((50, 80)) == self.BLUE
@@ -1254,7 +1254,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.CROP, fit_backs=FitMode.CROP,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # All edges should be red (blue/green sides were cropped off)
         assert base.getpixel((50, 80)) == self.RED
@@ -1301,7 +1301,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Top edge should be blue (stretched but preserved)
         assert base.getpixel((80, 50)) == self.BLUE
@@ -1344,7 +1344,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.CROP, fit_backs=FitMode.CROP,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # All edges should be red (blue/green sides were cropped off)
         assert base.getpixel((80, 50)) == self.RED
@@ -1388,7 +1388,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Edges of card should be blue (border preserved)
         assert base.getpixel((15, 15)) == self.BLUE
@@ -1435,7 +1435,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=10, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
         # Card area (25,25)-(34,34) should be red (border trimmed)
         assert base.getpixel((25, 25)) == self.RED
@@ -1479,7 +1479,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=10,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
 
         # Top-left card (red): extended top and left
@@ -1519,7 +1519,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=0,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
 
         # Card at (50, 50), size 100x140, normal bleed 10px
@@ -1549,7 +1549,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=10,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
 
         # Center card (blue) is at row=1, col=1, position (80, 100)
@@ -1579,7 +1579,7 @@ class TestDrawCardLayout:
             crop=(0, 0), crop_backs=(0, 0),
             ppi_ratio=1.0, extend_edges=0, extend_edges_backs=0, extend_corners_radius=0, extend_corners_backs_radius=0, extend_bleed=10,
             flip=False, fit=FitMode.STRETCH, fit_backs=FitMode.STRETCH,
-            orientation=Orientation.PORTRAIT
+            card_orientation=Orientation.PORTRAIT
         )
 
         # Single card is both first and last row/col, so all edges extended
@@ -1620,7 +1620,7 @@ class TestAddFrontBackPages:
             page_width=300, page_height=400,
             ppi_ratio=1.0, template='test_v1',
             only_fronts=False, label=None,
-            orientation=Orientation.LANDSCAPE, label_margin_px=10, borderless=False
+            card_orientation=Orientation.LANDSCAPE, label_margin_px=10, borderless=False
         )
         assert len(pages) == 2
         assert pages[0].size == front.size
@@ -1640,7 +1640,7 @@ class TestAddFrontBackPages:
             page_width=300, page_height=400,
             ppi_ratio=1.0, template='test_v1',
             only_fronts=True, label=None,
-            orientation=Orientation.LANDSCAPE, label_margin_px=10, borderless=False
+            card_orientation=Orientation.LANDSCAPE, label_margin_px=10, borderless=False
         )
         assert len(pages) == 1
         assert pages[0].size == front.size
@@ -1662,14 +1662,14 @@ class TestAddFrontBackPages:
             page_width=300, page_height=400,
             ppi_ratio=1.0, template='test_v1',
             only_fronts=False, label=None,
-            orientation=Orientation.PORTRAIT, label_margin_px=10, borderless=False
+            card_orientation=Orientation.PORTRAIT, label_margin_px=10, borderless=False
         )
         add_front_back_pages(
             front2, back2, pages,
             page_width=300, page_height=400,
             ppi_ratio=1.0, template='test_v1',
             only_fronts=False, label=None,
-            orientation=Orientation.PORTRAIT, label_margin_px=10, borderless=False
+            card_orientation=Orientation.PORTRAIT, label_margin_px=10, borderless=False
         )
         assert len(pages) == 4
 
@@ -1687,7 +1687,7 @@ class TestAddFrontBackPages:
             page_width=300, page_height=400,
             ppi_ratio=1.0, template='test_v1',
             only_fronts=False, label='my_deck',
-            orientation=Orientation.PORTRAIT, label_margin_px=10, borderless=False
+            card_orientation=Orientation.PORTRAIT, label_margin_px=10, borderless=False
         )
         assert len(pages) == 2
 
