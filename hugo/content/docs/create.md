@@ -231,11 +231,11 @@ Options:
   --extend_bleed TEXT             Extend the outer bleed of outer cards on
                                   front pages (odd-numbered pages). Only
                                   affects edges facing outward from the layout.
-                                  Examples: 2mm, 0.08in.
+                                  Examples: 3mm, 0.125in.
   --extend_bleed_backs TEXT       Extend the outer bleed of outer cards on
                                   back pages (even-numbered pages). Only
                                   affects edges facing outward from the layout.
-                                  Examples: 2mm, 0.08in.
+                                  Examples: 3mm, 0.125in.
   --ppi INTEGER RANGE             Pixels per inch (PPI) when creating PDF.
                                   [default: 300; x>=0]
   --quality INTEGER RANGE         File compression. A higher value corresponds
