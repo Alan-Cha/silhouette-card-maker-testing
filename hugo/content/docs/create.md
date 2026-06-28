@@ -130,13 +130,7 @@ python create_pdf.py --extend_corners 3.5mm
 
 You may need to experiment with the corner radius value, but `3.5mm` is a good starting point for standard playing cards.
 
-If you need different corner extension for back images only, you can use the `--extend_corners_backs` option:
-
-```sh
-python create_pdf.py --extend_corners 3.5mm --extend_corners_backs 2mm
-```
-
-## Edge Bleed with --extend_edges
+## Edge Artifacts
 
 If your print bleed does not match your card image, then there may be an issue with your your card image.
 
@@ -148,25 +142,16 @@ python create_pdf.py --extend_edges 3
 
 You may need to experiment with the corner radius value, but `3` (pixels) is a good starting point for standard playing cards.
 
-If you need different edge extension for back images only, you can use the `--extend_edges_backs` option:
-
-```sh
-python create_pdf.py --extend_edges 3 --extend_edges_backs 2
-```
-
 ## Extended Outer Bleed
 
-The distance between cards in a layout is fixed at exactly 1.25 mm. While this spacing is precise, extending the outer bleed of the outer cards can help reduce the possibility of white edges appearing on the final cut cards.
+The distance between cards in a layout is fixed at 1.25 mm. However, extending the outer bleed of the outer cards can reduce the possibility of white edges appearing on cut cards.
 
 The `--extend_bleed` option extends the bleed on the outer edges of outer cards on **front pages** (odd-numbered pages), while `--extend_bleed_backs` extends the bleed on **back pages** (even-numbered pages).
 
 ```sh
 python create_pdf.py --extend_bleed 2mm
-python create_pdf.py --extend_bleed 2mm --extend_bleed_backs 2mm
+python create_pdf.py --extend_bleed_backs 2mm
 ```
-
-These options only affect cards at the edges of the layout grid (top row, bottom row, leftmost column, rightmost column) and only extend the bleed on the sides that face outward from the layout.
-
 
 ## Skip Cards
 
@@ -209,71 +194,65 @@ Usage: create_pdf.py [OPTIONS]
 
 Options:
   --front_dir_path TEXT           The path to the directory containing the
-                                  card fronts.  [default: game\front]
+                                  card fronts.  [default: game/front]
   --back_dir_path TEXT            The path to the directory containing one or
-                                  more card backs.  [default: game\back]
+                                  more card backs.  [default: game/back]
   --double_sided_dir_path TEXT    The path to the directory containing card
                                   backs for double-sided cards.  [default:
-                                  game\double_sided]
+                                  game/double_sided]
   --output_path TEXT              The desired path to the output PDF.
-                                  [default: game\output\game.pdf]
+                                  [default: game/output/game.pdf]
   --output_images                 Create images instead of a PDF.
   --card_size [standard|poker|bridge|american_mini|bridge_square|business|catan|credit|domino|domino_square|euro_business|euro_mini|euro_poker|japanese|jumbo|micro|mini|mini_american|mini_euro|photo|standard_double|tarot|70mm_square]
                                   The desired card size.  [default: standard]
   --paper_size [letter|tabloid|a4|a3|arch_b|ansi_a|ansi_b]
                                   The desired paper size.  [default: letter]
-  --registration [3|4]            The desired registration.  [default: 3]
-  --only_fronts                   Only use the card fronts, exclude the card
-                                  backs.
+  --registration [3|4]            The desired registration pattern.  [default:
+                                  3]
+  --specialty [a4-commander|letter-commander]
+                                  Use a specialty layout. Overrides card_size,
+                                  paper_size, and registration settings.
+  --only_fronts                   Only generate front pages.
   --fit [stretch|crop]            How to fit front and double-sided images to
                                   card size. 'stretch' allows distortion,
                                   'crop' preserves aspect ratio by center-
                                   cropping.  [default: stretch]
-  --fit_backs [stretch|crop]      How to fit back images to card size. If not
-                                  specified, uses the value from --fit.
-  --crop TEXT                     Crop the outer portion of front and double-
-                                  sided images (removes edges). Examples: 3mm,
+  --fit_backs [stretch|crop]      How to fit back images to card size.
+                                  'stretch' allows distortion, 'crop'
+                                  preserves aspect ratio by center-cropping.
+  --crop TEXT                     Crop card edges of front and double-sided
+                                  images (removes edges). Examples: 3mm,
                                   0.125in, 6.5.
-  --crop_backs TEXT               Crop the outer portion of back images
-                                  (removes edges). Examples: 3mm, 0.125in,
-                                  6.5.
-  --extend_edges TEXT             Crop card edges and extend them uniformly to
-                                  generate bleed for front and double-sided
-                                  images. Like --crop but generates bleed from
-                                  cropped edges. Examples: 3mm, 0.125in.
-  --extend_edges_backs TEXT       Crop card edges and extend them uniformly to
-                                  generate bleed for back images only. Like
-                                  --crop but generates bleed from cropped
-                                  edges. Examples: 3mm, 0.125in.
-  --extend_corners TEXT           Fill rounded corner regions to reduce corner
-                                  artifacts for front and double-sided images.
-                                  Fills cut zones beyond corner radius arc.
+  --crop_backs TEXT               Crop card edges of back images (removes
+                                  edges). Examples: 3mm, 0.125in, 6.5.
+  --extend_edges TEXT             Crop card edges and extend them for front
+                                  and double-sided images. Examples: 3mm,
+                                  0.125in.
+  --extend_edges_backs TEXT       Crop card edges and extend them for back
+                                  images only. Examples: 3mm, 0.125in.
+  --extend_corners TEXT           Extend rounded corner regions to reduce
+                                  corner artifacts for front and double-sided
+                                  images. Examples: 3mm, 0.125in.
+  --extend_corners_backs TEXT     Extend rounded corner regions to reduce
+                                  corner artifacts for back images only.
                                   Examples: 3mm, 0.125in.
-  --extend_corners_backs TEXT     Fill rounded corner regions to reduce corner
-                                  artifacts for back images only. Fills cut
-                                  zones beyond corner radius arc. Examples:
-                                  3mm, 0.125in.
   --extend_bleed TEXT             Extend the outer bleed of outer cards on
-                                  front pages (odd-numbered pages). Only
-                                  affects edges facing outward from the layout.
-                                  Examples: 3mm, 0.125in.
+                                  front pages (odd-numbered pages). Examples:
+                                  3mm, 0.125in.
   --extend_bleed_backs TEXT       Extend the outer bleed of outer cards on
-                                  back pages (even-numbered pages). Only
-                                  affects edges facing outward from the layout.
-                                  Examples: 3mm, 0.125in.
+                                  back pages (even-numbered pages). Examples:
+                                  3mm, 0.125in.
   --ppi INTEGER RANGE             Pixels per inch (PPI) when creating PDF.
                                   [default: 300; x>=0]
-  --quality INTEGER RANGE         File compression. A higher value corresponds
-                                  to better quality and larger file size.
-                                  [default: 100; 0<=x<=100]
+  --quality INTEGER RANGE         File compression quality.  [default: 100;
+                                  0<=x<=100]
   --load_offset                   Apply saved offsets. See `offset_pdf.py` for
                                   more information.
   --skip INTEGER RANGE            Skip a card based on its index. Useful for
                                   registration issues. Examples: 0, 4.  [x>=0]
   --label TEXT                    Apply a custom label to each page.
-  --show_outline                  Overlay a black outline of the cutting path
-                                  on each page.
-  --borderless                    Use tighter margins to fit more cards per
+  --show_outline                  Show a white outline for cutting paths.
+  --borderless                    Use tighter inset to fit more cards per
                                   page.
   --version                       Show the version and exit.
   --help                          Show this message and exit.
