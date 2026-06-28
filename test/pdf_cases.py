@@ -66,4 +66,7 @@ TEST_CASES = [
     ('borderless-letter-poker', ['--borderless', '--card_size', 'poker', '--only_fronts']),
     ('borderless-a4-poker', ['--borderless', '--paper_size', 'a4', '--card_size', 'poker', '--only_fronts']),
     ('borderless-tabloid-standard', ['--borderless', '--paper_size', 'tabloid', '--only_fronts']),
+
+    ('extend_bleed', ['--extend_bleed', '3mm']),
+    ('extend_bleed_backs', ['--extend_bleed_backs', '3mm']),
 ]
