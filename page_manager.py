@@ -37,7 +37,7 @@ def generate_reg_mark(
     length: str,
     dpi: int,
     registration: Registration,
-    orientation: Orientation = Orientation.LANDSCAPE,
+    registration_orientation: Orientation = Orientation.LANDSCAPE,
 ) -> Image.Image:
     """Generate a registration mark image for the given paper size.
 
@@ -49,7 +49,7 @@ def generate_reg_mark(
         length: Line length for registration marks.
         dpi: Resolution in dots per inch.
         registration: Registration pattern (THREE or FOUR).
-        orientation: Page orientation. Portrait swaps width/height.
+        registration_orientation: Registration mark orientation. Portrait swaps width/height.
 
     Returns:
         PIL Image with registration marks drawn on a white background.
@@ -58,7 +58,7 @@ def generate_reg_mark(
     paper_height_mm = size_convert.size_to_mm(paper_height)
 
     # Paper sizes are stored as landscape. Swap for portrait.
-    if orientation == Orientation.PORTRAIT:
+    if registration_orientation == Orientation.PORTRAIT:
         paper_width_mm, paper_height_mm = paper_height_mm, paper_width_mm
     inset_mm = size_convert.size_to_mm(inset)
     thickness_mm = size_convert.size_to_mm(thickness)
