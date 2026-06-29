@@ -226,18 +226,6 @@ def template_name(paper_size: str, card_size: str, variant: Variant, version: in
         return f"{paper_size}-{card_size}-{variant.value}-v{version}"
 
 
-def template_name_with_registration_orientation(
-    template: str,
-    registration_orientation: Orientation,
-) -> str:
-    """Add registration orientation to the printed template label."""
-    suffix = f"-{registration_orientation.value}"
-    version_match = re.search(r"-v\d+$", template)
-    if version_match is None:
-        return f"{template}{suffix}"
-    return f"{template[:version_match.start()]}{suffix}{template[version_match.start():]}"
-
-
 # Known junk files across OSes
 EXTRANEOUS_FILES = {
     ".DS_Store",
@@ -1097,8 +1085,6 @@ def generate_pdf(
         if registration_orientation_override is not None:
             registration_orientation = registration_orientation_override
         template = f"{specialty}-v{spec.version}"
-        if registration_orientation_override is not None:
-            template = template_name_with_registration_orientation(template, registration_orientation)
 
         lr = spec.registration or RegistrationSettings()
         effective_inset = lr.inset or default_reg.inset
@@ -1146,8 +1132,6 @@ def generate_pdf(
             effective_inset = lr.inset or layout_config.defaults.registration.default.inset
 
         template = template_name(paper_size, card_size, variant, version)
-        if registration_orientation_override is not None:
-            template = template_name_with_registration_orientation(template, registration_orientation)
 
     effective_thickness = lr.thickness or default_reg.thickness
     effective_length = lr.length or default_reg.length
