@@ -79,7 +79,7 @@ def generate_single_dxf(
     else:
         variant_reg = config.defaults.registration.default
 
-    orientation = layout_def.card_orientation
+    orientation = layout_def.orientation
     version = layout_def.version
 
     total_length_mm = size_convert.size_to_mm(variant_reg.length) + page_manager.REG_PADDING_MM
@@ -517,7 +517,7 @@ def generate_all_optimized(config: LayoutConfig, out: Path):
                     num_rows = len(best_computed.y_pos)
 
                     # Check if orientation or layout changed
-                    if (best_orientation != layout_def.card_orientation
+                    if (best_orientation != layout_def.orientation
                             or num_cols != layout_def.num_cols
                             or num_rows != layout_def.num_rows):
                         version += 1

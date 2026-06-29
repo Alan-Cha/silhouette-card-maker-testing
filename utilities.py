@@ -95,7 +95,7 @@ class SpecialtyPaperSizeDef(BaseModel):
 class SpecialtyLayoutDef(BaseModel):
     card_size: SpecialtyCardSizeDef
     paper_size: SpecialtyPaperSizeDef
-    card_orientation: Orientation = Orientation.LANDSCAPE
+    orientation: Orientation = Orientation.LANDSCAPE
     registration_orientation: Optional[Orientation] = None
     version: int = 1
     num_rows: Optional[int] = None
@@ -125,7 +125,7 @@ class PaperSizeDef(BaseModel):
         return self
 
 class CardLayout(BaseModel):
-    card_orientation: Orientation
+    orientation: Orientation
     registration_orientation: Optional[Orientation] = None
     version: int
     num_rows: Optional[int] = None
@@ -672,7 +672,7 @@ def draw_card_layout(
     flip: bool,
     fit: FitMode,
     fit_backs: FitMode,
-    card_orientation: Orientation
+    orientation: Orientation
 ):
     num_cards = num_rows * num_cols
     crop_percent_x, crop_percent_y = crop
@@ -701,7 +701,7 @@ def draw_card_layout(
         row = (i % num_cards) // num_cols
         # Long-side flip: landscape flips rows, portrait flips columns
         if flip:
-            if card_orientation == Orientation.PORTRAIT:
+            if orientation == Orientation.PORTRAIT:
                 col = num_cols - col - 1
             else:
                 row = num_rows - row - 1
@@ -758,7 +758,7 @@ def draw_card_layout(
         if active_extend_corners_thickness > 0:
             card_image = fill_rounded_corners(card_image, active_extend_corners_thickness)
 
-        if flip and card_orientation == Orientation.LANDSCAPE:
+        if flip and orientation == Orientation.LANDSCAPE:
             card_image = card_image.rotate(180)
 
         # Calculate final position
@@ -811,7 +811,7 @@ def draw_outline(
                 width=1,
             )
 
-def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, label: str, card_orientation: Orientation, label_margin_px: int, borderless: bool):
+def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, label: str, orientation: Orientation, label_margin_px: int, borderless: bool):
     font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 40 * ppi_ratio)
 
     num_sheet = len(pages) + 1
@@ -825,7 +825,7 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
     # Label goes on the short side of the paper, opposite the top-left black square.
     # Landscape: short sides are left/right; black square top-left → label on RIGHT.
     # Portrait: short sides are top/bottom; black square top-left → label on BOTTOM.
-    if card_orientation == Orientation.LANDSCAPE:
+    if orientation == Orientation.LANDSCAPE:
         # Right side: rotate page, draw horizontal text, rotate back
         front_page = front_page.rotate(-90, expand=True)
         draw = ImageDraw.Draw(front_page)
@@ -842,7 +842,7 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
 
     # Rotate portrait pages to landscape so the generated PDF is always landscape.
     # This ensures offset_pdf.py works regardless of card orientation detection.
-    if card_orientation == Orientation.PORTRAIT:
+    if orientation == Orientation.PORTRAIT:
         front_page = front_page.rotate(-90, expand=True)
         back_page = back_page.rotate(-90, expand=True)
 
@@ -912,7 +912,7 @@ def find_best_orientation(
         preferred: Tiebreaker orientation when OPTIMIZE finds equal card counts.
 
     Returns:
-        (chosen_card_orientation, computed_layout)
+        (chosen_orientation, computed_layout)
 
     Raises:
         ValueError if no valid layout exists in any tried card orientation.
@@ -929,12 +929,12 @@ def find_best_orientation(
 
     # Manual mode: user specified exact card orientation (LANDSCAPE or PORTRAIT)
     if orientation_mode != OrientationMode.OPTIMIZE:
-        card_orientation = Orientation(orientation_mode.value)
-        return card_orientation, page_manager.generate_layout(orientation=card_orientation, **kwargs)
+        orientation = Orientation(orientation_mode.value)
+        return orientation, page_manager.generate_layout(orientation=orientation, **kwargs)
 
     # Optimize mode: try both card orientations and pick the one that fits more cards
     best_count = 0
-    best_card_orientation = preferred
+    best_orientation = preferred
     best_computed = None
 
     for orient in Orientation:
@@ -948,13 +948,13 @@ def find_best_orientation(
         # Keep this card orientation if it fits more cards, or if it's a tie and matches preferred
         if count > best_count or (count == best_count and orient == preferred):
             best_count = count
-            best_card_orientation = orient
+            best_orientation = orient
             best_computed = computed
 
     if best_computed is None:
         raise ValueError("No valid layout in either card orientation.")
 
-    return best_card_orientation, best_computed
+    return best_orientation, best_computed
 
 
 def generate_pdf(
@@ -1080,8 +1080,8 @@ def generate_pdf(
                 height=spec.paper_size.height,
             )
 
-        card_orientation = spec.card_orientation
-        registration_orientation = spec.registration_orientation or card_orientation
+        orientation = spec.orientation
+        registration_orientation = spec.registration_orientation or orientation
         if registration_orientation_override is not None:
             registration_orientation = registration_orientation_override
         template = f"{specialty}-v{spec.version}"
@@ -1116,8 +1116,8 @@ def generate_pdf(
             raise Exception(f'No {variant.value} layout defined for paper "{paper_size}" with card "{card_size}". Add it to layouts.json.')
 
         layout_def = card_layouts[variant.value]
-        card_orientation = layout_def.card_orientation
-        registration_orientation = layout_def.registration_orientation or card_orientation
+        orientation = layout_def.orientation
+        registration_orientation = layout_def.registration_orientation or orientation
         if registration_orientation_override is not None:
             registration_orientation = registration_orientation_override
         version = layout_def.version
@@ -1139,7 +1139,7 @@ def generate_pdf(
     # Corner exclusion zone = configured mark length + padding constant
     total_exclusion_mm = size_convert.size_to_mm(default_reg.length) + page_manager.REG_PADDING_MM
     computed = page_manager.generate_layout(
-        orientation=card_orientation,
+        orientation=orientation,
         card_width=card_size_def.width,
         card_height=card_size_def.height,
         paper_width=paper_size_def.width,
@@ -1323,7 +1323,7 @@ def generate_pdf(
                 flip=False,
                 fit=fit,
                 fit_backs=fit_backs_mode,
-                card_orientation=card_orientation,
+                orientation=orientation,
             )
 
             # Create back layout
@@ -1349,7 +1349,7 @@ def generate_pdf(
                 flip=True, # Flip the back sides
                 fit=fit,
                 fit_backs=fit_backs_mode,
-                card_orientation=card_orientation,
+                orientation=orientation,
             )
 
             # Draw cutting path outlines on top of the card images
@@ -1368,7 +1368,7 @@ def generate_pdf(
                 template,
                 only_fronts,
                 label,
-                card_orientation,
+                orientation,
                 label_margin_px,
                 borderless
             )
