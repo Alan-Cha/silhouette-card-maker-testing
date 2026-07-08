@@ -376,16 +376,20 @@ def get_back_card_image_path(back_dir_path) -> str | None:
     if len(files) == 0:
         return None
 
+    if len(files) == 1:
+        return files[0]
+
     # Multiple back files detected, provide a selection menu
     print("[0] No back image")
     for i, f in enumerate(files):
         print(f'[{i + 1}] {f}')
+
     while True:
         choice = input("Select a back image (enter the number): ")
 
         if not choice.isdigit():
             continue
-        
+
         index = int(choice) - 1
         if index == -1:
             return None
