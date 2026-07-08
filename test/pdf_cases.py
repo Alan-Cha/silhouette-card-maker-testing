@@ -46,6 +46,9 @@ TEST_CASES = [
     ('registration4', ['--registration', '4']),
     ('registration4-tabloid', ['--registration', '4', '--paper_size', 'tabloid']),
 
+    ('registration_orientation-letter_standard', ['--registration_orientation', 'portrait']),
+    ('registration_orientation-letter_standard-borderless', ['--registration_orientation', 'landscape', '--borderless']),
+
     ('show_outline', ['--show_outline']),
     ('show_outline-domino', ['--show_outline', '--card_size', 'domino']),
 

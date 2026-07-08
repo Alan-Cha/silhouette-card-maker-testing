@@ -843,8 +843,8 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
     # Rotate portrait pages to landscape so the generated PDF is always landscape.
     # This ensures offset_pdf.py works regardless of card orientation detection.
     if orientation == Orientation.PORTRAIT:
-        front_page = front_page.rotate(-90, expand=True)
-        back_page = back_page.rotate(-90, expand=True)
+        front_page = front_page.rotate(90, expand=True)
+        back_page = back_page.rotate(90, expand=True)
 
     # Add a back page for every front page template
     pages.append(front_page)
@@ -1205,18 +1205,27 @@ def generate_pdf(
     else:
         label_margin_px = math.floor((inset_px - thickness_px * 2) * ppi_ratio)
 
+    # Paper sizes are stored as landscape; portrait registration marks need swapped dimensions.
+    # When the registration orientation differs from the card layout, rotate the canvas back
+    # to match the layout so cards are placed correctly.
+    reg_is_portrait = registration_orientation == Orientation.PORTRAIT
+    reg_width  = paper_size_def.height if reg_is_portrait else paper_size_def.width
+    reg_height = paper_size_def.width  if reg_is_portrait else paper_size_def.height
+
     # Load an image with the registration marks
     with page_manager.generate_reg_mark(
-        paper_size_def.width,
-        paper_size_def.height,
+        reg_width,
+        reg_height,
         effective_inset,
         effective_thickness,
         effective_length,
         layout_config.ppi,
         registration,
-        registration_orientation,
     ) as reg_im:
         reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
+
+        if registration_orientation != orientation:
+            reg_im = reg_im.rotate(90 if reg_is_portrait else -90, expand=True)
 
         # Create the array that will store the filled templates
         pages: List[Image.Image] = []
