@@ -1017,7 +1017,7 @@ def generate_pdf(
         back_card_image_path = get_back_card_image_path(back_dir_path)
         use_default_back_page = back_card_image_path is None
         if use_default_back_page:
-            print(f'No back image provided in back image directory \"{back_dir_path}\". Using default instead.')
+            print(f'No back image provided in back image directory \"{back_dir_path}\".')
 
     front_image_filenames = get_image_file_paths(front_dir_path)
     ds_image_filenames = get_image_file_paths(ds_dir_path)
@@ -1219,7 +1219,7 @@ def generate_pdf(
                 single_back_image = Image.open(back_card_image_path)
                 single_back_image = ImageOps.exif_transpose(single_back_image)
             except FileNotFoundError:
-                print(f'Cannot get back image "{back_card_image_path}". Using default instead.')
+                print(f'Cannot get back image "{back_card_image_path}".')
                 single_back_image = None
             except OSError as e:
                 raise OSError(f'Failed to load back image "{back_card_image_path}": {e}') from e
