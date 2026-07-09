@@ -17,7 +17,7 @@ Put your decklist into a text file in [game/decklist](../game/decklist/). In thi
 Run the script.
 
 ```sh
-python plugins/ashes_reborn/fetch.py game/decklist/deck.txt ashes_share_url
+python plugins/ashes_reborn/application/fetch.py game/decklist/deck.txt ashes_share_url
 ```
 
 Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy).
@@ -47,7 +47,7 @@ https://ashes.live/decks/share/57be4c41-6b6f-4770-8e30-b2fe9b9a6c72/
 You can also use the share URL directly in the command line.
 
 ```sh
-python plugins/ashes_reborn/fetch.py https://ashes.live/decks/share/57be4c41-6b6f-4770-8e30-b2fe9b9a6c72/ ashes_share_url
+python plugins/ashes_reborn/application/fetch.py https://ashes.live/decks/share/57be4c41-6b6f-4770-8e30-b2fe9b9a6c72/ ashes_share_url
 ```
 
 ### `ashesdb_share_url`
@@ -61,5 +61,5 @@ https://ashesdb.plaidhatgames.com/decks/share/0f8855d9-3c02-45e8-8458-366cbd755a
 You can also use the share URL directly in the command line.
 
 ```sh
-python plugins/ashes_reborn/fetch.py https://ashesdb.plaidhatgames.com/decks/share/0f8855d9-3c02-45e8-8458-366cbd755a04/ ashesdb_share_url
+python plugins/ashes_reborn/application/fetch.py https://ashesdb.plaidhatgames.com/decks/share/0f8855d9-3c02-45e8-8458-366cbd755a04/ ashesdb_share_url
 ```

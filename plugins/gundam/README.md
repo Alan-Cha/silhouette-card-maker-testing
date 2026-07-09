@@ -17,7 +17,7 @@ Put your decklist into a text file in [game/decklist](../game/decklist/). In thi
 Run the script.
 
 ```sh
-python plugins/gundam/fetch.py game/decklist/deck.txt deckplanet
+python plugins/gundam/application/fetch.py game/decklist/deck.txt deckplanet
 ```
 
 Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy).

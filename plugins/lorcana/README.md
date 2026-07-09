@@ -17,7 +17,7 @@ Put your decklist into a text file in [game/decklist](../game/decklist/). In thi
 Run the script.
 
 ```shell
-python plugins/lorcana/fetch.py game/decklist/deck.txt dreamborn
+python plugins/lorcana/application/fetch.py game/decklist/deck.txt dreamborn
 ```
 
 Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy).

@@ -1,8 +1,8 @@
 # Echoes of Astra Plugin
 
-This plugin reads a decklist, fetches the card image from the [AstraBuilder](https://www.astra-builder.com/en), and puts the card images into the proper `game/` directories.
+This plugin reads a decklist, fetches the card image from [Echoes of Astra's Card Database](https://app.echoesofastra.com/cards-viewer), and puts the card images into the proper `game/` directories.
 
-This plugin supports the `astrabuilder_url` format. To learn more, see [here](#formats).
+This plugin supports the `tts` and `text` formats. To learn more, see [here](#formats).
 
 ## Basic Instructions
 
@@ -12,12 +12,12 @@ If you're on macOS or Linux, open **Terminal**. If you're on Windows, open **Pow
 
 Create and start your virtual Python environment and install Python dependencies if you have not done so already. See [here](../../README.md#basic-usage) for more information.
 
-Put your decklist into a text file in [game/decklist](../game/decklist/). In this example, the filename is `deck.txt` and the decklist format is AstraBuilder URL (`astrabuilder_url`).
+Put your decklist into a text file in [game/decklist](../game/decklist/). In this example, the filename is `deck.txt` and the decklist format is Text (`text`).
 
 Run the script.
 
 ```sh
-python plugins/echoes_of_astra/fetch.py game/decklist/deck.txt astrabuilder_url
+python plugins/echoes_of_astra/application/fetch.py game/decklist/deck.txt text
 ```
 
 Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy).
@@ -25,7 +25,7 @@ Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy)
 ## CLI Options
 
 ```
-Usage: fetch.py [OPTIONS] DECK_PATH {astrabuilder_url}
+Usage: fetch.py [OPTIONS] DECK_PATH {tts|text}
 
 Options:
   --help  Show this message and exit.
@@ -33,16 +33,108 @@ Options:
 
 ## Formats
 
-### `astrabuilder_url`
+### `tts`
 
-AstraBuilder URL format uses the full URL of a deck from AstraBuilder.
+Tabletop Simulator export of a deck from AstraBuilder.
 
 ```
-https://www.astra-builder.com/en/create?deck=122
+[
+  {
+    "count": 3,
+    "name": "Cadaver Supplier"
+  },
+  {
+    "count": 2,
+    "name": "Ebonblight Invoker"
+  },
+  {
+    "count": 3,
+    "name": "Guinea Pig"
+  },
+  {
+    "count": 3,
+    "name": "Jormun, Feldragon of Wyrmscar"
+  },
+  {
+    "count": 3,
+    "name": "Lucille, Blood Baroness"
+  },
+  {
+    "count": 3,
+    "name": "Noxhaven Researcher"
+  },
+  {
+    "count": 2,
+    "name": "Demonic Advance"
+  },
+  {
+    "count": 3,
+    "name": "Experimental Augment"
+  },
+  {
+    "count": 3,
+    "name": "Courier Drone"
+  },
+  {
+    "count": 3,
+    "name": "Imperial Skyfortress"
+  },
+  {
+    "count": 3,
+    "name": "Inquisition Drone"
+  },
+  {
+    "count": 3,
+    "name": "Lockdown Enforcer"
+  },
+  {
+    "count": 2,
+    "name": "Valeria, Dragoon Knight"
+  },
+  {
+    "count": 2,
+    "name": "Wingshield Transport"
+  },
+  {
+    "count": 3,
+    "name": "Airdrop"
+  },
+  {
+    "count": 3,
+    "name": "Void Warp"
+  },
+  {
+    "count": 3,
+    "name": "Freight Module"
+  },
+  {
+    "count": 3,
+    "name": "Radar Beacon"
+  }
+]
 ```
 
-You can also use the URL directly in the command line. Note the single quotes around the URL.
+### `text`
 
-```sh
-python plugins/echoes_of_astra/fetch.py 'https://www.astra-builder.com/en/create?deck=122' astrabuilder_url
+Text export of a deck from AstraBuilder.
+
+```
+3 Cadaver Supplier
+2 Ebonblight Invoker
+3 Guinea Pig
+3 Jormun, Feldragon of Wyrmscar
+3 Lucille, Blood Baroness
+3 Noxhaven Researcher
+2 Demonic Advance
+3 Experimental Augment
+3 Courier Drone
+3 Imperial Skyfortress
+3 Inquisition Drone
+3 Lockdown Enforcer
+2 Valeria, Dragoon Knight
+2 Wingshield Transport
+3 Airdrop
+3 Void Warp
+3 Freight Module
+3 Radar Beacon
 ```

@@ -17,7 +17,7 @@ Put your decklist into a text file in [game/decklist](../game/decklist/). In thi
 Run the script.
 
 ```sh
-python plugins/grand_archive/fetch.py game/decklist/deck.txt omnideck
+python plugins/grand_archive/application/fetch.py game/decklist/deck.txt omnideck
 ```
 
 Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy).

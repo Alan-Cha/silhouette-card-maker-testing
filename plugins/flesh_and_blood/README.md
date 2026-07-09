@@ -17,7 +17,7 @@ Put your decklist into a text file in [game/decklist](../game/decklist/). In thi
 Run the script.
 
 ```sh
-python plugins/flesh_and_blood/fetch.py game/decklist/deck.txt fabrary
+python plugins/flesh_and_blood/application/fetch.py game/decklist/deck.txt fabrary
 ```
 
 Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy).

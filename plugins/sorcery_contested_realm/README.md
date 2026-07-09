@@ -17,7 +17,7 @@ Put your decklist into a text file in [game/decklist](../game/decklist/). In thi
 Run the script.
 
 ```sh
-python plugins/sorcery_contested_realm/fetch.py game/decklist/deck.txt curiosa_url
+python plugins/sorcery_contested_realm/application/fetch.py game/decklist/deck.txt curiosa_url
 ```
 
 Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy).
