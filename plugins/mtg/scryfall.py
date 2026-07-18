@@ -1,17 +1,16 @@
 import os
+import time
 from io import BytesIO
 from typing import List, Optional, Tuple
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
-import requests
-import time
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+import requests
 from PIL import Image
 
-from .common import remove_nonalphanumeric, ScryfallLanguage, to_scryfall_api_lang
+from . import remote
+from .common import ScryfallLanguage, remove_nonalphanumeric, to_scryfall_api_lang
 
 double_sided_layouts = ['transform', 'modal_dfc', 'double_faced_token', 'reversible_card', 'meld']
-
-session = requests.Session()
 
 def append_search_filter(uri: str, filter_term: str) -> str:
     parsed = urlparse(uri)
@@ -35,23 +34,12 @@ def fetch_printings(prints_search_uri: str, prefer_ub: Optional[bool], name: str
         print(f'{label} printings for "{name}" are Universe Beyond. Ignoring {flag}.')
     return request_scryfall(prints_search_uri).json()['data']
 
+@remote.memo
 def request_scryfall(
     query: str,
     params: dict = None,
-    retry_count: int = 0,
 ) -> requests.Response:
-    r = session.get(query, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
-
-    # Rate limit check - Scryfall requires 30 second wait per their documentation
-    if r.status_code == 429:
-        if retry_count >= 3:
-            print(f"Warning: Hit rate limit 3 times for {query}, giving up after 30s wait")
-            raise requests.exceptions.HTTPError(f"Max retries (3) exceeded for Scryfall API: {query}", response=r)
-        print(f"Hit Scryfall rate limit (429), waiting 30 seconds before retry {retry_count + 1}/3...")
-        time.sleep(30)
-        return request_scryfall(query, params, retry_count + 1)
-
-    r.raise_for_status()
+    r = remote.get(query, params)
 
     # Apply rate limiting per Scryfall API documentation
     # See: https://scryfall.com/docs/api/rate-limits
