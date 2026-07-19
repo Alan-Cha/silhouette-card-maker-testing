@@ -1,10 +1,22 @@
 import re
-from enum import Enum
+import enum
+from typing import Callable, Iterable, TypeVar
+
+_A = TypeVar("_A")
+
+def partition(xs: Iterable[_A], fn: Callable[[_A], bool]) -> tuple[list[_A], list[_A]]:
+    a: list[_A] = []
+    b: list[_A] = []
+    for x in xs:
+        (a if fn(x) else b).append(x)
+    return a, b
 
 def remove_nonalphanumeric(s: str) -> str:
     return re.sub(r'[^\w]', '', s)
 
-class ScryfallLanguage(Enum):
+# Language code as printed on the card.
+# n.b. Scryfall uses a different code set for their data. See `scryfall.Language`.
+class MtgPrintedLanguage(enum.StrEnum):
     ENGLISH            = "en"
     SPANISH            = "sp"
     FRENCH             = "fr"
@@ -18,23 +30,3 @@ class ScryfallLanguage(Enum):
     TRADITIONAL_CHINESE = "ct"
     ANCIENT_GREEK      = "ag"
     PHYREXIAN          = "ph"
-
-# Maps the printed code (enum value) to the Scryfall API language code
-PRINTED_TO_API_LANG: dict[str, str] = {
-    "en": "en",
-    "sp": "es",
-    "fr": "fr",
-    "de": "de",
-    "it": "it",
-    "pt": "pt",
-    "jp": "ja",
-    "kr": "ko",
-    "ru": "ru",
-    "cs": "zhs",
-    "ct": "zht",
-    "ag": "grc",
-    "ph": "ph",
-}
-
-def to_scryfall_api_lang(lang: ScryfallLanguage) -> str:
-    return PRINTED_TO_API_LANG[lang.value]
