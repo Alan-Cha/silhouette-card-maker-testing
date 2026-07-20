@@ -297,7 +297,7 @@ def extract_mpcfill_card_ids(deck_text: str) -> set[str]:
     return card_ids
 
 
-def parse_mpcfill_xml(deck_text: str, fetch_card: FetchCard) -> DeckParse:
+def parse_mpcfill_xml(deck_text: str, handle_card: Callable[[int, str, str, str | None, str | None], None]) -> None:
     """
     Parse MPCFill XML and call fetch_card once per slot.
 
@@ -306,7 +306,6 @@ def parse_mpcfill_xml(deck_text: str, fetch_card: FetchCard) -> DeckParse:
 
     back_id and back_name will be None if the slot has no custom back.
     """
-    assert False, "MPCFill XML is not implemented"
     data = ET.fromstring(deck_text)
     fronts = data.find("fronts")
     backs = data.find("backs")
@@ -341,7 +340,7 @@ def parse_mpcfill_xml(deck_text: str, fetch_card: FetchCard) -> DeckParse:
                 slots[slot_idx]["back_id"] = card_id
                 slots[slot_idx]["back_name"] = name
 
-    # Call fetch_card once per slot (1-indexed for display and filenames)
+    # Call handle_card once per slot (1-indexed for display and filenames)
     for slot_idx, slot in enumerate(slots):
         slot_num = slot_idx + 1
         if slot["front_id"] is None:
@@ -425,7 +424,7 @@ def parse_deck(
         case DeckFormat.SCRYFALL_JSON:
             return parse_scryfall_json(deck_text, fetch_card)
         case DeckFormat.MPCFILL_XML:
-            return parse_mpcfill_xml(deck_text, fetch_card)
+            raise ValueError("`MPCFILL_XML` is not supported and has its own dispatcher")
         case DeckFormat.CUBECOBRA_CSV:
             return parse_cubecobra_csv(deck_text, fetch_card)
         case DeckFormat.URL:

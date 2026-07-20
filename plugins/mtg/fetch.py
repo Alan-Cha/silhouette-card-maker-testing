@@ -18,7 +18,9 @@ from plugins.mtg.common import MtgPrintedLanguage, partition, remove_nonalphanum
 from plugins.mtg.deck_formats import (
     DeckFormat,
     FetchCard,
+    extract_mpcfill_card_ids,
     parse_deck,
+    parse_mpcfill_xml,
     unparse,
 )
 from plugins.mtg.mpcfill import get_handle_card as mpc_get_handle_card
@@ -182,29 +184,35 @@ def cli(
             print(f'file not found: {deck_path}')
             raise click.Abort()
 
+    # MPC Fill XML is weird and doesn't follow all the other formats, which are all based on Scryfall.
+    # It more or less is its own ad-hoc thing.
+    # FUTURE WORK: Split `DeckFormat` into Scryfall formats and non-Scryfall formats.
     if deck_format == DeckFormat.MPCFILL_XML:
-        assert False, "MPCFill XML not supported"
-        # get_handle_card = mpc_get_handle_card(
-        #     front_directory,
-        #     double_sided_directory
-        # )
-        # prefetch_mpcfill(extract_mpcfill_card_ids(deck_text))
-    else:
-        fetch: FetchCard = functools.partial(
-            scryfall.fetch_card,
-            ignore_set_and_collector_number=ignore_set_and_collector_number,
-            ignore_sets=set(ignore_set),
-            ignore_ub=ignore_ub,
-            prefer_extra_art=prefer_extra_art,
-            prefer_langs=[
-                scryfall.Language.from_printed_lang(MtgPrintedLanguage(lang))
-                for lang in prefer_lang
-            ],
-            prefer_older_sets=prefer_older_sets,
-            prefer_sets=list(prefer_set),
-            prefer_showcase=prefer_showcase,
-            prefer_ub=prefer_ub,
+        if tokens:
+            print('ERROR - `--tokens` is incompatible w/ MPCFILL_XML deck format.')
+            raise click.Abort()
+
+        prefetch_mpcfill(extract_mpcfill_card_ids(deck_text))
+        parse_mpcfill_xml(
+            deck_text, mpc_get_handle_card(str(FRONT_DIR), str(DOUBLE_SIDED_DIR))
         )
+        return
+
+    fetch: FetchCard = functools.partial(
+        scryfall.fetch_card,
+        ignore_set_and_collector_number=ignore_set_and_collector_number,
+        ignore_sets=set(ignore_set),
+        ignore_ub=ignore_ub,
+        prefer_extra_art=prefer_extra_art,
+        prefer_langs=[
+            scryfall.Language.from_printed_lang(MtgPrintedLanguage(lang))
+            for lang in prefer_lang
+        ],
+        prefer_older_sets=prefer_older_sets,
+        prefer_sets=list(prefer_set),
+        prefer_showcase=prefer_showcase,
+        prefer_ub=prefer_ub,
+    )
 
     errors, deck = parse_deck(
         deck_text,
