@@ -175,12 +175,12 @@ def cli(
     if deck_format == DeckFormat.URL:
         deck_text = deck_path
     else:
-        if not os.path.isfile(deck_path):
-            print(f'{deck_path} is not a valid file.')
-            return
-
-        with open(deck_path, 'r') as deck_file:
-            deck_text = deck_file.read()
+        try:
+            with open(deck_path, 'r') as deck_file:
+                deck_text = deck_file.read()
+        except FileNotFoundError:
+            print(f'file not found: {deck_path}')
+            raise click.Abort()
 
     if deck_format == DeckFormat.MPCFILL_XML:
         assert False, "MPCFill XML not supported"
