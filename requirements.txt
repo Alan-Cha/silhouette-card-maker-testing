@@ -6,10 +6,10 @@ matplotlib==3.10.5
 mtg_parser==0.0.1a50
 natsort==8.4.0
 numpy==2.4.2
-pillow==12.1.1
+pillow==12.3.0
 pyautogui==0.9.54
 pydantic==2.12.5
 pywinauto==0.6.9
 pypdfium2==4.30.0
-requests==2.32.4
+requests==2.33.0
 split-image==2.0.1
