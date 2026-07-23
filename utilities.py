@@ -343,9 +343,10 @@ def get_directory(path):
     else:
         return os.path.abspath(os.path.dirname(path))
 
-def ensure_directory(path: str) -> str:
+def ensure_directory(path: str | Path) -> Path:
     """Create directory and any missing parent directories. Returns the path."""
-    os.makedirs(path, exist_ok=True)
+    path = Path(path)
+    path.mkdir(exist_ok=True)
     return path
 
 def ensure_output_directory(output_path: str) -> None:

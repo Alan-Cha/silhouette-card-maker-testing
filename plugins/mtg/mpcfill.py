@@ -22,12 +22,11 @@ from base64 import b64decode
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Set
 
-import requests
 from filetype.filetype import guess_extension
 
-from .common import remove_nonalphanumeric
+from plugins.mtg import remote
 
-session = requests.Session()
+from .common import remove_nonalphanumeric
 
 # Cache for fetched images: card_id -> decoded image bytes.
 # Populated by prefetch_mpcfill() and read by get_cached_image().
@@ -38,12 +37,11 @@ _image_cache: dict[str, bytes] = {}
 # up to 8 simultaneous downloads.
 MAX_WORKERS = 8
 
-
+@remote.memo
 def request_mpcfill(card_id: str) -> bytes:
     """Fetch a single card image from MPCFill API and return decoded bytes."""
     base_url = "https://script.google.com/macros/s/AKfycbw8laScKBfxda2Wb0g63gkYDBdy8NWNxINoC4xDOwnCQ3JMFdruam1MdmNmN4wI5k4/exec?id="
-    r = session.get(base_url + card_id, headers={"user-agent": "silhouette-card-maker/0.1", "accept": "*/*"})
-    r.raise_for_status()
+    r = remote.get(base_url + card_id)
     return b64decode(r.content)
 
 
