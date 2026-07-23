@@ -2,7 +2,6 @@ import csv
 import io
 import json
 import re
-from collections import OrderedDict
 from enum import Enum
 from typing import Any, Callable, Iterable, Tuple
 from xml.etree import ElementTree as ET
@@ -10,23 +9,38 @@ from xml.etree import ElementTree as ET
 import cloudscraper
 import mtg_parser
 
-from plugins.mtg.patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 from plugins.mtg import scryfall
+from plugins.mtg.patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 
-type DeckEntry = Tuple[CardName, SetCode | None, CollectorNumber | None, int]
-type FetchCard = Callable[[CardName, SetCode | None, CollectorNumber | None], scryfall.Card]
-type DeckParse = tuple[list[tuple[str, Exception]], OrderedDict[scryfall.Card, int]]
+type Quantity = int  # INVARIANT: 0 <= x
+type DeckEntry = Tuple[
+    scryfall.CardName,
+    scryfall.SetCode | None,
+    scryfall.CollectorNumber | None,
+    Quantity,
+]
+type FetchCard = Callable[
+    [scryfall.CardName, scryfall.SetCode | None, scryfall.CollectorNumber | None],
+    scryfall.Card,
+]
+
+# In decl order.
+# *NOT* deduplicated. This matters for enabling fine-grain control of token pairing.
+# INVARIANT: 0 <= quantity   (weird, but allows token pairing tricks)
+type DeckList = list[tuple[scryfall.Card, int]]
+type DeckParse = tuple[list[tuple[str, Exception]], DeckList]
+
 
 # Deck parsing needs to be overhauled w/ better abstractions.
 def parse_deck_helper2(
     deck_entries: Iterable[tuple[str, DeckEntry]],
     fetch_card: FetchCard,
 ) -> DeckParse:
-    cards = OrderedDict[scryfall.Card, int]() # annoyingly there's no shrink-wrapped ordered-default-dict.
+    cards: list[tuple[scryfall.Card, Quantity]] = []
     errors: list[tuple[str, Exception]] = []
 
     # `raw` sucks. this whole abstraction mechanism sucks.
-    for (raw, (name, set_code, collector_number, quantity)) in deck_entries:
+    for raw, (name, set_code, collector_number, quantity) in deck_entries:
         parts = [f'quantity: {quantity}']
         if set_code:
             parts.append(f'set code: {set_code}')
@@ -40,12 +54,12 @@ def parse_deck_helper2(
             card = fetch_card(name, set_code, collector_number)
         except Exception as e:
             errors.append((raw, e))
-            raise # DEBUG
+            raise  # DEBUG
 
-        cards.setdefault(card, 0)
-        cards[card] += quantity
+        cards.append((card, quantity))
 
     return (errors, cards)
+
 
 def parse_deck_helper(
     deck_text: str,
@@ -69,14 +83,17 @@ def parse_deck_helper(
 # Blazemire Verge
 # Blightstep Pathway
 # Blood Crypt
-def parse_simple_list(deck_text: str, fetch_card: FetchCard) ->DeckParse:
+def parse_simple_list(deck_text: str, fetch_card: FetchCard) -> DeckParse:
     def is_simple_card_line(line: str) -> bool:
         return bool(line.strip())
 
     def extract_simple_card_data(line: str) -> DeckEntry:
         return (line.strip(), None, None, 1)
 
-    return parse_deck_helper(deck_text, is_simple_card_line, extract_simple_card_data, fetch_card)
+    return parse_deck_helper(
+        deck_text, is_simple_card_line, extract_simple_card_data, fetch_card
+    )
+
 
 # About
 # Name Death & Taxes
@@ -118,7 +135,9 @@ def parse_mtga(deck_text: str, fetch_card: FetchCard) -> DeckParse:
 
             return (name, None, None, quantity)
 
-    return parse_deck_helper(deck_text, is_mtga_card_line, extract_mtga_card_data, fetch_card)
+    return parse_deck_helper(
+        deck_text, is_mtga_card_line, extract_mtga_card_data, fetch_card
+    )
 
 
 # 1 Abzan Battle Priest
@@ -144,7 +163,9 @@ def parse_mtgo(deck_text: str, fetch_card: FetchCard) -> DeckParse:
         name = parts[1].strip()
         return (name, None, None, quantity)
 
-    return parse_deck_helper(deck_text, is_mtgo_card_line, extract_mtgo_card_data, fetch_card)
+    return parse_deck_helper(
+        deck_text, is_mtgo_card_line, extract_mtgo_card_data, fetch_card
+    )
 
 
 # 1x Agadeem's Awakening // Agadeem, the Undercrypt (znr) 90 [Resilience,Land]
@@ -246,10 +267,10 @@ def parse_scryfall_json(
 ):
     def parse(item: dict[str, Any]) -> DeckEntry | None:
         card_digest = item.get("card_digest")
-        if card_digest is None: # TODO: is this even valid? error instead?
+        if card_digest is None:  # TODO: is this even valid? error instead?
             return None
 
-        name = card_digest["name"] # must have `name`
+        name = card_digest["name"]  # must have `name`
         set_code = card_digest.get("set")
         collector_number = card_digest.get("collector_number")
         quantity = int(item.get("count", 1))
@@ -259,12 +280,13 @@ def parse_scryfall_json(
     data = json.loads(deck_text)
     return parse_deck_helper2(
         # lazy eval to allow helper to capture exceptions
-        ((json.dumps(item), deck_entry)
-         for entry in data.get("entries", {}).values()
-         for item in entry
-         if (deck_entry := parse(item)) is not None
+        (
+            (json.dumps(item), deck_entry)
+            for entry in data.get("entries", {}).values()
+            for item in entry
+            if (deck_entry := parse(item)) is not None
         ),
-        fetch_card
+        fetch_card,
     )
 
 
@@ -297,7 +319,9 @@ def extract_mpcfill_card_ids(deck_text: str) -> set[str]:
     return card_ids
 
 
-def parse_mpcfill_xml(deck_text: str, handle_card: Callable[[int, str, str, str | None, str | None], None]) -> None:
+def parse_mpcfill_xml(
+    deck_text: str, handle_card: Callable[[int, str, str, str | None, str | None], None]
+) -> None:
     """
     Parse MPCFill XML and call fetch_card once per slot.
 
@@ -347,8 +371,18 @@ def parse_mpcfill_xml(deck_text: str, handle_card: Callable[[int, str, str, str 
             print(f"Warning: Slot {slot_num} has no front image, skipping")
             continue
 
-        print(f"Slot {slot_num}: {slot['front_name']}" + (f" / {slot['back_name']}" if slot['back_id'] else ""))
-        handle_card(slot_num, slot["front_id"], slot["front_name"], slot["back_id"], slot["back_name"])
+        print(
+            f"Slot {slot_num}: {slot['front_name']}"
+            + (f" / {slot['back_name']}" if slot['back_id'] else "")
+        )
+        handle_card(
+            slot_num,
+            slot["front_id"],
+            slot["front_name"],
+            slot["back_id"],
+            slot["back_name"],
+        )
+
 
 # CubeCobra CSV
 # Exported from CubeCobra (https://cubecobra.com)
@@ -368,8 +402,9 @@ def parse_cubecobra_csv(deck_text: str, fetch_card: FetchCard) -> DeckParse:
     return parse_deck_helper2(
         # lazy eval to allow helper to capture exceptions
         ((json.dumps(row), parse(row)) for row in reader),
-        fetch_card
+        fetch_card,
     )
+
 
 # URL Auto-Import
 #   Supported sites:
@@ -381,12 +416,14 @@ def parse_url(deck_url: str, fetch_card: FetchCard) -> DeckParse:
     cards = mtg_parser.parse_deck(deck_url, scraper)
     if cards is None:
         print(f"Failed to parse deck from URL: {deck_url}")
-        return ([(deck_url, Exception("Failed to parse deck from URL"))], OrderedDict())
+        return ([(deck_url, Exception("Failed to parse deck from URL"))], [])
 
     return parse_deck_helper2(
-        (("", (card.name, card.extension, card.number, card.quantity))
-         for card in cards),
-        fetch_card
+        (
+            ("", (card.name, card.extension, card.number, card.quantity))
+            for card in cards
+        ),
+        fetch_card,
     )
 
 
@@ -424,7 +461,9 @@ def parse_deck(
         case DeckFormat.SCRYFALL_JSON:
             return parse_scryfall_json(deck_text, fetch_card)
         case DeckFormat.MPCFILL_XML:
-            raise ValueError("`MPCFILL_XML` is not supported and has its own dispatcher")
+            raise ValueError(
+                "`MPCFILL_XML` is not supported and has its own dispatcher"
+            )
         case DeckFormat.CUBECOBRA_CSV:
             return parse_cubecobra_csv(deck_text, fetch_card)
         case DeckFormat.URL:
@@ -435,27 +474,40 @@ def unparse(format: DeckFormat, card: 'scryfall.Card', quantity: int) -> str:
     assert 0 < quantity
     match format:
         # 1x Ancient Cornucopia (big) 16 [Maybeboard{noDeck}{noPrice},Mana Advantage]
-        case DeckFormat.ARCHIDEKT: return f'{quantity}x {card.name} ({card.set}) {card.collector_number}'
+        case DeckFormat.ARCHIDEKT:
+            return f'{quantity}x {card.name} ({card.set}) {card.collector_number}'
         # Don't bother with all the CSV fields.
         # name, CMC, Type, Color, Set, Collector Number, Rarity, Color Category, status, Finish, maybeboard, image URL, image Back URL, tags, Notes, MTGO ID, Custom
         case DeckFormat.CUBECOBRA_CSV:
             s = io.StringIO()
             w = csv.writer(s)
-            w.writerow([card.name, '', '', '', card.set, card.collector_number] + [''] * 11)
+            w.writerow(
+                [card.name, '', '', '', card.set, card.collector_number] + [''] * 11
+            )
             return '\n'.join([s.getvalue()] * quantity)
-        case DeckFormat.DECKSTATS: return f'{quantity} [{card.set}#{card.collector_number}] {card.name}'
-        case DeckFormat.MOXFIELD: return f'{quantity} {card.name} ({card.set}) {card.collector_number}'
-        case DeckFormat.MPCFILL_XML: raise NotImplemented
-        case DeckFormat.MTGA: return f'{quantity}x {card.name} ({card.set}) {card.collector_number}'
-        case DeckFormat.MTGO: return f'{quantity} {card.name}'
-        case DeckFormat.SCRYFALL_JSON: return json.dumps({
-            "count": quantity,
-            "card_digest": {
-                "name": card.name,
-                "set": card.set,
-                "collector_number": card.collector_number,
-            }
-        })
-        case DeckFormat.SIMPLE: return '\n'.join([card.name] * quantity)
+        case DeckFormat.DECKSTATS:
+            return f'{quantity} [{card.set}#{card.collector_number}] {card.name}'
+        case DeckFormat.MOXFIELD:
+            return f'{quantity} {card.name} ({card.set}) {card.collector_number}'
+        case DeckFormat.MPCFILL_XML:
+            raise NotImplementedError
+        case DeckFormat.MTGA:
+            return f'{quantity}x {card.name} ({card.set}) {card.collector_number}'
+        case DeckFormat.MTGO:
+            return f'{quantity} {card.name}'
+        case DeckFormat.SCRYFALL_JSON:
+            return json.dumps(
+                {
+                    "count": quantity,
+                    "card_digest": {
+                        "name": card.name,
+                        "set": card.set,
+                        "collector_number": card.collector_number,
+                    },
+                }
+            )
+        case DeckFormat.SIMPLE:
+            return '\n'.join([card.name] * quantity)
         # URL is a pseudo format and cannot be unparsed. Use moxfield syntax.
-        case DeckFormat.URL: return unparse(DeckFormat.MOXFIELD, card, quantity)
+        case DeckFormat.URL:
+            return unparse(DeckFormat.MOXFIELD, card, quantity)

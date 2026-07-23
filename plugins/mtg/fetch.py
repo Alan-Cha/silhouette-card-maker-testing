@@ -1,5 +1,4 @@
 import functools
-import os
 import sys
 from collections import OrderedDict
 from pathlib import Path
@@ -17,6 +16,7 @@ from plugins.mtg import remote, scryfall
 from plugins.mtg.common import MtgPrintedLanguage, partition, remove_nonalphanumeric
 from plugins.mtg.deck_formats import (
     DeckFormat,
+    DeckList,
     FetchCard,
     extract_mpcfill_card_ids,
     parse_deck,
@@ -37,10 +37,11 @@ DOUBLE_SIDED_DIR = REPO_ROOT / 'game' / 'double_sided'
 # PRECONDITION: `forall x \in cards. x is single-faced`
 # FIXME: O(n^2)
 def _generate_paired_faces(
-    cards: Iterable[tuple[Card, int]],
+    cards: DeckList,
 ) -> list[tuple[CardName, scryfall.CardFaces]]:
     card_queue: list[tuple[Card, scryfall.BytesPNG]] = []
     for card, quantity in cards:
+        assert 0 <= quantity
         print(f"fetching image: {card.name} ({card.set}) {card.collector_number}")
         faces = scryfall.fetch_faces(card)
         assert (
@@ -53,7 +54,7 @@ def _generate_paired_faces(
     paired_with = set[UUID]()
 
     def pick_pairing() -> tuple[Card, scryfall.BytesPNG] | None:
-        for i in range(1, len(card_queue)+1):
+        for i in range(1, len(card_queue) + 1):
             card, _ = card_queue[-i]
             if card.id not in paired_with:
                 return card_queue.pop(-i)
@@ -98,14 +99,13 @@ def _generate_paired_faces(
 
 # n.b. `CardName` can be a partial lie due to token face pairing feature.
 def _generate_deck_faces(
-    deck: OrderedDict[Card, int],
+    deck: DeckList,
 ) -> list[tuple[CardName, scryfall.CardFaces]]:
-    boring, tokens = partition(
-        deck.items(), lambda kv: kv[0].layout != scryfall.Layout.TOKEN
-    )
+    boring, tokens = partition(deck, lambda kv: kv[0].layout != scryfall.Layout.TOKEN)
     deck_raw: list[tuple[CardName, scryfall.CardFaces]] = []
 
     for card, quantity in boring:
+        assert 0 <= quantity
         print(f"fetching image: {card.name} ({card.set}) {card.collector_number}")
         faces = scryfall.fetch_faces(card)
         deck_raw += [(card.name, faces)] * quantity
@@ -115,7 +115,7 @@ def _generate_deck_faces(
 
 
 def report_tokens(format: DeckFormat, cards: Iterable[Card]):
-    tokens = OrderedDict[Card, int]()
+    tokens = OrderedDict[Card, int]() # gather by ID
 
     for card in cards:
         for token in scryfall.tokens(card):
@@ -126,7 +126,7 @@ def report_tokens(format: DeckFormat, cards: Iterable[Card]):
         print(unparse(format, token, quantity))
 
 
-def generate_deck(deck: OrderedDict[Card, int]):
+def generate_deck(deck: DeckList):
     card_faces = _generate_deck_faces(deck)
     for i, (name, faces) in enumerate(card_faces):
         # FUTURE WORK: other img types?
@@ -227,7 +227,7 @@ def cli(
         raise click.Abort()  # if there were errors, stop.
 
     if tokens:
-        report_tokens(deck_format, deck.keys())
+        report_tokens(deck_format, [card for (card, _) in deck])
     else:
         generate_deck(deck)
 

@@ -7,9 +7,8 @@ import copy
 import shutil
 import tempfile
 import uuid
-from io import BytesIO
-from collections import OrderedDict
 from datetime import datetime
+from io import BytesIO
 from typing import Any, Callable
 from unittest.mock import MagicMock, patch
 
@@ -22,6 +21,7 @@ from plugins.mtg.common import MtgPrintedLanguage
 from plugins.mtg.deck_formats import (
     DeckEntry,
     DeckFormat,
+    DeckList,
     DeckParse,
     FetchCard,
     parse_archidekt,
@@ -55,13 +55,13 @@ def _dummy_fetch_card(
 
 def _verify_deckparse(
     errs: list[tuple[str, Exception]],
-    deck: OrderedDict[Card, int],
+    deck: DeckList,
     expected_cards: list[DeckEntry],
 ):
     assert not errs
     assert len(expected_cards) == len(deck)
     for (name, card_set, collector_number, expected_quantity), (card, quantity) in zip(
-        expected_cards, deck.items()
+        expected_cards, deck
     ):
         assert name == card.name
         assert card_set == card.set
@@ -260,7 +260,8 @@ class TestDeckstatsFormat:
             parse_deckstats,
             deck_text,
             [
-                ("Varragoth, Bloodsky Sire", '', '', 2),
+                ("Varragoth, Bloodsky Sire", '', '', 1),
+                ("Varragoth, Bloodsky Sire", '', '', 1),
             ],
         )
 
@@ -309,7 +310,7 @@ class TestScryfallJsonFormat:
         errors, deck = parse_scryfall_json(deck_text, fetcher)
         assert errors == []
         assert len(deck) == 1
-        deck_card, quantity = list(deck.items())[0]
+        deck_card, quantity = deck[0]
         assert quantity == 1
         assert deck_card == card
 
@@ -770,9 +771,9 @@ class TestFetchWorkflow:
         errs, deck = parse_deck(deck_text, DeckFormat.SIMPLE, scryfall.fetch_card)
         assert not errs
         assert len(deck) == 1
-        assert list(deck.items())[0][1] == 1
+        assert deck[0][1] == 1
 
-        faces = scryfall.fetch_faces(list(deck.keys())[0])
+        faces = scryfall.fetch_faces(deck[0][0])
         assert faces.back is None  # not a double sided card
         assert 0 < len(faces.front)
 
@@ -783,9 +784,9 @@ class TestFetchWorkflow:
         errs, deck = parse_deck(deck_text, DeckFormat.MTGA, scryfall.fetch_card)
         assert not errs
         assert len(deck) == 1
-        assert list(deck.items())[0][1] == 1
+        assert deck[0][1] == 1
 
-        faces = scryfall.fetch_faces(list(deck.keys())[0])
+        faces = scryfall.fetch_faces(deck[0][0])
         assert faces.back is not None  # double sided card
         assert 0 < len(faces.front)
         assert 0 < len(faces.back)
@@ -804,7 +805,7 @@ class TestFetchWorkflow:
         assert not errs
         assert len(deck) == 1
 
-        faces = scryfall.fetch_faces(list(deck.keys())[0])
+        faces = scryfall.fetch_faces(deck[0][0])
         assert faces.back is not None  # double sided card
         assert 0 < len(faces.front)
         assert 0 < len(faces.back)
@@ -819,7 +820,7 @@ class TestFetchWorkflow:
         assert not errs
         assert len(deck) == 1
 
-        faces = scryfall.fetch_faces(list(deck.keys())[0])
+        faces = scryfall.fetch_faces(deck[0][0])
         assert faces.back is not None  # double sided card
         assert 0 < len(faces.front)
         assert 0 < len(faces.back)
