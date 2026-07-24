@@ -81,3 +81,19 @@ You can select a variant by adding one of the following markers at the end of th
 - 1 Kuzco - Temperamental Emperor
 + 1 Kuzco - Temperamental Emperor *PROMO*
 ```
+
+#### Selecting a Specific Print
+
+Some cards have more than one distinct promo printing (e.g. [Mickey Mouse - True Friend](https://dreamborn.ink/cards/mickey-mouse/true-friend) has separate P1, P2, and P3 promo prints). Since `*PROMO*` can't tell these apart, you can instead select the exact printing by its set code, optionally followed by its collector number (needed when a single promo set has more than one print of the same card).
+
+```diff
+- 1 Mickey Mouse - True Friend
++ 1 Mickey Mouse - True Friend *P1*
+```
+
+```diff
+- 1 Mickey Mouse - True Friend
++ 1 Mickey Mouse - True Friend *P2-15*
+```
+
+You can find a card's set code and collector number on its [Lorcast](https://lorcast.com) or [Dreamborn](https://dreamborn.ink) page (e.g. `#15/P2` means collector number `15` in set `P2`).

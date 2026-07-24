@@ -29,6 +29,14 @@ VARIANT_MARKERS = {
     "*PROMO*": CardVariant.PROMO,
 }
 
+# Some cards have multiple, distinctly-illustrated promo printings (e.g.
+# Mickey Mouse - True Friend has separate P1, P2, and P3 promo prints). The
+# *PROMO* marker above can't disambiguate between them, so also support a
+# marker naming the exact printing, e.g. "*P1*" (set only) or "*P2-15*" (set
+# plus collector number, for when a single promo set has more than one print
+# of the same card). See https://lorcast.com/docs/syntax#set
+PRINT_MARKER_PATTERN = re.compile(r'\*([A-Za-z]{0,3}\d{1,4})(?:-(\d{1,4}))?\*')
+
 def parse_deck_helper(deck_text: str, is_card_line: Callable[[str], bool], extract_card_data: Callable[[str], card_data_tuple], handle_card: Callable) -> None:
     error_lines = []
 
@@ -72,6 +80,14 @@ def parse_dreamborn_list(deck_text, handle_card: Callable) -> None:
                 variant = marker_variant.value
                 name = name.replace(marker, "").strip()
                 break
+        else:
+            print_match = PRINT_MARKER_PATTERN.search(name)
+            if print_match:
+                set_code, collector_number = print_match.groups()
+                variant = f'set:{set_code}'
+                if collector_number:
+                    variant += f' cn:{collector_number}'
+                name = name.replace(print_match.group(0), "").strip()
 
         return (name, variant, quantity)
 

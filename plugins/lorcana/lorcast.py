@@ -45,6 +45,10 @@ def format_lorcast_query(name: str, variant: Optional[str]) -> str:
     if variant == 'promo':
         set_clause = '+or+'.join(f'set:{code}' for code in get_promo_set_codes())
         query += f'+({set_clause})'
+    elif variant and variant.startswith('set:'):
+        # A specific print marker (e.g. "set:P2 cn:15") built by
+        # deck_formats.py to select an exact printing - append it as-is.
+        query += '+' + variant.replace(' ', '+')
     elif variant:
         query += f'+rarity:{variant}'
 

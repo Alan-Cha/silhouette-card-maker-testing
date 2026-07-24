@@ -143,6 +143,45 @@ class TestDreambornFormat:
         assert parsed_cards[1]['name'] == "Kuzco - Temperamental Emperor"
         assert parsed_cards[1]['variant'] == CardVariant.PROMO
 
+    def test_parse_dreamborn_with_specific_print(self):
+        """Test parsing Dreamborn format with a specific-print marker (set only)."""
+        deck_text = """1 Mickey Mouse - True Friend *P1*"""
+
+        parsed_cards = []
+        def collect_card(index, name, variant, quantity):
+            parsed_cards.append({
+                'index': index,
+                'name': name,
+                'variant': variant,
+                'quantity': quantity
+            })
+
+        parse_dreamborn_list(deck_text, collect_card)
+
+        assert len(parsed_cards) == 1
+        assert parsed_cards[0]['name'] == "Mickey Mouse - True Friend"
+        assert parsed_cards[0]['variant'] == "set:P1"
+
+    def test_parse_dreamborn_with_specific_print_and_collector_number(self):
+        """Test parsing Dreamborn format with a set + collector number marker."""
+        deck_text = """1 Mickey Mouse - True Friend *P2-15*
+1 Mickey Mouse - True Friend *P2-36*"""
+
+        parsed_cards = []
+        def collect_card(index, name, variant, quantity):
+            parsed_cards.append({
+                'index': index,
+                'name': name,
+                'variant': variant,
+                'quantity': quantity
+            })
+
+        parse_dreamborn_list(deck_text, collect_card)
+
+        assert len(parsed_cards) == 2
+        assert parsed_cards[0]['variant'] == "set:P2 cn:15"
+        assert parsed_cards[1]['variant'] == "set:P2 cn:36"
+
     def test_parse_dreamborn_with_x_quantity(self):
         """Test parsing Dreamborn format with 'x' in quantity."""
         deck_text = """4x Pete - Games Referee
@@ -189,6 +228,10 @@ class TestUtilityFunctions:
         query_iconic = format_lorcast_query("Mickey Mouse - Brave Little Prince", CardVariant.ICONIC.value)
         assert "rarity:iconic" in query_iconic
 
+        query_print = format_lorcast_query("Mickey Mouse - True Friend", "set:P2 cn:15")
+        assert "set:P2" in query_print
+        assert "cn:15" in query_print
+
 
 # --- Integration Tests for API and Image Fetching ---
 
@@ -209,6 +252,14 @@ class TestLorcastAPI:
         response = request_lorcast(f'https://api.lorcast.com/v0/cards/search?q={query}')
         card = response.json()['results'][0]
         assert card['rarity'] == 'Promo'
+
+    def test_format_lorcast_query_specific_print(self):
+        """Test that a set + collector number marker resolves to the exact printing."""
+        query = format_lorcast_query("Mickey Mouse - True Friend", "set:P2 cn:15")
+        response = request_lorcast(f'https://api.lorcast.com/v0/cards/search?q={query}')
+        card = response.json()['results'][0]
+        assert card['set']['code'] == 'P2'
+        assert card['collector_number'] == '15'
 
 
 @pytest.mark.integration
