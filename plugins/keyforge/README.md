@@ -1,0 +1,77 @@
+# KeyForge Plugin
+
+This plugin reads a decklist, fetches the card images from the [Archon Arcana](https://www.archonarcana.com) wiki, and puts the card images into the proper `game/` directories.
+
+This plugin supports decklist URLs from [Master Vault](https://www.keyforgegame.com) and [Decks of KeyForge](https://decksofkeyforge.com), as well as a plain list of cards. To learn more, see [here](#formats).
+
+## Basic Instructions
+
+Navigate to the [root directory](../..) as plugins are not meant to be run in the [plugin directory](.).
+
+If you're on macOS or Linux, open **Terminal**. If you're on Windows, open **PowerShell**.
+
+Create and start your virtual Python environment and install Python dependencies if you have not done so already. See [here](../../README.md#basic-usage) for more information.
+
+Put your decklist into a text file in [game/decklist](../game/decklist/). In this example, the filename is `deck.txt` and the decklist format is Master Vault (`master_vault`).
+
+Run the script.
+
+```sh
+python plugins/keyforge/fetch.py game/decklist/deck.txt master_vault
+```
+
+Card images are always downloaded from Archon Arcana because it hosts higher-resolution art than Master Vault. Any cards that could not be found are reported together at the end.
+
+> [!NOTE]
+> Card enhancements (the æmber, capture, damage, and draw pips added to specific cards in a deck) are not currently handled, so enhanced cards are printed with their standard, unenhanced art.
+
+Now you can create the PDF using [`create_pdf.py`](../../README.md#create_pdfpy). KeyForge uses the `standard` card size, which is the default.
+
+```sh
+python create_pdf.py
+```
+
+> [!NOTE]
+> The Archon Arcana art is not exactly the `standard` card aspect ratio, so the default `stretch` fit distorts it very slightly. To preserve the aspect ratio instead (trimming a negligible sliver), add `--fit crop`.
+>
+> ```sh
+> python create_pdf.py --fit crop
+> ```
+
+> [!TIP]
+> KeyForge cards share a common card back, which you provide in `game/back/`. Blank card backs are available in the [keyteki repository](https://github.com/keyteki/keyteki/tree/master/client/assets/img/idbacks/idback_blanks).
+
+## CLI Options
+
+```
+Usage: fetch.py [OPTIONS] DECK_PATH {archon_arcana|master_vault}
+
+Options:
+  --help  Show this message and exit.
+```
+
+## Formats
+
+### `master_vault`
+
+A [Master Vault](https://www.keyforgegame.com) or [Decks of KeyForge](https://decksofkeyforge.com) deck URL. Decks of KeyForge uses the same deck ID as Master Vault, so both are resolved through Master Vault. The plugin reads the full deck, including non-deck cards such as Prophecies, and downloads each card's art from Archon Arcana.
+
+List one deck URL per line. You can mix Master Vault and Decks of KeyForge URLs to combine several decks into a single PDF.
+
+```
+https://www.keyforgegame.com/deck-details/4b86855f-71e5-4f54-a20d-2a58ec973f9c
+https://decksofkeyforge.com/decks/79c716d4-9605-4c8d-8b4c-5f9c9d3e2b7a
+```
+
+### `archon_arcana`
+
+A plain list of cards, one per line. Each card can be referenced as an Archon Arcana URL or a card name. Names are matched case-insensitively, and spaces and underscores are interchangeable, so all of the following refer to the same card:
+
+```
+https://www.archonarcana.com/wiki/Gracchan_Reform
+Gracchan_Reform
+Gracchan Reform
+gracchan reform
+```
+
+Special characters can be written in plain ASCII: `AEmber Imp`, `Nature's Call`, and `Shae "Cloudkicker"` resolve to their `Æmber`, curly-apostrophe, and curly-quote spellings on Archon Arcana. Accents can be omitted too (for example, `Gezdrutyo the Arcane`), and if there is no exact match, the closest Archon Arcana search result is used as a last resort.
