@@ -40,8 +40,8 @@ def get_deck_card_counts(deck_id: str) -> List[card_count_tuple]:
     cards_by_id = {card['id']: card for card in linked_cards}
 
     def card_name(card: dict) -> str:
-        # Archon Arcana uses English card titles.
-        return card.get('card_title_en') or card.get('card_title')
+        # Archon Arcana uses English card titles
+        return card.get('card_title_en') or card['card_title']
 
     # A dict preserves insertion order, so counts stay in the deck's card order.
     counts = {}
