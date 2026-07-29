@@ -246,6 +246,20 @@ class TestLorcastAPI:
         json_data = response.json()
         assert 'results' in json_data
 
+    def test_format_lorcast_query_epic(self):
+        """Test that the epic variant resolves to the actual epic printing."""
+        query = format_lorcast_query("Aladdin - Barreling Through", CardVariant.EPIC.value)
+        response = request_lorcast(f'https://api.lorcast.com/v0/cards/search?q={query}')
+        card = response.json()['results'][0]
+        assert card['rarity'] == 'Epic'
+
+    def test_format_lorcast_query_iconic(self):
+        """Test that the iconic variant resolves to the actual iconic printing."""
+        query = format_lorcast_query("Ariel - Ethereal Voice", CardVariant.ICONIC.value)
+        response = request_lorcast(f'https://api.lorcast.com/v0/cards/search?q={query}')
+        card = response.json()['results'][0]
+        assert card['rarity'] == 'Iconic'
+
     def test_format_lorcast_query_promo(self):
         """Test that the promo variant resolves to the actual promo printing."""
         query = format_lorcast_query("Kuzco - Temperamental Emperor", CardVariant.PROMO.value)
