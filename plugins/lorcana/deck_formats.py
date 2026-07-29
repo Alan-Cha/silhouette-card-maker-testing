@@ -49,7 +49,11 @@ def parse_deck_helper(deck_text: str, is_card_line: Callable[[str], bool], extra
 
             parts = [f'Index: {index}', f'quantity: {quantity}']
             if name: parts.append(f'name: {name}')
-            if variant: parts.append(f'variant: {variant.capitalize()}')
+            if variant:
+                # Only title-case known rarity variants; exact-print markers
+                # (e.g. "set:P2 cn:15") should be shown as-is.
+                display_variant = variant if variant.startswith('set:') else variant.capitalize()
+                parts.append(f'variant: {display_variant}')
             print(', '.join(parts))
             try:
                 handle_card(index, name, variant, quantity)

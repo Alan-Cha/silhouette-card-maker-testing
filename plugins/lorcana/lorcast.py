@@ -35,6 +35,7 @@ def get_promo_set_codes() -> list:
 
     if _promo_set_codes_cache is None:
         sets_json = request_lorcast('https://api.lorcast.com/v0/sets').json()['results']
+        # Normal (non-promo) sets are expected to have a purely numerical set code.
         _promo_set_codes_cache = [s['code'] for s in sets_json if not s['code'].isdigit()]
 
     return _promo_set_codes_cache
@@ -43,7 +44,10 @@ def format_lorcast_query(name: str, variant: Optional[str]) -> str:
     query = re.sub(r'[^\w]', '+', name)
 
     if variant == 'promo':
-        set_clause = '+or+'.join(f'set:{code}' for code in get_promo_set_codes())
+        promo_set_codes = get_promo_set_codes()
+        if not promo_set_codes:
+            raise ValueError('No promo set codes found from Lorcast API')
+        set_clause = '+or+'.join(f'set:{code}' for code in promo_set_codes)
         query += f'+({set_clause})'
     elif variant and variant.startswith('set:'):
         # A specific print marker (e.g. "set:P2 cn:15") built by
