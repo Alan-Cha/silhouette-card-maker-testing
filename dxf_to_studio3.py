@@ -38,7 +38,7 @@ import platform
 import click
 
 from enums import Orientation, Variant, Unit
-from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, template_name, resolve_cutting_templates_dir, BORDERLESS_EXPANSION_MM
+from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, resolve_cutting_templates_dir, BORDERLESS_EXPANSION_MM
 import size_convert
 import page_manager
 
@@ -1141,26 +1141,22 @@ def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_r
     config = load_layout_config()
 
     if generate_new:
-        # Derive expected DXF/studio3 filenames from layouts.json
+        # Only DXFs that actually exist in out_path are candidates - out_path may only
+        # contain a subset of layouts.json's full catalog (e.g. when
+        # SCM_CUTTING_TEMPLATES_DIR is redirected to a companion project's own card
+        # sizes), so deriving candidates from layouts.json itself (like the old
+        # implementation did) would warn about every entry that will never exist there.
+        # Among the DXFs that do exist, skip ones whose .studio3 is already converted.
+        all_dxf_files = sorted(list((out_path / "dxf").glob("*.dxf")) + list((out_path / "borderless" / "dxf").glob("*.dxf")))
         dxf_files = []
-        for ps, cards in config.layouts.items():
-            for cs, variants in cards.items():
-                for var_str, layout_def in variants.items():
-                    var = Variant(var_str)
-                    name = template_name(ps, cs, var, layout_def.version)
-                    # Borderless templates go in borderless/ subdirectory
-                    if var == Variant.BORDERLESS:
-                        studio3_file = out_path / "borderless" / f"{name}.studio3"
-                        dxf_file = out_path / "borderless" / "dxf" / f"{name}.dxf"
-                    else:
-                        studio3_file = out_path / f"{name}.studio3"
-                        dxf_file = out_path / "dxf" / f"{name}.dxf"
-                    if not studio3_file.exists():
-                        if dxf_file.exists():
-                            dxf_files.append(dxf_file)
-                        else:
-                            click.echo(f"  Warning: missing DXF {dxf_file.name} for {ps} + {cs} + {var}")
-        dxf_files.sort()
+        for dxf_file in all_dxf_files:
+            _, _, variant = parse_dxf_filename(dxf_file.name, config) or (None, None, None)
+            if variant == Variant.BORDERLESS:
+                studio3_file = out_path / "borderless" / dxf_file.with_suffix(".studio3").name
+            else:
+                studio3_file = out_path / dxf_file.with_suffix(".studio3").name
+            if not studio3_file.exists():
+                dxf_files.append(dxf_file)
     else:
         # Search both default and borderless DXF directories
         dxf_files = sorted(list((out_path / "dxf").glob("*.dxf")) + list((out_path / "borderless" / "dxf").glob("*.dxf")))
