@@ -1185,7 +1185,7 @@ def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_r
         return
 
     click.echo(f"Found {len(dxf_files)} DXF files to convert")
-    click.echo(f"Registration mark unit: {unit}")
+    click.echo(f"Registration mark unit: {unit.value}")
     click.echo()
 
     if dry_run:
@@ -1204,11 +1204,15 @@ def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_r
                 paper_w, paper_h = adjust_paper_for_borderless(paper_w, paper_h)
 
             max_len = get_max_length_for_dxf(paper_size, card_size, variant, config, unit)
-            len_str = f", max_length={max_len}{unit}" if max_len is not None else ""
+            len_str = f", max_length={max_len}{unit.value}" if max_len is not None else ""
             click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h}{len_str})")
         click.echo()
         click.echo("Dry run complete. No files were converted.")
         return
+
+    for dxf_file in dxf_files:
+        click.echo(f"  {dxf_file.name}")
+    click.echo()
 
     click.echo("=" * 60)
     click.echo("Batch DXF to Studio3 Converter")
