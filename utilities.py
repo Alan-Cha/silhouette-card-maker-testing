@@ -26,6 +26,21 @@ asset_directory = SCRIPT_DIR / 'assets'
 layouts_filename = 'layouts.json'
 layouts_path = asset_directory / layouts_filename
 
+# Optional extra layout definitions to merge on top of layouts.json. Lets a layout-consuming
+# project layer its own card sizes, paper sizes, and layouts on top of this repo's without
+# modifying it. Opt-in: both are empty/unset by default, so load_layout_config() behaves
+# exactly as if this didn't exist. Two ways to supply extra files, merged in this order:
+#   1. Drop any number of *.json files into EXTRA_LAYOUTS_DIR (merged in filename order) -
+#      no configuration needed, just copy a file in.
+#   2. Point EXTRA_LAYOUTS_ENV at one or more file paths (os.pathsep-separated, merged in
+#      order) - for files that live outside EXTRA_LAYOUTS_DIR.
+EXTRA_LAYOUTS_DIR = asset_directory / 'extra_layouts'
+EXTRA_LAYOUTS_ENV = 'SCM_EXTRA_LAYOUTS'
+
+# Optional override for where cutting templates get written/read (default: SCRIPT_DIR-relative
+# cutting_templates/ directories in generate_dxf.py and dxf_to_studio3.py).
+OUTPUT_DIR_ENV = 'SCM_CUTTING_TEMPLATES_DIR'
+
 # Specify valid mimetypes for images
 # List can be found here: https://github.com/h2non/filetype.py?tab=readme-ov-file#image
 # Pillow suported formats: https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
@@ -141,10 +156,53 @@ class LayoutConfig(BaseModel):
     specialty_layouts: Optional[Dict[str, SpecialtyLayoutDef]] = None
 
 
+def merge_extra_layouts(raw_config: dict) -> dict:
+    """Merge extra card_sizes/paper_sizes/layouts on top of raw_config, in place.
+
+    Merges every *.json file found in EXTRA_LAYOUTS_DIR (sorted by filename), followed by
+    every file in EXTRA_LAYOUTS_ENV (an os.pathsep-separated list), into raw_config's
+    card_sizes/paper_sizes/layouts dicts, in that order. Each key (card size, paper size, or
+    paper+card+variant layout) must be new: raise ValueError on any collision with raw_config
+    or an earlier file in the merge, since these files are meant to be pure additions, not
+    overrides. No-op if EXTRA_LAYOUTS_DIR doesn't exist and EXTRA_LAYOUTS_ENV is unset/empty.
+    """
+    dir_paths = sorted(EXTRA_LAYOUTS_DIR.glob('*.json')) if EXTRA_LAYOUTS_DIR.is_dir() else []
+    env_paths = [Path(p) for p in os.environ.get(EXTRA_LAYOUTS_ENV, '').split(os.pathsep) if p]
+    paths = dir_paths + env_paths
+
+    for path in paths:
+        with open(path, 'r') as f:
+            extra = json.load(f)
+
+        for section in ('card_sizes', 'paper_sizes'):
+            for key, value in extra.get(section, {}).items():
+                if key in raw_config[section]:
+                    raise ValueError(f"'{key}' in {section} of {path} already defined")
+                raw_config[section][key] = value
+
+        for paper, cards in extra.get('layouts', {}).items():
+            for card, variants in cards.items():
+                for variant, layout_def in variants.items():
+                    if variant in raw_config['layouts'].get(paper, {}).get(card, {}):
+                        raise ValueError(f"layout '{paper}'/'{card}'/'{variant}' in {path} already defined")
+                    raw_config['layouts'].setdefault(paper, {}).setdefault(card, {})[variant] = layout_def
+
+    return raw_config
+
+
+def resolve_output_dir(default: Path) -> Path:
+    """Return the OUTPUT_DIR_ENV override if set, else default."""
+    override = os.environ.get(OUTPUT_DIR_ENV)
+    return Path(override) if override else default
+
+
 def load_layout_config() -> LayoutConfig:
-    """Load and validate layouts.json from the assets directory."""
+    """Load and validate layouts.json from the assets directory, merging in any extra
+    layout definitions from EXTRA_LAYOUTS_ENV."""
     with open(layouts_path, 'r') as f:
-        return LayoutConfig(**json.load(f))
+        raw_config = json.load(f)
+    merge_extra_layouts(raw_config)
+    return LayoutConfig(**raw_config)
 
 
 # Borderless mode tricks Silhouette Studio into using a smaller effective inset than its

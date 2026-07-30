@@ -25,5 +25,8 @@ test/*/output/*
 cutting_templates/dxf/
 cutting_templates/borderless/dxf/
 
+assets/extra_layouts/*
+!assets/extra_layouts/README.md
+
 hugo/public/
 .vscode/launch.json
