@@ -38,7 +38,7 @@ import platform
 import click
 
 from enums import Orientation, Variant, Unit
-from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, template_name, resolve_output_dir, BORDERLESS_EXPANSION_MM
+from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, template_name, resolve_cutting_templates_dir, BORDERLESS_EXPANSION_MM
 import size_convert
 import page_manager
 
@@ -85,7 +85,7 @@ ASSETS_DIR = Path(__file__).parent / "assets"
 CALIBRATION_FILE = ASSETS_DIR / "gui_coordinates.json"
 
 # Batch conversion defaults
-TEMPLATES_DIR = resolve_output_dir(Path(__file__).parent / "cutting_templates")
+TEMPLATES_DIR = resolve_cutting_templates_dir(Path(__file__).parent / "cutting_templates")
 
 
 

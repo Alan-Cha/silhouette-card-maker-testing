@@ -28,6 +28,7 @@ from utilities import (
     FitMode,
     asset_directory,
     merge_extra_layouts,
+    extra_layout_paths,
     EXTRA_LAYOUTS_ENV,
 )
 from enums import Orientation
@@ -1578,6 +1579,40 @@ class TestDrawCardLayout:
         # Right: card ends at x=150, extends 15 pixels from x=150 to x=164
         assert base.getpixel((164, 50)) == self.RED
         assert base.getpixel((165, 50)) == self.WHITE
+
+
+class TestExtraLayoutPaths:
+    """Tests for extra_layout_paths()."""
+
+    def write_json(self, tmpdir, name, data=None):
+        path = Path(tmpdir) / name
+        with open(path, 'w') as f:
+            json.dump(data or {}, f)
+        return path
+
+    def test_empty_when_nothing_configured(self):
+        os.environ.pop(EXTRA_LAYOUTS_ENV, None)
+        original_dir = utilities.EXTRA_LAYOUTS_DIR
+        utilities.EXTRA_LAYOUTS_DIR = Path(tempfile.gettempdir()) / "scm-test-nonexistent-dir"
+        try:
+            assert extra_layout_paths() == []
+        finally:
+            utilities.EXTRA_LAYOUTS_DIR = original_dir
+
+    def test_dir_files_sorted_before_env_files(self):
+        with tempfile.TemporaryDirectory() as dir_tmpdir, tempfile.TemporaryDirectory() as env_tmpdir:
+            b_path = self.write_json(dir_tmpdir, "b.json")
+            a_path = self.write_json(dir_tmpdir, "a.json")
+            env_path = self.write_json(env_tmpdir, "c.json")
+
+            original_dir = utilities.EXTRA_LAYOUTS_DIR
+            utilities.EXTRA_LAYOUTS_DIR = Path(dir_tmpdir)
+            os.environ[EXTRA_LAYOUTS_ENV] = str(env_path)
+            try:
+                assert extra_layout_paths() == [a_path, b_path, env_path]
+            finally:
+                utilities.EXTRA_LAYOUTS_DIR = original_dir
+                del os.environ[EXTRA_LAYOUTS_ENV]
 
 
 class TestMergeExtraLayouts:

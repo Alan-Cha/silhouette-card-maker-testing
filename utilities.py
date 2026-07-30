@@ -39,7 +39,7 @@ EXTRA_LAYOUTS_ENV = 'SCM_EXTRA_LAYOUTS'
 
 # Optional override for where cutting templates get written/read (default: SCRIPT_DIR-relative
 # cutting_templates/ directories in generate_dxf.py and dxf_to_studio3.py).
-OUTPUT_DIR_ENV = 'SCM_CUTTING_TEMPLATES_DIR'
+CUTTING_TEMPLATES_DIR_ENV = 'SCM_CUTTING_TEMPLATES_DIR'
 
 # Specify valid mimetypes for images
 # List can be found here: https://github.com/h2non/filetype.py?tab=readme-ov-file#image
@@ -156,21 +156,28 @@ class LayoutConfig(BaseModel):
     specialty_layouts: Optional[Dict[str, SpecialtyLayoutDef]] = None
 
 
-def merge_extra_layouts(raw_config: dict) -> dict:
-    """Merge extra card_sizes/paper_sizes/layouts on top of raw_config, in place.
+def extra_layout_paths() -> list[Path]:
+    """Return every extra layout file, in merge/precedence order.
 
-    Merges every *.json file found in EXTRA_LAYOUTS_DIR (sorted by filename), followed by
-    every file in EXTRA_LAYOUTS_ENV (an os.pathsep-separated list), into raw_config's
-    card_sizes/paper_sizes/layouts dicts, in that order. Each key (card size, paper size, or
-    paper+card+variant layout) must be new: raise ValueError on any collision with raw_config
-    or an earlier file in the merge, since these files are meant to be pure additions, not
-    overrides. No-op if EXTRA_LAYOUTS_DIR doesn't exist and EXTRA_LAYOUTS_ENV is unset/empty.
+    Every *.json file found in EXTRA_LAYOUTS_DIR (sorted by filename), followed by every
+    file listed in EXTRA_LAYOUTS_ENV (an os.pathsep-separated list). Empty if neither is
+    configured.
     """
     dir_paths = sorted(EXTRA_LAYOUTS_DIR.glob('*.json')) if EXTRA_LAYOUTS_DIR.is_dir() else []
     env_paths = [Path(p) for p in os.environ.get(EXTRA_LAYOUTS_ENV, '').split(os.pathsep) if p]
-    paths = dir_paths + env_paths
+    return dir_paths + env_paths
 
-    for path in paths:
+
+def merge_extra_layouts(raw_config: dict) -> dict:
+    """Merge extra card_sizes/paper_sizes/layouts on top of raw_config, in place.
+
+    Merges every file from extra_layout_paths(), in order, into raw_config's
+    card_sizes/paper_sizes/layouts dicts. Each key (card size, paper size, or
+    paper+card+variant layout) must be new: raise ValueError on any collision with raw_config
+    or an earlier file in the merge, since these files are meant to be pure additions, not
+    overrides. No-op if extra_layout_paths() is empty.
+    """
+    for path in extra_layout_paths():
         with open(path, 'r') as f:
             extra = json.load(f)
 
@@ -190,9 +197,9 @@ def merge_extra_layouts(raw_config: dict) -> dict:
     return raw_config
 
 
-def resolve_output_dir(default: Path) -> Path:
-    """Return the OUTPUT_DIR_ENV override if set, else default."""
-    override = os.environ.get(OUTPUT_DIR_ENV)
+def resolve_cutting_templates_dir(default: Path) -> Path:
+    """Return the CUTTING_TEMPLATES_DIR_ENV override if set, else default."""
+    override = os.environ.get(CUTTING_TEMPLATES_DIR_ENV)
     return Path(override) if override else default
 
 
