@@ -168,6 +168,16 @@ def extra_layout_paths() -> list[Path]:
     return dir_paths + env_paths
 
 
+def find_extra_layout_owner(section: str, key: str) -> Path | None:
+    """Return the first file from extra_layout_paths() whose `section` dict already
+    contains `key` (e.g. section='card_sizes', key='mtg'), or None if none do."""
+    for path in extra_layout_paths():
+        with open(path, 'r') as f:
+            if key in json.load(f).get(section, {}):
+                return path
+    return None
+
+
 def merge_extra_layouts(raw_config: dict) -> dict:
     """Merge extra card_sizes/paper_sizes/layouts on top of raw_config, in place.
 

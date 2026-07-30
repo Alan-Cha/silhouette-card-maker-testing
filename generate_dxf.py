@@ -29,7 +29,7 @@ import page_manager
 import dxf_manager
 import size_convert
 from enums import Orientation, OrientationMode, Variant
-from utilities import LayoutConfig, load_layout_config, template_name, resolve_card_size_alias, resolve_paper_size_alias, get_all_card_size_names, get_all_paper_size_names, find_best_orientation, resolve_cutting_templates_dir, extra_layout_paths, BORDERLESS_INSET_MM, BORDERLESS_EXPANSION_MM
+from utilities import LayoutConfig, load_layout_config, template_name, resolve_card_size_alias, resolve_paper_size_alias, get_all_card_size_names, get_all_paper_size_names, find_best_orientation, resolve_cutting_templates_dir, extra_layout_paths, find_extra_layout_owner, BORDERLESS_INSET_MM, BORDERLESS_EXPANSION_MM
 
 SCRIPT_DIR = Path(__file__).parent
 CUTTING_TEMPLATES_DIR = resolve_cutting_templates_dir(SCRIPT_DIR / "cutting_templates")
@@ -276,11 +276,16 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
     print(f"  {paper_label} + {card_label} ({variant}): {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_path}")
 
     if save:
-        # If any extra layout files are configured (drop-in directory and/or env var), new
-        # entries go to the last one instead of this repo's own layouts.json, so opt-in extra
-        # sizes stay out of it.
+        # Prefer the extra file that already defines this card size (or, failing that, this
+        # paper size), so a layout lands alongside the size it's for rather than an unrelated
+        # file when more than one extra layout file is in use. Falls back to the last extra
+        # file, then this repo's own layouts.json, so opt-in extra sizes stay out of it.
         extra_paths = extra_layout_paths()
-        save_path = extra_paths[-1] if extra_paths else LAYOUTS_PATH
+        save_path = (
+            find_extra_layout_owner('card_sizes', card_label)
+            or find_extra_layout_owner('paper_sizes', paper_label)
+            or (extra_paths[-1] if extra_paths else LAYOUTS_PATH)
+        )
 
         if save_path.exists():
             with open(save_path, 'r') as f:

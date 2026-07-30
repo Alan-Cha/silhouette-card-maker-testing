@@ -29,6 +29,7 @@ from utilities import (
     asset_directory,
     merge_extra_layouts,
     extra_layout_paths,
+    find_extra_layout_owner,
     EXTRA_LAYOUTS_ENV,
 )
 from enums import Orientation
@@ -1613,6 +1614,44 @@ class TestExtraLayoutPaths:
             finally:
                 utilities.EXTRA_LAYOUTS_DIR = original_dir
                 del os.environ[EXTRA_LAYOUTS_ENV]
+
+
+class TestFindExtraLayoutOwner:
+    """Tests for find_extra_layout_owner()."""
+
+    def write_json(self, tmpdir, name, data):
+        path = Path(tmpdir) / name
+        with open(path, 'w') as f:
+            json.dump(data, f)
+        return path
+
+    def test_finds_defining_file_among_several(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mtg_path = self.write_json(tmpdir, "a-mtg.json", {
+                "card_sizes": {"mtg": {"width": "2.5in", "height": "3.5in"}},
+            })
+            sorcery_path = self.write_json(tmpdir, "b-sorcery.json", {
+                "card_sizes": {"sorcery": {"width": "2.61in", "height": "3.74in"}},
+            })
+            original_dir = utilities.EXTRA_LAYOUTS_DIR
+            utilities.EXTRA_LAYOUTS_DIR = Path(tmpdir)
+            try:
+                assert find_extra_layout_owner("card_sizes", "sorcery") == sorcery_path
+                assert find_extra_layout_owner("card_sizes", "mtg") == mtg_path
+            finally:
+                utilities.EXTRA_LAYOUTS_DIR = original_dir
+
+    def test_returns_none_when_not_found(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.write_json(tmpdir, "a.json", {
+                "card_sizes": {"mtg": {"width": "2.5in", "height": "3.5in"}},
+            })
+            original_dir = utilities.EXTRA_LAYOUTS_DIR
+            utilities.EXTRA_LAYOUTS_DIR = Path(tmpdir)
+            try:
+                assert find_extra_layout_owner("card_sizes", "nonexistent") is None
+            finally:
+                utilities.EXTRA_LAYOUTS_DIR = original_dir
 
 
 class TestMergeExtraLayouts:
