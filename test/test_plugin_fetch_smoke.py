@@ -26,6 +26,7 @@ PLUGINS = [
     ('flesh_and_blood', 'plugins.flesh_and_blood.fetch', ['fab']),
     ('grand_archive', 'plugins.grand_archive.fetch', ['gatcg']),
     ('gundam', 'plugins.gundam.fetch', ['gundam']),
+    ('keyforge', 'plugins.keyforge.fetch', ['archon_arcana']),
     ('lorcana', 'plugins.lorcana.fetch', ['lorcast']),
     ('lotr_lcg', 'plugins.lotr_lcg.fetch', ['ringsdb_url', 'ringsdb_fellowship_url', 'ringsdb_scenario_url', 'hallofbeorn_url']),
     ('mtg', 'plugins.mtg.fetch', ['moxfield', 'archidekt', 'text']),
