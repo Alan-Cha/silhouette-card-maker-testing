@@ -1185,8 +1185,6 @@ def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_r
         return
 
     click.echo(f"Found {len(dxf_files)} DXF files to convert")
-    click.echo(f"Registration mark unit: {unit.value}")
-    click.echo()
 
     if dry_run:
         for dxf_file in dxf_files:
@@ -1207,11 +1205,15 @@ def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_r
             len_str = f", max_length={max_len}{unit.value}" if max_len is not None else ""
             click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h}{len_str})")
         click.echo()
+        click.echo(f"Registration mark unit: {unit.value}")
+        click.echo()
         click.echo("Dry run complete. No files were converted.")
         return
 
     for dxf_file in dxf_files:
         click.echo(f"  {dxf_file.name}")
+    click.echo()
+    click.echo(f"Registration mark unit: {unit.value}")
     click.echo()
 
     click.echo("=" * 60)
