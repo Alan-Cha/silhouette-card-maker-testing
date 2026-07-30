@@ -757,8 +757,8 @@ CALIBRATION_ELEMENTS = [
     {
         "id": "cutting_mat_12x24",
         "name": "12x24 cutting mat option",
-        "description": "Open the cutting mat dropdown again and "
-                       "click the 12\" x 24\" option."
+        "description": "The cutting mat dropdown should be open. "
+                       "Click the 12\" x 24\" option."
     },
     {
         "id": "media_size_dropdown",
@@ -768,85 +768,89 @@ CALIBRATION_ELEMENTS = [
     {
         "id": "media_size_12x12",
         "name": "12x12 media size option",
-        "description": "The 12x12 cutting mat must be selected and the media size dropdown must be open. "
+        "description": "The 12x12 cutting mat must be selected and the media size dropdown should be open. "
                        "Click the 12\" x 12\" option."
     },
     {
         "id": "media_size_12x24",
         "name": "12x24 media size option",
-        "description": "Select the 12x24 cutting mat first, then open the media size dropdown again and "
-                       "click the 12\" x 24\" option."
+        "description": "The 12x24 cutting mat must be selected and the media size dropdown should be open. "
+                       "Click the 12\" x 24\" option."
     },
     {
         "id": "media_width_field",
         "name": "Media width input field",
-        "description": "The numerical input field for custom media width."
+        "description": "Click the numerical input field for custom media width."
     },
     {
         "id": "media_height_field",
         "name": "Media height input field",
-        "description": "The numerical input field for custom media height."
+        "description": "Click the numerical input field for custom media height."
     },
     {
         "id": "portrait_button",
         "name": "Portrait orientation button",
-        "description": "Scroll down if needed to find the orientation buttons."
+        "description": "Click the portrait orientation button."
     },
     {
         "id": "landscape_button",
         "name": "Landscape orientation button",
-        "description": "Next to the Portrait button"
+        "description": "Click the landscape orientation button."
     },
     # --- Transform ---
     {
         "id": "transform",
         "name": "Transform icon in sidebar",
-        "description": "Click the Transform tool icon in the left sidebar"
+        "description": "Click the Transform panel icon in the left sidebar"
     },
     {
         "id": "center_to_page",
         "name": "Center to Page button",
-        "description": "The Transform panel should now be open. "
-                       "Find the Center to Page button."
+        "description": "The Transform panel should be open. "
+                       "Click the Center to Page button."
     },
     # --- Print & Cut ---
     {
         "id": "print_cut",
         "name": "Print & Cut icon in sidebar",
-        "description": "Click the Print & Cut (registration marks) tool icon in the left sidebar"
+        "description": "Click the Print & Cut (registration marks) panel icon in the left sidebar"
     },
     {
         "id": "regmark_checkbox",
         "name": "Registration marks enable checkbox",
-        "description": "The Print & Cut panel should now be open. "
-                       "Find the checkbox to enable registration marks."
+        "description": "The Print & Cut panel should be open. "
+                       "Click the checkbox to enable registration marks."
     },
     {
         "id": "regmark_length_field",
         "name": "Registration mark length input field",
-        "description": "The numerical input field for mark length"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark length"
     },
     {
         "id": "regmark_thickness_field",
         "name": "Registration mark thickness input field",
-        "description": "The numerical input field for mark thickness"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark thickness"
     },
     {
         "id": "regmark_inset_field",
         "name": "Registration mark inset input field",
-        "description": "The numerical input field for mark inset"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark inset"
     },
     # --- Flip Vertically (right-click context menu) ---
     {
         "id": "cutting_path_menu",
-        "name": "Cutting path right-click target",
-        "description": "Click on any cutting path on the canvas "
+        "name": "Open cutting path menu (right-click)",
+        "description": "Select on any cutting path on the canvas "
                        "(used as the target for the right-click context menu)."
+                       "Right click anywhere to open the context menu."
     },
     {
         "id": "context_flip_vertically",
         "name": "Flip Vertically option in context menu",
-        "description": "Right-click a cutting path to open the context menu. "
+        "description": "The cutting path context menu should be open. "
                        "Click the 'Flip Vertically' option."
     },
 ]
@@ -1079,14 +1083,25 @@ def calibrate(studio_path):
     }
 
     try:
-        for element in CALIBRATION_ELEMENTS:
+        index = 0
+        while index < len(CALIBRATION_ELEMENTS):
+            element = CALIBRATION_ELEMENTS[index]
             click.echo(f"\n--- {element['name']} ---")
             click.echo(f"    {element['description']}")
 
-            response = input("Position mouse and press Enter (or 's' to skip): ").strip().lower()
+            response = input("Position mouse and press Enter (or 's' to skip, 'b' to go back): ").strip().lower()
+
+            if response == 'b':
+                if index == 0:
+                    click.echo("  Already at the first element.")
+                else:
+                    index -= 1
+                    click.echo("  Going back...")
+                continue
 
             if response == 's':
                 click.echo("  Skipped")
+                index += 1
                 continue
 
             pos = pyautogui.position()
@@ -1101,6 +1116,7 @@ def calibrate(studio_path):
             }
 
             click.echo(f"  Recorded: relative=({rel_x}, {rel_y})")
+            index += 1
 
     except KeyboardInterrupt:
         click.echo("\n\nCalibration interrupted.")
