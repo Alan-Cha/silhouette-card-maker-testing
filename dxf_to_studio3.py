@@ -573,12 +573,10 @@ class SilhouetteAutomation:
     def flip_vertically(self):
         """Select all objects and flip them vertically via the right-click context menu.
 
-        Corrects the image-fill mirroring SS applies to closed-polyline cutting
-        shapes (see add_rounded_rectangle() in dxf_manager.py for why LINE+ARC
-        entities, which don't have this fill-mirroring problem, can't be used
-        instead). This also mirrors the cutting path itself, which is fine
-        since generate_dxf() only produces vertically-symmetric card shapes
-        (single uniform corner radius).
+        Corrects SS's image-fill mirroring on closed-polyline shapes (see
+        add_rounded_rectangle() in dxf_manager.py). Also mirrors the cutting
+        path, harmless today since shapes are symmetric (single uniform
+        corner radius).
         """
         print("  Flipping vertically...")
         pyautogui.hotkey('ctrl', 'a')
