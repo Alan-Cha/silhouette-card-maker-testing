@@ -573,9 +573,12 @@ class SilhouetteAutomation:
     def flip_vertically(self):
         """Select all objects and flip them vertically via the right-click context menu.
 
-        DXF files are imported by Silhouette Studio with a vertical flip. This corrects
-        the orientation by selecting all objects and applying Flip Vertically through
-        the cutting path right-click context menu.
+        Corrects the image-fill mirroring SS applies to closed-polyline cutting
+        shapes (see add_rounded_rectangle() in dxf_manager.py for why LINE+ARC
+        entities, which don't have this fill-mirroring problem, can't be used
+        instead). This also mirrors the cutting path itself, which is fine
+        since generate_dxf() only produces vertically-symmetric card shapes
+        (single uniform corner radius).
         """
         print("  Flipping vertically...")
         pyautogui.hotkey('ctrl', 'a')
@@ -646,7 +649,7 @@ class SilhouetteAutomation:
         1. Open DXF
         2. Page setup (cutting mat, media size, orientation, dimensions)
         3. Center paths
-        4. Flip vertically (corrects vertical flip from DXF import)
+        4. Flip vertically (corrects the image-fill mirror on closed-polyline shapes)
         5. Set registration marks
         6. Save as .studio3
 
@@ -692,8 +695,6 @@ class SilhouetteAutomation:
         if center:
             self.center_to_page()
 
-        # DXF files are imported into Silhouette Studio with a vertical flip.
-        # Flip vertically after centering to correct the orientation.
         self.flip_vertically()
 
         if registration:
@@ -1067,18 +1068,26 @@ def calibrate(studio_path):
     # Start Silhouette Studio at fixed size
     _, window_rect = start_and_resize_studio(studio_path)
 
+    output_file = CALIBRATION_FILE
+    existing = load_calibration(output_file)
+    existing_elements = existing.get("elements", {}) if existing else {}
+
     click.echo()
-    version = click.prompt("What version of Silhouette Studio are you using?", default="unknown")
+    version = click.prompt(
+        "What version of Silhouette Studio are you using?",
+        default=existing.get("silhouette_studio_version", "unknown") if existing else "unknown"
+    )
     click.echo()
 
-    output_file = CALIBRATION_FILE
     click.echo(f"Calibration will be saved to: {output_file}")
+    if existing_elements:
+        click.echo(f"Loaded {len(existing_elements)} existing element(s); skipped elements keep their current coordinates.")
     click.echo()
 
     calibration = {
         "silhouette_studio_version": version,
         "window": window_rect,
-        "elements": {},
+        "elements": dict(existing_elements),
         "notes": "All coordinates are relative to the window top-left corner"
     }
 
@@ -1100,7 +1109,10 @@ def calibrate(studio_path):
                 continue
 
             if response == 's':
-                click.echo("  Skipped")
+                if element["id"] in calibration["elements"]:
+                    click.echo("  Skipped (kept existing coordinates)")
+                else:
+                    click.echo("  Skipped")
                 index += 1
                 continue
 

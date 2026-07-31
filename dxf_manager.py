@@ -14,8 +14,25 @@ def add_rounded_rectangle(msp, x, y, width, height, radius):
     Uses LWPOLYLINE with bulge-encoded arcs so Silhouette Studio sees one
     connected path and renders smooth line-to-arc transitions.
 
-    NOTE: SS vertically flips image fills for closed polyline entities. These
-    DXF files are cutting templates only, so fill orientation is irrelevant.
+    LINE + ARC entities (tried instead, twice) were rejected both times:
+    - Loose LINE/ARC entities in modelspace get merged by SS into a single
+      compound path across all cards in the file, making individual cards
+      unselectable after import.
+    - Wrapping the LINE+ARC shape in a block and placing each card via an
+      INSERT avoids that merge (each INSERT is one selectable object), but
+      SS then renders the line-to-arc joins with a visible sharp corner on
+      one side of each arc instead of a smooth transition. Verified on SS
+      5.0.414ss. This alone rules out LINE+ARC regardless of the
+      selectability fix, since a sharp corner artifact on the cutting path
+      isn't acceptable.
+
+    NOTE: SS vertically mirrors image fills for closed-polyline entities
+    (LINE+ARC does not have this problem, but can't be used — see above).
+    dxf_to_studio3.py's flip_vertically() step corrects the fill by flipping
+    the whole imported object, which also mirrors the cutting path itself.
+    That's accepted here because generate_dxf() only supports a single
+    uniform corner radius, so every card shape is vertically symmetric and
+    mirroring it has no visible effect on the cut.
 
     Bulge factor for a 90° CCW arc = tan(22.5°) ≈ 0.4142.
     Positive bulge = CCW arc (left of travel direction).
