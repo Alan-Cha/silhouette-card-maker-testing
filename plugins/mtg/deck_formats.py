@@ -8,8 +8,6 @@ from enum import Enum
 from typing import Callable, Tuple
 from xml.etree import ElementTree as ET
 
-from pyparsing import line
-
 from plugins.mtg.patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 
 import cloudscraper
@@ -405,14 +403,39 @@ def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, do
 #     MTGJSON, Scryfall, Tapped Out, TCGPlayer
 def parse_url(deck_url, handle_card: Callable) -> None:
     scraper = cloudscraper.create_scraper()
-    cards = mtg_parser.parse_deck(deck_url, scraper)
+    try:
+        cards = mtg_parser.parse_deck(deck_url, scraper)
+    except Exception as e:
+        print(f"Error while fetching deck from URL: {deck_url} ({e})")
+        return
+
     if not cards:
-        print(f"Failed to parse deck from URL: {deck_url}")
+        # mtg_parser returns None when no parser recognizes the URL (unsupported
+        # site or malformed link), as opposed to a recognized site failing to fetch.
+        print(f"URL not recognized by any supported site: {deck_url}")
         return
 
     error_lines = []
+    card_iter = iter(cards)
+    index = 0
 
-    for index, card in enumerate(cards, start=1):
+    while True:
+        try:
+            card = next(card_iter)
+        except StopIteration:
+            break
+        except Exception as e:
+            # mtg_parser lazily fetches/parses per card, so a site-side issue
+            # (deck deleted, made private, malformed API response, etc.) only
+            # surfaces here, mid-iteration, rather than when parse_deck() is called.
+            print(
+                f"Failed to parse deck from URL: {deck_url}. "
+                f"The deck may be private, deleted, or the URL may be incorrect. "
+                f"(underlying error: {e!r})"
+            )
+            break
+
+        index += 1
         name = card.name
         set_code = card.extension
         collector_number = card.number
@@ -427,7 +450,7 @@ def parse_url(deck_url, handle_card: Callable) -> None:
             handle_card(index, name, set_code, collector_number, quantity)
         except Exception as e:
             print(f'Error: {e}')
-            error_lines.append((line, e))
+            error_lines.append((name, e))
 
     if len(error_lines) > 0:
         print(f'Errors: {error_lines}')
