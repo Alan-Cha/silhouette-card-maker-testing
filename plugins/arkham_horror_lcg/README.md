@@ -42,7 +42,7 @@ python plugins/arkham_horror_lcg/fetch.py game/decklist/deck.txt arkhamdb_url
 You can also use the URL directly in the command line. Note the single quotes around the URL.
 
 ```sh
-python plugins/arkham_horror_lcg/fetch.py 'https://arkhamdb.com/decklist/view/20344/roland-banks-structure-deck-series-core-set-1.0' arkhamdb_url
+python plugins/arkham_horror_lcg/fetch.py 'https://arkhamdb.com/deck/view/12345' arkhamdb_url
 ```
 
 ## Formats
@@ -69,8 +69,8 @@ The investigator is fetched automatically alongside the rest of the deck.
 ArkhamDB URL format uses the full URL of a deck or published decklist from [ArkhamDB](https://arkhamdb.com).
 
 ```
-https://arkhamdb.com/decklist/view/20344/roland-banks-structure-deck-series-core-set-1.0
 https://arkhamdb.com/deck/view/12345
+https://arkhamdb.com/decklist/view/12345
 ```
 
 Published decklists (`/decklist/view/`) are always public. Personal decks (`/deck/view/`) are only reachable this way if their owner has enabled public sharing on that deck; otherwise the request will fail.
