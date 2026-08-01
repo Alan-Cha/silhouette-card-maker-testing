@@ -62,8 +62,6 @@ python plugins/arkham_horror_lcg/fetch.py 'https://arkhamdb.com/deck/view/12345'
 }
 ```
 
-The investigator is fetched automatically alongside the rest of the deck.
-
 [Arkham.Build](https://arkham.build) decks export to this same `investigator_code`/`slots` shape, so its **Export JSON** output works here too.
 
 ### `arkhamdb_url`
@@ -74,9 +72,3 @@ ArkhamDB URL format uses the full URL of a deck or published decklist from [Arkh
 https://arkhamdb.com/deck/view/12345
 https://arkhamdb.com/decklist/view/12345
 ```
-
-Published decklists (`/decklist/view/`) are always public. Personal decks (`/deck/view/`) are only reachable this way if their owner has enabled public sharing on that deck; otherwise the request will fail.
-
-## Double-Sided Cards
-
-Investigators and other double-sided cards (acts, agendas, and some player/encounter cards) automatically fetch both faces. The back is placed in [`game/double_sided`](../../game/double_sided/) under the same filename as the front, per [`create_pdf.py`](../../README.md#double-sided-cards)'s pairing convention.
