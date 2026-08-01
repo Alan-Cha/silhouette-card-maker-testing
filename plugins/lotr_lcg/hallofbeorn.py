@@ -2,9 +2,11 @@ from enum import Enum
 from re import sub
 from time import sleep
 
-from requests import Response, get
+from requests import Response, Session
 
 from plugins.lotr_lcg.card_entry import CardEntry
+
+session = Session()
 
 HALL_BASE_URL = "https://hallofbeorn.com"
 
@@ -63,7 +65,7 @@ class ScenarioMode(str, Enum):
 
 
 def request_hall(query: str) -> Response:
-    response = get(
+    response = session.get(
         query,
         headers={"user-agent": "silhouette-card-maker/0.1", "accept": "*/*"},
         timeout=30,
@@ -91,12 +93,14 @@ def fetch_all_scenarios() -> list[dict]:
     return request_hall(EXPORT_SCENARIOS_LIST_URL).json()
 
 
-def find_scenario_slug(title: str) -> str | None:
+def find_scenario_slug(title: str, scenarios: list[dict]) -> str | None:
     """Look up a scenario's exact Hall of Beorn slug by title (case-insensitive,
-    exact match against the full scenario list). Returns None if no scenario
-    has that title."""
+    exact match). `scenarios` is the full list from fetch_all_scenarios() --
+    passed in rather than fetched here so callers processing multiple
+    scenarios in one run can fetch it once and reuse it. Returns None if no
+    scenario has that title."""
     normalized = title.strip().lower()
-    for scenario in fetch_all_scenarios():
+    for scenario in scenarios:
         if scenario.get("Title", "").strip().lower() == normalized:
             return scenario.get("Slug")
     return None
@@ -106,7 +110,7 @@ def normalize_slug(value: str) -> str:
     return sub(r"[^a-z0-9]", "", value.lower())
 
 
-def find_scenario_slug_fuzzy(slug: str) -> str | None:
+def find_scenario_slug_fuzzy(slug: str, scenarios: list[dict]) -> str | None:
     """Find a scenario whose real Slug matches once punctuation/casing
     differences are ignored. Hall of Beorn's own /LotR/Scenarios/{slug} HTML
     page is more lenient about this than /Export/Scenarios/{slug} -- e.g. it
@@ -114,14 +118,14 @@ def find_scenario_slug_fuzzy(slug: str) -> str | None:
     "Passage-Through-Mirkwood-(Campaign)" -- so a slug pulled from a pasted
     page URL can differ slightly from the exact one the Export API expects."""
     normalized_target = normalize_slug(slug)
-    for scenario in fetch_all_scenarios():
+    for scenario in scenarios:
         candidate = scenario.get("Slug", "")
         if normalize_slug(candidate) == normalized_target:
             return candidate
     return None
 
 
-def fetch_scenario_by_slug(slug: str) -> dict:
+def fetch_scenario_by_slug(slug: str, scenarios: list[dict]) -> dict:
     data = request_hall(EXPORT_SCENARIO_URL_TEMPLATE.format(slug=slug)).json()
     if isinstance(data, dict):
         return data
@@ -129,7 +133,7 @@ def fetch_scenario_by_slug(slug: str) -> dict:
     # Unrecognized slugs return HTTP 200 with a bare JSON string message
     # ("Scenario {slug} not found") instead of a 404 or an object. Before
     # giving up, retry with a fuzzy-matched slug (see find_scenario_slug_fuzzy).
-    fuzzy_slug = find_scenario_slug_fuzzy(slug)
+    fuzzy_slug = find_scenario_slug_fuzzy(slug, scenarios)
     if fuzzy_slug is not None and fuzzy_slug != slug:
         data = request_hall(EXPORT_SCENARIO_URL_TEMPLATE.format(slug=fuzzy_slug)).json()
         if isinstance(data, dict):
@@ -207,7 +211,9 @@ def build_encounter_entries(
 
 def fetch_scenario_entries(
     scenario_slug: str,
-    scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
+    scenario_mode: str | ScenarioMode,
+    scenarios: list[dict],
+    card_image_index: dict[str, str],
 ) -> list[CardEntry]:
     """
     Fetch every card (quest deck + encounter deck) for a scenario via Hall of
@@ -219,15 +225,21 @@ def fetch_scenario_entries(
     CardEntry.image_url is left None -- fetch_card in ringsdb.py raises
     clearly for that case, which the caller's per-card error handling
     collects instead of the card silently vanishing.
+
+    `scenarios` (fetch_all_scenarios()) and `card_image_index`
+    (load_card_image_index()) are both bulk, scenario-independent fetches --
+    passed in rather than fetched here so a caller processing several
+    scenarios in one run (e.g. a whole campaign) fetches each once and
+    reuses it, instead of re-fetching Hall of Beorn's full scenario list and
+    full official card index (a multi-MB payload) once per scenario.
     """
     mode = normalize_scenario_mode(scenario_mode)
-    scenario = fetch_scenario_by_slug(scenario_slug)
+    scenario = fetch_scenario_by_slug(scenario_slug, scenarios)
 
     entries = build_quest_entries(scenario.get("QuestCards") or [])
 
     scenario_cards = scenario.get("ScenarioCards") or []
     if scenario_cards:
-        card_image_index = load_card_image_index()
         entries.extend(build_encounter_entries(scenario_cards, mode, card_image_index))
 
     return entries

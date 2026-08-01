@@ -8,9 +8,11 @@ from time import sleep
 from unicodedata import category, normalize
 
 from PIL import Image, ImageOps
-from requests import Response, get
+from requests import Response, Session
 
 from plugins.lotr_lcg.card_entry import CardEntry
+
+session = Session()
 
 RINGSDB_BASE_URL = "https://ringsdb.com"
 RINGSDB_ALL_CARDS_URL = f"{RINGSDB_BASE_URL}/api/public/cards/"
@@ -25,7 +27,7 @@ PLUGIN_DIRECTORY = Path(__file__).resolve().parent
 
 
 def request_ringsdb(query: str) -> Response:
-    response = get(
+    response = session.get(
         query,
         headers = {"user-agent": "silhouette-card-maker/0.1", "accept": "*/*"},
         timeout = 30,

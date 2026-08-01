@@ -4,7 +4,13 @@ from re import compile
 from typing import Callable
 
 from plugins.lotr_lcg.card_entry import CardEntry
-from plugins.lotr_lcg.hallofbeorn import ScenarioMode, fetch_scenario_entries, find_scenario_slug
+from plugins.lotr_lcg.hallofbeorn import (
+    ScenarioMode,
+    fetch_all_scenarios,
+    fetch_scenario_entries,
+    find_scenario_slug,
+    load_card_image_index,
+)
 from plugins.lotr_lcg.ringsdb import (
     build_deck_entries,
     fetch_decklist,
@@ -210,9 +216,15 @@ def parse_ringsdb_scenario_url(
     nameCanonical for scenario 1 is the lowercase "passage-through-mirkwood",
     but Hall of Beorn's actual slug is title-cased
     "Passage-Through-Mirkwood" -- a guess based on nameCanonical alone 404s.
+
+    Hall of Beorn's scenario list and official card index are each fetched
+    once here (not per line) and reused for every scenario reference in
+    deck_text, since both are scenario-independent, multi-MB payloads.
     """
     index = 0
     errors = []
+    scenarios = fetch_all_scenarios()
+    card_image_index = load_card_image_index()
 
     for line in read_reference_lines(deck_text):
         scenario_id = extract_ringsdb_scenario_id(line)
@@ -224,7 +236,7 @@ def parse_ringsdb_scenario_url(
         scenario_name = metadata.get("name", scenario_id)
         print(f"Scenario: {scenario_name} (ID: {scenario_id}, mode: {scenario_mode})")
 
-        scenario_slug = find_scenario_slug(scenario_name)
+        scenario_slug = find_scenario_slug(scenario_name, scenarios)
         if scenario_slug is None:
             raise ValueError(
                 f'Could not find a Hall of Beorn scenario titled "{scenario_name}" (from RingsDB '
@@ -232,7 +244,7 @@ def parse_ringsdb_scenario_url(
                 f"and pass its URL directly with the hallofbeorn_url format instead."
             )
 
-        entries = fetch_scenario_entries(scenario_slug, scenario_mode)
+        entries = fetch_scenario_entries(scenario_slug, scenario_mode, scenarios, card_image_index)
         index, batch_errors = emit_entries(entries, handle_card, index)
         errors.extend(batch_errors)
 
@@ -251,9 +263,15 @@ def parse_hallofbeorn_url(
     (see the module-level comment in hallofbeorn.py for details).
     `scenario_slug` here comes straight from a pasted /LotR/Scenarios/{slug}
     page URL, which uses the same slug the Export API expects.
+
+    Hall of Beorn's scenario list and official card index are each fetched
+    once here (not per line) and reused for every scenario reference in
+    deck_text, since both are scenario-independent, multi-MB payloads.
     """
     index = 0
     errors = []
+    scenarios = fetch_all_scenarios()
+    card_image_index = load_card_image_index()
 
     for line in read_reference_lines(deck_text):
         scenario_slug = extract_hallofbeorn_slug(line)
@@ -263,7 +281,7 @@ def parse_hallofbeorn_url(
 
         print(f"Scenario: {scenario_slug} (mode: {scenario_mode})")
 
-        entries = fetch_scenario_entries(scenario_slug, scenario_mode)
+        entries = fetch_scenario_entries(scenario_slug, scenario_mode, scenarios, card_image_index)
         index, batch_errors = emit_entries(entries, handle_card, index)
         errors.extend(batch_errors)
 
