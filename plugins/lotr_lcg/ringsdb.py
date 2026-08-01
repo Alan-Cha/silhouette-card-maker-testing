@@ -144,7 +144,7 @@ def build_deck_entries(deck: dict, card_catalog: dict[str, dict]) -> list[CardEn
 
         # Always emit an entry, even without an image_url. fetch_card raises
         # clearly for that case, and the caller's per-card error handling
-        # (see deck_formats.emit_entries) logs it in the final error summary
+        # (see deck_formats.process_entries) logs it in the final error summary
         # instead of the card silently vanishing from the output.
         entries.append(
             CardEntry(

@@ -105,7 +105,7 @@ def read_reference_lines(deck_text: str) -> list[str]:
     return [line.strip() for line in deck_text.strip().split("\n") if line.strip()]
 
 
-def emit_entries(entries: list[CardEntry], handle_card: Callable, index: int) -> tuple[int, list]:
+def process_entries(entries: list[CardEntry], handle_card: Callable, index: int) -> tuple[int, list]:
     """
     Log and dispatch each CardEntry to handle_card. Card-level failures are
     caught and collected rather than raised, so one bad card doesn't stop the
@@ -160,7 +160,7 @@ def parse_ringsdb(deck_text: str, handle_card: Callable) -> None:
         deck = fetch_decklist(deck_id)
         print(f'Deck: {deck.get("name", deck_id)} (ID: {deck_id})')
 
-        index, batch_errors = emit_entries(build_deck_entries(deck, card_catalog), handle_card, index)
+        index, batch_errors = process_entries(build_deck_entries(deck, card_catalog), handle_card, index)
         errors.extend(batch_errors)
 
     if errors:
@@ -189,7 +189,7 @@ def parse_ringsdb_fellowship(deck_text: str, handle_card: Callable) -> None:
 
         for deck in decks:
             print(f'  Deck: {deck.get("name", "Unnamed Deck")}')
-            index, batch_errors = emit_entries(build_deck_entries(deck, card_catalog), handle_card, index)
+            index, batch_errors = process_entries(build_deck_entries(deck, card_catalog), handle_card, index)
             errors.extend(batch_errors)
 
     if errors:
@@ -233,7 +233,7 @@ def parse_ringsdb_scenario_url(
             )
 
         entries = fetch_scenario_entries(scenario_slug, scenario_mode, card_image_index, scenarios)
-        index, batch_errors = emit_entries(entries, handle_card, index)
+        index, batch_errors = process_entries(entries, handle_card, index)
         errors.extend(batch_errors)
 
     if errors:
@@ -264,7 +264,7 @@ def parse_hallofbeorn_url(
         print(f"Scenario: {scenario_slug} (mode: {scenario_mode})")
 
         entries = fetch_scenario_entries(scenario_slug, scenario_mode, card_image_index)
-        index, batch_errors = emit_entries(entries, handle_card, index)
+        index, batch_errors = process_entries(entries, handle_card, index)
         errors.extend(batch_errors)
 
     if errors:
