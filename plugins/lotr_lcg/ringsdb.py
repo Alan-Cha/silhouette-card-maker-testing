@@ -134,16 +134,15 @@ def build_deck_entries(deck: dict, card_catalog: dict[str, dict]) -> list[CardEn
         if card is None:
             card = fetch_card_details(card_code)
 
-        image_url = build_image_url(card.get("imagesrc"))
-        if image_url is None:
-            print(f"Skipping card without image: {card_code}")
-            continue
-
+        # Always emit an entry, even without an image_url. fetch_card raises
+        # clearly for that case, and the caller's per-card error handling
+        # (see deck_formats.emit_entries) logs it in the final error summary
+        # instead of the card silently vanishing from the output.
         entries.append(
             CardEntry(
                 card_code=card_code,
                 name=card.get("name", card_code),
-                image_url=image_url,
+                image_url=build_image_url(card.get("imagesrc")),
                 quantity=quantity,
             )
         )
@@ -216,11 +215,14 @@ def fetch_card(
     quantity: int,
     card_code: str,
     name: str,
-    image_url: str,
+    image_url: str | None,
     front_img_dir: str,
     double_sided_img_dir: str | None = None,
     back_image_url: str | None = None,
 ):
+    if not image_url:
+        raise ValueError(f'No image available for card "{card_code}" ({name})')
+
     extension = Path(image_url).suffix or ".png"
     sanitized_name = sanitize_card_name(name)
     sanitized_code = sanitize_identifier(card_code)
