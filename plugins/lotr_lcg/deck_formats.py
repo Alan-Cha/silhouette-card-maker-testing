@@ -232,7 +232,7 @@ def parse_ringsdb_scenario_url(
                 f"and pass its URL directly with the hallofbeorn_url format instead."
             )
 
-        entries = fetch_scenario_entries(scenario_slug, scenario_mode, scenarios, card_image_index)
+        entries = fetch_scenario_entries(scenario_slug, scenario_mode, card_image_index, scenarios)
         index, batch_errors = emit_entries(entries, handle_card, index)
         errors.extend(batch_errors)
 
@@ -249,8 +249,10 @@ def parse_hallofbeorn_url(
     /LotR/Scenarios/{slug} page URL."""
     index = 0
     errors = []
-    # Fetched once and reused per line, not per scenario -- each is a multi-MB payload.
-    scenarios = fetch_all_scenarios()
+    # card_image_index is needed for virtually every scenario, so it's
+    # fetched once up front. The scenario list is NOT fetched here -- it's
+    # only needed for the rare case where the pasted slug doesn't match
+    # exactly, and fetch_scenario_entries fetches it lazily if that happens.
     card_image_index = load_card_image_index()
 
     for line in read_reference_lines(deck_text):
@@ -261,7 +263,7 @@ def parse_hallofbeorn_url(
 
         print(f"Scenario: {scenario_slug} (mode: {scenario_mode})")
 
-        entries = fetch_scenario_entries(scenario_slug, scenario_mode, scenarios, card_image_index)
+        entries = fetch_scenario_entries(scenario_slug, scenario_mode, card_image_index)
         index, batch_errors = emit_entries(entries, handle_card, index)
         errors.extend(batch_errors)
 

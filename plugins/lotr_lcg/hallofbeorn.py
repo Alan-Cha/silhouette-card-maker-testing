@@ -42,10 +42,13 @@ class ScenarioMode(str, Enum):
 
 
 def request_hall(query: str) -> Response:
+    # Hall of Beorn's /Export endpoints are slow: measured 24-28s for both
+    # /Export/Scenarios and /Export/Cards/OFFICIAL, so a 30s timeout leaves
+    # almost no headroom and intermittently times out for real.
     response = session.get(
         query,
         headers={"user-agent": "silhouette-card-maker/0.1", "accept": "*/*"},
-        timeout=30,
+        timeout=60,
     )
     response.raise_for_status()
     sleep(0.05)
@@ -97,14 +100,19 @@ def find_scenario_slug_fuzzy(slug: str, scenarios: list[dict]) -> str | None:
     return None
 
 
-def fetch_scenario_by_slug(slug: str, scenarios: list[dict]) -> dict:
+def fetch_scenario_by_slug(slug: str, scenarios: list[dict] | None = None) -> dict:
     data = request_hall(EXPORT_SCENARIO_URL_TEMPLATE.format(slug=slug)).json()
     if isinstance(data, dict):
         return data
 
     # Unrecognized slugs return HTTP 200 with a bare JSON string message
-    # ("Scenario {slug} not found") instead of a 404 or an object. Before
-    # giving up, retry with a fuzzy-matched slug (see find_scenario_slug_fuzzy).
+    # ("Scenario {slug} not found") instead of a 404 or an object. The
+    # scenario list (needed for the fuzzy retry) is fetched here rather than
+    # required from the caller -- fetch_all_scenarios() alone measured 28s,
+    # so the common case of an already-correct slug shouldn't pay for it.
+    if scenarios is None:
+        scenarios = fetch_all_scenarios()
+
     fuzzy_slug = find_scenario_slug_fuzzy(slug, scenarios)
     if fuzzy_slug is not None and fuzzy_slug != slug:
         data = request_hall(EXPORT_SCENARIO_URL_TEMPLATE.format(slug=fuzzy_slug)).json()
@@ -184,15 +192,16 @@ def build_encounter_entries(
 def fetch_scenario_entries(
     scenario_slug: str,
     scenario_mode: str | ScenarioMode,
-    scenarios: list[dict],
     card_image_index: dict[str, str],
+    scenarios: list[dict] | None = None,
 ) -> list[CardEntry]:
     """
     Fetch every card (quest deck + encounter deck) for a scenario. Quest
     cards carry their own image URLs; encounter cards resolve against
-    `card_image_index`. `scenarios`/`card_image_index` are passed in (not
-    fetched here) so a caller processing several scenarios in one run can
-    fetch each bulk payload once and reuse it.
+    `card_image_index`. `card_image_index` is always needed, so callers
+    processing several scenarios in one run should fetch it once and pass
+    it in; `scenarios` is only needed for the rare fuzzy-slug fallback (see
+    fetch_scenario_by_slug), so it's fetched lazily if not supplied.
     """
     mode = normalize_scenario_mode(scenario_mode)
     scenario = fetch_scenario_by_slug(scenario_slug, scenarios)

@@ -5,9 +5,11 @@ Tests RingsDB references, fellowship/scenario parsing, and public API access.
 from io import BytesIO
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from plugins.lotr_lcg.card_entry import CardEntry
 
@@ -22,11 +24,15 @@ from plugins.lotr_lcg.deck_formats import (
     extract_ringsdb_scenario_id,
     parse_deck,
 )
+from plugins.lotr_lcg.hallofbeorn import fetch_scenario_by_slug
 from plugins.lotr_lcg.ringsdb import (
     RINGSDB_ALL_CARDS_URL,
     get_handle_card,
     request_ringsdb,
 )
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+FETCH_SCRIPT = REPO_ROOT / "plugins" / "lotr_lcg" / "fetch.py"
 
 
 class TestDeckFormatEnum:
@@ -217,6 +223,144 @@ class TestParseDeckRouting:
                 None,
             )
         ]
+
+
+class TestFetchScriptInvocation:
+    """
+    Regression coverage for two bugs invisible to every other test in this
+    file, because they only reproduce when fetch.py is run as a script
+    (python plugins/lotr_lcg/fetch.py ...) rather than imported as a
+    package: Python only auto-prepends a script's own directory to sys.path
+    -- and only resolves bare relative paths against cwd -- when run that
+    way, not on a package import.
+    """
+
+    def test_help_runs_without_crashing_from_any_cwd(self, tmp_path):
+        # plugins/lotr_lcg/types.py used to shadow the stdlib types module,
+        # crashing every invocation (including --help) with an ImportError
+        # from deep inside click's own import chain.
+        result = subprocess.run(
+            [sys.executable, str(FETCH_SCRIPT), "--help"],
+            cwd=str(tmp_path),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        assert result.returncode == 0, result.stderr
+
+    @pytest.mark.integration
+    def test_game_directories_resolve_to_repo_root_not_cwd(self, tmp_path):
+        # fetch.py used to resolve game/front and game/double_sided as bare
+        # relative paths, which only pointed at the real repo when invoked
+        # from exactly repo root. ensure_directory() runs before any
+        # network call, so this still passes even though the bogus deck
+        # reference below never resolves to a real card.
+        subprocess.run(
+            [sys.executable, str(FETCH_SCRIPT), "not-a-real-reference", "ringsdb_url"],
+            cwd=str(tmp_path),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+        assert not (tmp_path / "game").exists()
+        assert (REPO_ROOT / "game" / "front").is_dir()
+        assert (REPO_ROOT / "game" / "double_sided").is_dir()
+
+
+class TestFetchScenarioBySlugNotFound:
+    @patch("plugins.lotr_lcg.hallofbeorn.request_hall")
+    def test_raises_clearly_when_slug_and_fuzzy_match_both_fail(self, mock_request_hall):
+        not_found_response = MagicMock()
+        not_found_response.json.return_value = "Scenario nonexistent-slug not found"
+        mock_request_hall.return_value = not_found_response
+
+        scenarios = [{"Title": "Some Scenario", "Slug": "Some-Scenario"}]
+
+        with pytest.raises(ValueError, match="not found"):
+            fetch_scenario_by_slug("nonexistent-slug", scenarios)
+
+    @patch("plugins.lotr_lcg.hallofbeorn.fetch_all_scenarios")
+    @patch("plugins.lotr_lcg.hallofbeorn.request_hall")
+    def test_exact_slug_match_never_fetches_scenario_list(self, mock_request_hall, mock_fetch_all_scenarios):
+        found_response = MagicMock()
+        found_response.json.return_value = {"Title": "Some Scenario", "Slug": "Some-Scenario"}
+        mock_request_hall.return_value = found_response
+
+        result = fetch_scenario_by_slug("Some-Scenario")
+
+        assert result == {"Title": "Some Scenario", "Slug": "Some-Scenario"}
+        mock_fetch_all_scenarios.assert_not_called()
+
+    @patch("plugins.lotr_lcg.hallofbeorn.fetch_all_scenarios")
+    @patch("plugins.lotr_lcg.hallofbeorn.request_hall")
+    def test_fuzzy_fallback_fetches_scenario_list_only_when_needed(self, mock_request_hall, mock_fetch_all_scenarios):
+        not_found_response = MagicMock()
+        not_found_response.json.return_value = "Scenario some-scenario not found"
+        found_response = MagicMock()
+        found_response.json.return_value = {"Title": "Some Scenario", "Slug": "Some-Scenario"}
+        mock_request_hall.side_effect = [not_found_response, found_response]
+        mock_fetch_all_scenarios.return_value = [{"Title": "Some Scenario", "Slug": "Some-Scenario"}]
+
+        result = fetch_scenario_by_slug("some-scenario")
+
+        assert result == {"Title": "Some Scenario", "Slug": "Some-Scenario"}
+        mock_fetch_all_scenarios.assert_called_once()
+
+
+class TestScenarioBulkFetchCaching:
+    """Guards the fix where fetch_all_scenarios()/load_card_image_index()
+    were re-fetched once per scenario line instead of once per run."""
+
+    @patch("plugins.lotr_lcg.deck_formats.fetch_scenario_entries", return_value=[])
+    @patch("plugins.lotr_lcg.deck_formats.find_scenario_slug", return_value="Some-Slug")
+    @patch("plugins.lotr_lcg.deck_formats.fetch_all_scenarios", return_value=[])
+    @patch("plugins.lotr_lcg.deck_formats.load_card_image_index", return_value={})
+    @patch("plugins.lotr_lcg.deck_formats.fetch_scenario_metadata")
+    def test_ringsdb_scenario_url_fetches_bulk_data_once_for_multiple_lines(
+        self,
+        mock_fetch_scenario_metadata,
+        mock_load_card_image_index,
+        mock_fetch_all_scenarios,
+        _mock_find_scenario_slug,
+        _mock_fetch_scenario_entries,
+    ):
+        mock_fetch_scenario_metadata.side_effect = [
+            {"name": "Scenario One"},
+            {"name": "Scenario Two"},
+        ]
+
+        parse_deck("1\n2", DeckFormat.RINGSDB_SCENARIO_URL, lambda *args: None)
+
+        assert mock_fetch_all_scenarios.call_count == 1
+        assert mock_load_card_image_index.call_count == 1
+        assert mock_fetch_scenario_metadata.call_count == 2
+
+    @patch("plugins.lotr_lcg.deck_formats.fetch_scenario_entries", return_value=[])
+    @patch("plugins.lotr_lcg.deck_formats.fetch_all_scenarios", return_value=[])
+    @patch("plugins.lotr_lcg.deck_formats.load_card_image_index", return_value={})
+    def test_hallofbeorn_url_fetches_card_index_once_and_never_fetches_scenario_list(
+        self,
+        mock_load_card_image_index,
+        mock_fetch_all_scenarios,
+        mock_fetch_scenario_entries,
+    ):
+        # hallofbeorn_url slugs come straight from a pasted page URL and are
+        # usually already exact, so parse_hallofbeorn_url should never pay
+        # for the ~28s scenario list fetch -- that's only needed inside
+        # fetch_scenario_entries's fuzzy fallback (see TestFetchScenarioBySlugNotFound),
+        # not by the caller.
+        deck_text = (
+            "https://hallofbeorn.com/LotR/Scenarios/Scenario-One\n"
+            "https://hallofbeorn.com/LotR/Scenarios/Scenario-Two"
+        )
+
+        parse_deck(deck_text, DeckFormat.HALLOFBEORN_URL, lambda *args: None)
+
+        assert mock_fetch_all_scenarios.call_count == 0
+        assert mock_load_card_image_index.call_count == 1
+        assert mock_fetch_scenario_entries.call_count == 2
 
 
 class TestLandscapeRotation:
