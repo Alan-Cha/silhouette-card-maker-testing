@@ -1,24 +1,59 @@
 from enum import Enum
-from html import unescape
-from re import S, compile, search
+from re import sub
 from time import sleep
-from urllib.parse import urljoin
 
 from requests import Response, get
 
 from plugins.lotr_lcg.card_entry import CardEntry
 
 HALL_BASE_URL = "https://hallofbeorn.com"
-HALL_SCENARIO_URL_TEMPLATE = f"{HALL_BASE_URL}/LotR/Scenarios/{{scenario_slug}}"
-DETAIL_HREF_PATTERN = compile(
-    r'<a[^>]+title="(?P<title>[^"]+)"[^>]+href="(?P<href>/LotR/Details/[^"]+)"[^>]*>'
-    r"<span[^>]*>.*?</span></a>\s*"
-    r'<span[^>]*>(?P<normal>[^<]+)</span>\s*'
-    r'<span[^>]*>(?P<easy>[^<]+)</span>\s*'
-    r'<span[^>]*>(?P<nightmare>[^<]+)</span>',
-    flags=S,
-)
-CARD_IMAGE_TAG_PATTERN = compile(r'<img[^>]*class="card-image[^"]*"[^>]*>', flags=S)
+
+# Hall of Beorn does not publish or document a public API. Everything below
+# was reverse engineered from the site's own (open source) backend at
+# https://github.com/danpoage/hall-of-beorn -- specifically
+# src/HallOfBeorn/Controllers/ExportController.cs (the handlers) and
+# src/HallOfBeorn/App_Start/RouteConfig.cs (the "Export/{action}/{id}" route
+# that dispatches "/Export/<action>/<id>" requests to that controller). All
+# three endpoints below were confirmed working live against production as of
+# 2026-08-01. Since none of this is a published, versioned contract, Hall of
+# Beorn is free to change or remove it without notice -- if these break,
+# check ExportController.cs on GitHub for what changed before assuming the
+# site itself is down.
+#
+#   GET /Export/Scenarios
+#     -> [{Title, Slug, Product, Number, QuestCards: [], ScenarioCards: []}, ...]
+#     Every scenario Hall of Beorn knows about. QuestCards/ScenarioCards are
+#     always empty arrays here regardless of the scenario -- this endpoint
+#     is only useful for finding a scenario's exact Slug by Title (see
+#     find_scenario_slug), not for its card list.
+#
+#   GET /Export/Scenarios/{slug}
+#     -> {Title, Slug, Product, Number, QuestCards: [...], ScenarioCards: [...]}
+#     `slug` must match one returned by the list endpoint above exactly,
+#     including case -- e.g. "Passage-Through-Mirkwood", not RingsDB's
+#     lowercase nameCanonical "passage-through-mirkwood" (these can differ;
+#     RingsDB and Hall of Beorn are independently-run sites that don't
+#     coordinate on slugs). An unrecognized slug returns HTTP 200 with a
+#     bare JSON string "Scenario {slug} not found", not a 404 or an object,
+#     so callers must check the response shape rather than the status code.
+#     - QuestCards: fully detailed quest/story cards. Each has Front/Back
+#       objects that already carry a direct image URL (Front.ImagePath /
+#       Back.ImagePath) -- no follow-up request needed per card.
+#     - ScenarioCards: the scenario's encounter deck, as {EncounterSet,
+#       Title, Slug, NormalQuantity, EasyQuantity, NightmareQuantity}. No
+#       image URL is included here; resolve one by looking this same Slug
+#       up in the bulk card index below.
+#
+#   GET /Export/Cards/{set_type}
+#     -> [{code, name, ..., url, imagesrc}, ...] (RingsDB-shaped card records)
+#     Bulk export of every card in `set_type` ("OFFICIAL" for all official
+#     releases, no fan-made content). `url` is the card's detail page
+#     (".../LotR/Details/{slug}"); its trailing path segment is the same
+#     Slug used by ScenarioCards above, and `imagesrc` is the card's image.
+EXPORT_SCENARIOS_LIST_URL = f"{HALL_BASE_URL}/Export/Scenarios"
+EXPORT_SCENARIO_URL_TEMPLATE = f"{HALL_BASE_URL}/Export/Scenarios/{{slug}}"
+EXPORT_CARDS_URL_TEMPLATE = f"{HALL_BASE_URL}/Export/Cards/{{set_type}}"
+OFFICIAL_SET_TYPE = "OFFICIAL"
 
 
 class ScenarioMode(str, Enum):
@@ -38,13 +73,6 @@ def request_hall(query: str) -> Response:
     return response
 
 
-def parse_quantity(value: str) -> int:
-    cleaned = unescape(value).strip()
-    if cleaned in {"-", ""}:
-        return 0
-    return int(cleaned)
-
-
 def normalize_scenario_mode(value: str | ScenarioMode) -> ScenarioMode:
     if isinstance(value, ScenarioMode):
         return value
@@ -57,18 +85,124 @@ def normalize_scenario_mode(value: str | ScenarioMode) -> ScenarioMode:
         raise ValueError(f"Unsupported scenario mode: {value}. Valid modes: {valid_modes}")
 
 
-def scenario_card_code(detail_href: str) -> str:
-    return detail_href.rsplit("/", 1)[-1]
+def fetch_all_scenarios() -> list[dict]:
+    """Fetch the full scenario list. Only Title/Slug/Product/Number are
+    populated here -- see find_scenario_slug for what this is used for."""
+    return request_hall(EXPORT_SCENARIOS_LIST_URL).json()
 
 
-def fetch_card_image_urls(detail_href: str) -> list[str]:
-    detail_html = request_hall(urljoin(HALL_BASE_URL, detail_href)).text
-    image_urls = []
-    for image_tag in CARD_IMAGE_TAG_PATTERN.findall(detail_html):
-        url_match = search(r'(?:data-src|src)="([^"]+)"', image_tag)
-        if url_match:
-            image_urls.append(urljoin(HALL_BASE_URL, unescape(url_match.group(1))))
-    return image_urls
+def find_scenario_slug(title: str) -> str | None:
+    """Look up a scenario's exact Hall of Beorn slug by title (case-insensitive,
+    exact match against the full scenario list). Returns None if no scenario
+    has that title."""
+    normalized = title.strip().lower()
+    for scenario in fetch_all_scenarios():
+        if scenario.get("Title", "").strip().lower() == normalized:
+            return scenario.get("Slug")
+    return None
+
+
+def normalize_slug(value: str) -> str:
+    return sub(r"[^a-z0-9]", "", value.lower())
+
+
+def find_scenario_slug_fuzzy(slug: str) -> str | None:
+    """Find a scenario whose real Slug matches once punctuation/casing
+    differences are ignored. Hall of Beorn's own /LotR/Scenarios/{slug} HTML
+    page is more lenient about this than /Export/Scenarios/{slug} -- e.g. it
+    accepts "Passage-Through-Mirkwood-Campaign" for the real slug
+    "Passage-Through-Mirkwood-(Campaign)" -- so a slug pulled from a pasted
+    page URL can differ slightly from the exact one the Export API expects."""
+    normalized_target = normalize_slug(slug)
+    for scenario in fetch_all_scenarios():
+        candidate = scenario.get("Slug", "")
+        if normalize_slug(candidate) == normalized_target:
+            return candidate
+    return None
+
+
+def fetch_scenario_by_slug(slug: str) -> dict:
+    data = request_hall(EXPORT_SCENARIO_URL_TEMPLATE.format(slug=slug)).json()
+    if isinstance(data, dict):
+        return data
+
+    # Unrecognized slugs return HTTP 200 with a bare JSON string message
+    # ("Scenario {slug} not found") instead of a 404 or an object. Before
+    # giving up, retry with a fuzzy-matched slug (see find_scenario_slug_fuzzy).
+    fuzzy_slug = find_scenario_slug_fuzzy(slug)
+    if fuzzy_slug is not None and fuzzy_slug != slug:
+        data = request_hall(EXPORT_SCENARIO_URL_TEMPLATE.format(slug=fuzzy_slug)).json()
+        if isinstance(data, dict):
+            return data
+
+    raise ValueError(str(data))
+
+
+def load_card_image_index() -> dict[str, str]:
+    """Bulk-fetch every official card once and index it by the slug in its
+    detail-page URL, so ScenarioCards entries (which only carry that slug,
+    not an image) can be resolved without one request per card."""
+    cards = request_hall(EXPORT_CARDS_URL_TEMPLATE.format(set_type=OFFICIAL_SET_TYPE)).json()
+
+    index = {}
+    for card in cards:
+        url = card.get("url")
+        image_url = card.get("imagesrc")
+        if not url or not image_url:
+            continue
+        index[url.rsplit("/", 1)[-1]] = image_url
+
+    return index
+
+
+def build_quest_entries(quest_cards: list[dict]) -> list[CardEntry]:
+    entries = []
+
+    for card in quest_cards:
+        front = card.get("Front") or {}
+        back = card.get("Back")
+        entries.append(
+            CardEntry(
+                card_code=card.get("Slug") or card.get("Title", ""),
+                name=card.get("Title", ""),
+                image_url=front.get("ImagePath"),
+                quantity=card.get("Quantity") or 1,
+                back_image_url=back.get("ImagePath") if back else None,
+            )
+        )
+
+    return entries
+
+
+def build_encounter_entries(
+    scenario_cards: list[dict],
+    scenario_mode: ScenarioMode,
+    card_image_index: dict[str, str],
+) -> list[CardEntry]:
+    quantity_field = {
+        ScenarioMode.NORMAL: "NormalQuantity",
+        ScenarioMode.EASY: "EasyQuantity",
+        ScenarioMode.NIGHTMARE: "NightmareQuantity",
+    }[scenario_mode]
+
+    entries = []
+
+    for card in scenario_cards:
+        quantity = card.get(quantity_field) or 0
+        if quantity <= 0:
+            continue
+
+        slug = card.get("Slug", "")
+        entries.append(
+            CardEntry(
+                card_code=slug,
+                name=card.get("Title", ""),
+                image_url=card_image_index.get(slug),
+                quantity=quantity,
+            )
+        )
+
+    return entries
 
 
 def fetch_scenario_entries(
@@ -76,44 +210,24 @@ def fetch_scenario_entries(
     scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> list[CardEntry]:
     """
-    Fetch scenario card entries by scraping Hall of Beorn HTML.
-
-    Hall of Beorn is the only source for detailed scenario card lists with
-    individual card quantities per difficulty mode (easy/normal/nightmare).
-    Parses HTML to extract card names, quantities, and fetches individual
-    card detail pages for image URLs.
+    Fetch every card (quest deck + encounter deck) for a scenario via Hall of
+    Beorn's undocumented /Export JSON API (see the module-level comment
+    above for how these endpoints were found and what they return). Quest
+    cards come back fully detailed with image URLs already included;
+    encounter deck cards are resolved against a bulk card index keyed by
+    their detail-page slug. If a card's image can't be resolved, its
+    CardEntry.image_url is left None -- fetch_card in ringsdb.py raises
+    clearly for that case, which the caller's per-card error handling
+    collects instead of the card silently vanishing.
     """
     mode = normalize_scenario_mode(scenario_mode)
-    scenario_html = request_hall(
-        HALL_SCENARIO_URL_TEMPLATE.format(scenario_slug=scenario_slug)
-    ).text
+    scenario = fetch_scenario_by_slug(scenario_slug)
 
-    image_cache: dict[str, list[str]] = {}
-    entries = []
+    entries = build_quest_entries(scenario.get("QuestCards") or [])
 
-    for match in DETAIL_HREF_PATTERN.finditer(scenario_html):
-        quantity = parse_quantity(match.group(mode.value))
-        if quantity <= 0:
-            continue
-
-        detail_href = unescape(match.group("href"))
-        title = unescape(match.group("title")).strip()
-        image_urls = image_cache.get(detail_href)
-        if image_urls is None:
-            image_urls = fetch_card_image_urls(detail_href)
-            image_cache[detail_href] = image_urls
-
-        if not image_urls:
-            raise ValueError(f"Could not find images for Hall of Beorn detail page {detail_href}")
-
-        entries.append(
-            CardEntry(
-                card_code=scenario_card_code(detail_href),
-                name=title,
-                image_url=image_urls[0],
-                quantity=quantity,
-                back_image_url=image_urls[1] if len(image_urls) > 1 else None,
-            )
-        )
+    scenario_cards = scenario.get("ScenarioCards") or []
+    if scenario_cards:
+        card_image_index = load_card_image_index()
+        entries.extend(build_encounter_entries(scenario_cards, mode, card_image_index))
 
     return entries

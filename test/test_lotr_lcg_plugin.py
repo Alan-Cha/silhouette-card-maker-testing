@@ -186,8 +186,13 @@ class TestParseDeckRouting:
         "plugins.lotr_lcg.deck_formats.fetch_scenario_metadata",
         return_value={"name": "Passage Through Mirkwood", "nameCanonical": "passage-through-mirkwood"},
     )
+    @patch(
+        "plugins.lotr_lcg.deck_formats.find_scenario_slug",
+        return_value="Passage-Through-Mirkwood",
+    )
     def test_parse_scenario_calls_handle_card(
         self,
+        _mock_find_scenario_slug,
         _mock_fetch_scenario_metadata,
         _mock_fetch_scenario_entries,
     ):

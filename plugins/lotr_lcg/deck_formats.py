@@ -4,7 +4,7 @@ from re import compile
 from typing import Callable
 
 from plugins.lotr_lcg.card_entry import CardEntry
-from plugins.lotr_lcg.hallofbeorn import ScenarioMode, fetch_scenario_entries
+from plugins.lotr_lcg.hallofbeorn import ScenarioMode, fetch_scenario_entries, find_scenario_slug
 from plugins.lotr_lcg.ringsdb import (
     build_deck_entries,
     fetch_decklist,
@@ -190,29 +190,26 @@ def parse_ringsdb_fellowship(deck_text: str, handle_card: Callable) -> None:
         print(f"Errors: {errors}")
 
 
-def fetch_scenario_entries_or_raise(scenario_slug: str, scenario_mode, hint: str) -> list[CardEntry]:
-    try:
-        return fetch_scenario_entries(scenario_slug, scenario_mode)
-    except Exception as exc:
-        raise ValueError(f'Could not fetch Hall of Beorn scenario data for slug "{scenario_slug}": {exc}. {hint}') from exc
-
-
 def parse_ringsdb_scenario_url(
     deck_text: str,
     handle_card: Callable,
     scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
     """
-    Parse RingsDB scenarios by fetching metadata, then scraping Hall of Beorn.
+    Parse RingsDB scenarios by fetching metadata, then looking up the
+    matching scenario on Hall of Beorn by title.
     Uses: /api/public/scenario/{id}.json for metadata (name, pack, counts)
-    Then: Hall of Beorn HTML scraping for actual card list
+    Then: Hall of Beorn's /Export/Scenarios list (find_scenario_slug) to
+    find that title's exact slug, and /Export/Scenarios/{slug} for the
+    actual card list.
 
-    ASSUMPTION: RingsDB's nameCanonical slug can be used to construct a Hall of
-    Beorn URL. This mapping is fragile and not guaranteed - Hall of Beorn URLs
-    may change or diverge from RingsDB slugs. RingsDB's scenario API does not
-    contain the actual card list, only metadata and aggregate counts. If the
-    guessed slug doesn't resolve, the error tells the user to look up the
-    scenario on Hall of Beorn directly and use hallofbeorn_url instead.
+    RingsDB's scenario API has no card list, only metadata and aggregate
+    counts, so the card data always comes from Hall of Beorn. Looking up the
+    slug by title (rather than assuming RingsDB's nameCanonical equals Hall
+    of Beorn's slug) avoids a real, confirmed mismatch: RingsDB's
+    nameCanonical for scenario 1 is the lowercase "passage-through-mirkwood",
+    but Hall of Beorn's actual slug is title-cased
+    "Passage-Through-Mirkwood" -- a guess based on nameCanonical alone 404s.
     """
     index = 0
     errors = []
@@ -224,20 +221,18 @@ def parse_ringsdb_scenario_url(
             continue
 
         metadata = fetch_scenario_metadata(scenario_id)
-        scenario_slug = metadata.get("nameCanonical")
         scenario_name = metadata.get("name", scenario_id)
         print(f"Scenario: {scenario_name} (ID: {scenario_id}, mode: {scenario_mode})")
 
-        entries = fetch_scenario_entries_or_raise(
-            scenario_slug,
-            scenario_mode,
-            hint=(
-                f'RingsDB\'s "{scenario_slug}" slug guess may not match Hall of Beorn\'s URL for '
-                f'"{scenario_name}". Find the scenario at https://hallofbeorn.com/LotR/Scenarios/ '
+        scenario_slug = find_scenario_slug(scenario_name)
+        if scenario_slug is None:
+            raise ValueError(
+                f'Could not find a Hall of Beorn scenario titled "{scenario_name}" (from RingsDB '
+                f"scenario ID {scenario_id}). Find the scenario at https://hallofbeorn.com/LotR/Scenarios/ "
                 f"and pass its URL directly with the hallofbeorn_url format instead."
-            ),
-        )
+            )
 
+        entries = fetch_scenario_entries(scenario_slug, scenario_mode)
         index, batch_errors = emit_entries(entries, handle_card, index)
         errors.extend(batch_errors)
 
@@ -251,11 +246,11 @@ def parse_hallofbeorn_url(
     scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
     """
-    Parse Hall of Beorn scenarios by scraping HTML.
-    Uses: /LotR/Scenarios/{slug} (HTML page)
-    Note: This is the only source for detailed scenario card lists with
-    individual card quantities and image URLs. Parses HTML tables and
-    fetches individual card detail pages.
+    Parse Hall of Beorn scenarios directly by slug.
+    Uses: Hall of Beorn's undocumented /Export/Scenarios/{slug} JSON API
+    (see the module-level comment in hallofbeorn.py for details).
+    `scenario_slug` here comes straight from a pasted /LotR/Scenarios/{slug}
+    page URL, which uses the same slug the Export API expects.
     """
     index = 0
     errors = []
