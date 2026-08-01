@@ -118,7 +118,7 @@ The [Yu-Gi-Oh! plugin](plugins/yugioh/README.md) supports **YDK** and **YDKE** f
 
 The [Altered plugin](plugins/altered/README.md) supports **Ajordat** format.
 
-The [Arkham Horror LCG plugin](plugins/arkham_horror_lcg/README.md) supports **ArkhamDB** format.
+The [Arkham Horror: The Card Game plugin](plugins/arkham_horror_lcg/README.md) supports **ArkhamDB** format.
 
 The [Ashes Reborn plugin](plugins/ashes_reborn/README.md) supports **Ashes** and **Ashes DB** formats.
 

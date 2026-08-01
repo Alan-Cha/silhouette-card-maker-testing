@@ -1,4 +1,4 @@
-# Arkham Horror LCG Plugin
+# Arkham Horror: The Card Game Plugin
 
 This plugin reads a decklist, automatically fetches card art from [ArkhamDB](https://arkhamdb.com/) and puts them in the proper `game/` directories.
 

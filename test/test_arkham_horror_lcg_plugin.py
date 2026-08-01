@@ -1,5 +1,5 @@
 """
-Tests for the Arkham Horror LCG plugin.
+Tests for the Arkham Horror: The Card Game plugin.
 Tests deck format parsing and image fetching from ArkhamDB.
 """
 import json

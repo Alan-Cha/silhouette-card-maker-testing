@@ -1,5 +1,5 @@
 ---
-title: 'Arkham Horror LCG'
+title: 'Arkham Horror: The Card Game'
 weight: 22
 ---
 
