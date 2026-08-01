@@ -64,6 +64,8 @@ python plugins/arkham_horror_lcg/fetch.py 'https://arkhamdb.com/deck/view/12345'
 
 The investigator is fetched automatically alongside the rest of the deck.
 
+[Arkham.Build](https://arkham.build) decks export to this same `investigator_code`/`slots` shape, so its **Export JSON** output works here too.
+
 ### `arkhamdb_url`
 
 ArkhamDB URL format uses the full URL of a deck or published decklist from [ArkhamDB](https://arkhamdb.com).
