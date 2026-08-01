@@ -99,7 +99,7 @@ def sanitize_identifier(value: str) -> str:
 def build_image_url(image_path: str | None) -> str | None:
     if not image_path:
         return None
-    if image_path.startswith("http://") or image_path.startswith("https://"):
+    if image_path.startswith(("http://", "https://")):
         return image_path
     return f"{RINGSDB_BASE_URL}{image_path}"
 

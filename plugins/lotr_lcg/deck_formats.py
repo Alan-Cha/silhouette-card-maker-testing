@@ -44,55 +44,35 @@ HALL_SCENARIO_URL_PATTERN = compile(
 BARE_ID_PATTERN = compile(r"(\d+)\s*$")
 
 
-def extract_decklist_id(value: str) -> str | None:
+def extract_first_match(value: str, patterns: tuple) -> str | None:
+    """Try each pattern in order against value (fully stripped and matched
+    end-to-end); return the first capture group that matches, else None."""
     line = value.strip()
     if not line:
         return None
 
-    for pattern in (RINGSDB_URL_PATTERN, RINGSDB_API_PATTERN, BARE_ID_PATTERN):
+    for pattern in patterns:
         match = pattern.fullmatch(line)
         if match:
             return match.group(1)
 
     return None
+
+
+def extract_decklist_id(value: str) -> str | None:
+    return extract_first_match(value, (RINGSDB_URL_PATTERN, RINGSDB_API_PATTERN, BARE_ID_PATTERN))
 
 
 def extract_fellowship_id(value: str) -> str | None:
-    line = value.strip()
-    if not line:
-        return None
-
-    for pattern in (RINGSDB_FELLOWSHIP_URL_PATTERN, BARE_ID_PATTERN):
-        match = pattern.fullmatch(line)
-        if match:
-            return match.group(1)
-
-    return None
+    return extract_first_match(value, (RINGSDB_FELLOWSHIP_URL_PATTERN, BARE_ID_PATTERN))
 
 
 def extract_ringsdb_scenario_id(value: str) -> str | None:
-    line = value.strip()
-    if not line:
-        return None
-
-    for pattern in (RINGSDB_SCENARIO_API_PATTERN, BARE_ID_PATTERN):
-        match = pattern.fullmatch(line)
-        if match:
-            return match.group(1)
-
-    return None
+    return extract_first_match(value, (RINGSDB_SCENARIO_API_PATTERN, BARE_ID_PATTERN))
 
 
 def extract_hallofbeorn_slug(value: str) -> str | None:
-    line = value.strip()
-    if not line:
-        return None
-
-    hall_match = HALL_SCENARIO_URL_PATTERN.fullmatch(line)
-    if hall_match:
-        return hall_match.group(1)
-
-    return None
+    return extract_first_match(value, (HALL_SCENARIO_URL_PATTERN,))
 
 
 def read_reference_lines(deck_text: str) -> list[str]:
