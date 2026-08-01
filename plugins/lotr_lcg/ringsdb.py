@@ -61,6 +61,37 @@ def fetch_fellowship_decks(fellowship_id: str) -> tuple[str, list[dict]]:
     RingsDB has no /api/public/fellowship/{id}.json endpoint, so we fetch the
     HTML page and extract JSON from inline JavaScript variables using regex:
     Decks[0] = {"id": 123, "name": "...", "slots": {...}, ...};
+
+    RingsDB's source is public (github.com/olivierkes/ringsdb) and does
+    define /fellowship/export/text/{id} and /fellowship/export/octgn/{id}
+    routes, but both redirect to /login when hit anonymously -- confirmed
+    live, so they require authentication and aren't a usable alternative
+    (unlike Hall of Beorn's /Export endpoints, which are public).
+
+    FELLOWSHIP_DECK_PATTERN's non-greedy `\\{.*?\\}` only reliably captures
+    the *whole* nested deck object because valid JSON never contains a bare
+    "};" (fields are comma-separated, not semicolon-separated), so the first
+    "};" the regex finds is reliably the true end of the statement -- a
+    property of JSON syntax the regex leans on, not something it verifies
+    itself. It would truncate early if a string field (e.g. a deck name)
+    ever literally contained the text "};" (low probability, not
+    impossible). Confirmed live that the whole "Decks[N] = {...};" statement
+    is always emitted as a single line (RingsDB JSON-escapes embedded
+    newlines rather than emitting literal ones), which is why the pattern
+    doesn't need re.DOTALL to work.
+
+    FELLOWSHIP_NAME_PATTERN is lower-risk by comparison: it matches a single
+    <h1>...</h1> tag pair (tolerant of any attributes) rather than an
+    ordered multi-tag sequence, so there's less markup structure for it to
+    depend on. For contrast, this plugin used to scrape Hall of Beorn's
+    scenario pages with a regex requiring a precise 5-element ordered tag
+    sequence (a link, then 3 sibling count spans), which broke on structural
+    drift *within a single page*: Hall of Beorn's "Quest Cards" section
+    orders count-before-link, while the encounter-card table the old regex
+    targeted orders link-before-counts. That regex was replaced entirely
+    with Hall of Beorn's JSON export API (see hallofbeorn.py's module
+    docstring) once one was found; no such API exists for RingsDB
+    fellowships (see above), so this regex-based approach is what's left.
     """
     html = request_ringsdb(RINGSDB_FELLOWSHIP_URL_TEMPLATE.format(fellowship_id=fellowship_id)).text
 
