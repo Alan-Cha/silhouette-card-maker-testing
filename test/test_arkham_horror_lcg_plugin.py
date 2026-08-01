@@ -11,7 +11,7 @@ import pytest
 from PIL import Image
 
 from plugins.arkham_horror_lcg.deck_formats import DeckFormat, DECK_URL_PATTERN, handle_slots, parse_deck
-from plugins.arkham_horror_lcg.api import fetch_card_json, get_handle_card
+from plugins.arkham_horror_lcg.api import fetch_arkhamdb_deck, fetch_card_json, get_handle_card
 
 
 # --- Unit Tests ---
@@ -141,6 +141,16 @@ class TestArkhamDBAPI:
         assert not card.get("backimagesrc")
         assert card.get("linked_card", {}).get("imagesrc")
 
+    def test_private_deck_url_is_not_reachable(self):
+        # Most /deck/view/<id> IDs belong to decks whose owner has not enabled
+        # public sharing. ArkhamDB responds to those with a redirect to its
+        # login page rather than an HTTP error, so the JSON parse itself is
+        # what fails. This documents that failure mode, which is why
+        # test_fetch_deck_from_arkhamdb_personal_deck_url below pins a
+        # specific ID that is actually reachable rather than an arbitrary one.
+        with pytest.raises(json.JSONDecodeError):
+            fetch_arkhamdb_deck("1", is_decklist=False)
+
 
 @pytest.mark.integration
 class TestFullFetchWorkflow:
@@ -176,7 +186,8 @@ class TestFullFetchWorkflow:
         double_sided_files = os.listdir(double_sided_dir)
         assert len(double_sided_files) >= 1
 
-    def test_fetch_deck_from_arkhamdb_url(self, temp_dirs):
+    def test_fetch_deck_from_arkhamdb_decklist_url(self, temp_dirs):
+        """Published decklist URL (/decklist/view/<id>), always public."""
         front_dir, double_sided_dir = temp_dirs
 
         deck_url = "https://arkhamdb.com/decklist/view/1"
@@ -189,6 +200,30 @@ class TestFullFetchWorkflow:
 
         for f in front_files:
             assert os.path.getsize(os.path.join(front_dir, f)) > 0
+
+    def test_fetch_deck_from_arkhamdb_personal_deck_url(self, temp_dirs):
+        """Personal deck URL (/deck/view/<id>) with public sharing enabled by its
+        owner. Unlike published decklists, most /deck/view/ IDs are private and
+        redirect to a login page rather than returning deck data (see
+        TestArkhamDBAPI.test_private_deck_url_is_not_reachable) -- this is one of
+        the few that is reachable, found via a public web search rather than
+        pinned arbitrarily."""
+        front_dir, double_sided_dir = temp_dirs
+
+        deck_url = "https://arkhamdb.com/deck/view/1405"
+
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck(deck_url, DeckFormat.ARKHAMDB_URL, handle_card)
+
+        front_files = os.listdir(front_dir)
+        assert len(front_files) >= 1
+
+        for f in front_files:
+            assert os.path.getsize(os.path.join(front_dir, f)) > 0
+
+        # This particular deck's investigator (Skids) is double-sided.
+        double_sided_files = os.listdir(double_sided_dir)
+        assert len(double_sided_files) >= 1
 
     def test_landscape_card_is_rotated_to_portrait(self, temp_dirs):
         front_dir, double_sided_dir = temp_dirs
