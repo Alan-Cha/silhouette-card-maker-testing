@@ -53,6 +53,8 @@ def fetch_card_art(
     name = card.get('name') or code
     clean_name = remove_nonalphanumeric(name)
 
+    print(f'Index: {index}, quantity: {quantity}, code: {code}, name: {name}')
+
     front_path = card.get('imagesrc')
     if not front_path:
         raise ValueError(f'No image available for card "{code}"')
@@ -76,6 +78,10 @@ def fetch_card_art(
         for counter in range(quantity):
             image_path = os.path.join(double_sided_dir, f'{index}{clean_name}{counter + 1}.png')
             back_img.save(image_path)
+    elif card.get('double_sided'):
+        # ArkhamDB has this card flagged double-sided but hasn't uploaded a
+        # back image for it yet (typically very recently released cards).
+        print(f'Warning: "{name}" ({code}) is double-sided but has no back image available yet.')
 
 def get_handle_card(front_img_dir: str, double_sided_dir: str):
     def configured_fetch_card(index: int, code: str, quantity: int):

@@ -21,7 +21,9 @@ def handle_slots(data: dict, handle_card: Callable) -> None:
     for code, quantity in slots.items():
         index += 1
 
-        print(f'Index: {index}, quantity: {quantity}, code: {code}')
+        # No name is available here -- slots are just code/quantity pairs.
+        # handle_card (fetch_card_art) logs the full line once it knows the
+        # card's name.
         try:
             handle_card(index, code, quantity)
         except Exception as e:

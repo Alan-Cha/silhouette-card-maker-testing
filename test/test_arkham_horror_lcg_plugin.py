@@ -6,10 +6,12 @@ import json
 import os
 import shutil
 import tempfile
+from unittest.mock import MagicMock, patch
 
 import pytest
 from PIL import Image
 
+from plugins.arkham_horror_lcg import api
 from plugins.arkham_horror_lcg.deck_formats import DeckFormat, DECK_URL_PATTERN, handle_slots, parse_deck
 from plugins.arkham_horror_lcg.api import fetch_arkhamdb_deck, fetch_card_json, get_handle_card
 
@@ -116,6 +118,62 @@ class TestParseArkhamdbJson:
     def test_unrecognized_format_raises(self):
         with pytest.raises(ValueError):
             parse_deck("{}", "not_a_real_format", lambda *args: None)
+
+
+class TestMissingBackImage:
+    """Test the case where ArkhamDB flags a card double_sided=true but hasn't
+    uploaded a back image for it yet. Found via a real example (Carolyn Fern,
+    code 60251, at the Chapter 2 release) but mocked here rather than pinned
+    live, since ArkhamDB uploading the missing art would silently break a
+    live-network version of this test."""
+
+    def test_warns_and_skips_back_when_double_sided_but_no_back_source(self, tmp_path, capsys):
+        fake_card = {
+            "code": "60251",
+            "name": "Carolyn Fern",
+            "imagesrc": "/bundles/cards/60251.png",
+            "double_sided": True,
+            "backimagesrc": None,
+            "linked_card": None,
+        }
+
+        front_dir = tmp_path / "front"
+        double_sided_dir = tmp_path / "double_sided"
+        front_dir.mkdir()
+        double_sided_dir.mkdir()
+
+        with patch.object(api, "fetch_card_json", return_value=fake_card), \
+             patch.object(api, "request_arkhamdb") as mock_request, \
+             patch.object(api, "prepare_card_image", return_value=MagicMock()):
+            mock_request.return_value.content = b""
+            api.fetch_card_art(1, "60251", 1, str(front_dir), str(double_sided_dir))
+
+        assert list(double_sided_dir.iterdir()) == []
+        assert "no back image available yet" in capsys.readouterr().out.lower()
+
+    def test_no_warning_when_card_is_not_double_sided(self, tmp_path, capsys):
+        fake_card = {
+            "code": "01006",
+            "name": "Beat Cop",
+            "imagesrc": "/bundles/cards/01006.png",
+            "double_sided": False,
+            "backimagesrc": None,
+            "linked_card": None,
+        }
+
+        front_dir = tmp_path / "front"
+        double_sided_dir = tmp_path / "double_sided"
+        front_dir.mkdir()
+        double_sided_dir.mkdir()
+
+        with patch.object(api, "fetch_card_json", return_value=fake_card), \
+             patch.object(api, "request_arkhamdb") as mock_request, \
+             patch.object(api, "prepare_card_image", return_value=MagicMock()):
+            mock_request.return_value.content = b""
+            api.fetch_card_art(1, "01006", 1, str(front_dir), str(double_sided_dir))
+
+        assert list(double_sided_dir.iterdir()) == []
+        assert "no back image available yet" not in capsys.readouterr().out.lower()
 
 
 # --- Integration Tests ---
