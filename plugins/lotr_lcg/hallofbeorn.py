@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 from requests import Response, get
 
-from plugins.lotr_lcg.types import CardEntry
+from plugins.lotr_lcg.card_entry import CardEntry
 
 HALL_BASE_URL = "https://hallofbeorn.com"
 HALL_SCENARIO_URL_TEMPLATE = f"{HALL_BASE_URL}/LotR/Scenarios/{{scenario_slug}}"

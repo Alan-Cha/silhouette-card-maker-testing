@@ -4,7 +4,7 @@ from re import compile
 from typing import Callable
 
 from plugins.lotr_lcg.hallofbeorn import ScenarioMode, fetch_scenario_entries
-from plugins.lotr_lcg.types import CardEntry
+from plugins.lotr_lcg.card_entry import CardEntry
 from plugins.lotr_lcg.ringsdb import (
     build_deck_entries,
     fetch_decklist,

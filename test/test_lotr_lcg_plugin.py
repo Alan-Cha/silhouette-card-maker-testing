@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from plugins.lotr_lcg.types import CardEntry
+from plugins.lotr_lcg.card_entry import CardEntry
 
 import pytest
 from PIL import Image

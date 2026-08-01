@@ -10,7 +10,7 @@ from unicodedata import category, normalize
 from PIL import Image, ImageOps
 from requests import Response, get
 
-from plugins.lotr_lcg.types import CardEntry
+from plugins.lotr_lcg.card_entry import CardEntry
 
 RINGSDB_BASE_URL = "https://ringsdb.com"
 RINGSDB_ALL_CARDS_URL = f"{RINGSDB_BASE_URL}/api/public/cards/"
