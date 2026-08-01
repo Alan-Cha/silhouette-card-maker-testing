@@ -202,27 +202,15 @@ def parse_ringsdb_scenario_url(
     scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
     """
-    Parse RingsDB scenarios by fetching metadata, then looking up the
-    matching scenario on Hall of Beorn by title.
-    Uses: /api/public/scenario/{id}.json for metadata (name, pack, counts)
-    Then: Hall of Beorn's /Export/Scenarios list (find_scenario_slug) to
-    find that title's exact slug, and /Export/Scenarios/{slug} for the
-    actual card list.
-
-    RingsDB's scenario API has no card list, only metadata and aggregate
-    counts, so the card data always comes from Hall of Beorn. Looking up the
-    slug by title (rather than assuming RingsDB's nameCanonical equals Hall
-    of Beorn's slug) avoids a real, confirmed mismatch: RingsDB's
-    nameCanonical for scenario 1 is the lowercase "passage-through-mirkwood",
-    but Hall of Beorn's actual slug is title-cased
-    "Passage-Through-Mirkwood" -- a guess based on nameCanonical alone 404s.
-
-    Hall of Beorn's scenario list and official card index are each fetched
-    once here (not per line) and reused for every scenario reference in
-    deck_text, since both are scenario-independent, multi-MB payloads.
+    Parse RingsDB scenarios: fetch metadata for the name, then look up the
+    matching scenario on Hall of Beorn by title (find_scenario_slug) rather
+    than guessing a slug from RingsDB's nameCanonical, which doesn't
+    reliably match Hall of Beorn's real slug (confirmed for scenario 1:
+    "passage-through-mirkwood" vs. the real "Passage-Through-Mirkwood").
     """
     index = 0
     errors = []
+    # Fetched once and reused per line, not per scenario -- each is a multi-MB payload.
     scenarios = fetch_all_scenarios()
     card_image_index = load_card_image_index()
 
@@ -257,19 +245,11 @@ def parse_hallofbeorn_url(
     handle_card: Callable,
     scenario_mode: str | ScenarioMode = ScenarioMode.NORMAL,
 ) -> None:
-    """
-    Parse Hall of Beorn scenarios directly by slug.
-    Uses: Hall of Beorn's undocumented /Export/Scenarios/{slug} JSON API
-    (see the module-level comment in hallofbeorn.py for details).
-    `scenario_slug` here comes straight from a pasted /LotR/Scenarios/{slug}
-    page URL, which uses the same slug the Export API expects.
-
-    Hall of Beorn's scenario list and official card index are each fetched
-    once here (not per line) and reused for every scenario reference in
-    deck_text, since both are scenario-independent, multi-MB payloads.
-    """
+    """Parse Hall of Beorn scenarios by slug, pulled directly from a pasted
+    /LotR/Scenarios/{slug} page URL."""
     index = 0
     errors = []
+    # Fetched once and reused per line, not per scenario -- each is a multi-MB payload.
     scenarios = fetch_all_scenarios()
     card_image_index = load_card_image_index()
 

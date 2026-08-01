@@ -10,48 +10,25 @@ session = Session()
 
 HALL_BASE_URL = "https://hallofbeorn.com"
 
-# Hall of Beorn does not publish or document a public API. Everything below
-# was reverse engineered from the site's own (open source) backend at
-# https://github.com/danpoage/hall-of-beorn -- specifically
-# src/HallOfBeorn/Controllers/ExportController.cs (the handlers) and
-# src/HallOfBeorn/App_Start/RouteConfig.cs (the "Export/{action}/{id}" route
-# that dispatches "/Export/<action>/<id>" requests to that controller). All
-# three endpoints below were confirmed working live against production as of
-# 2026-08-01. Since none of this is a published, versioned contract, Hall of
-# Beorn is free to change or remove it without notice -- if these break,
-# check ExportController.cs on GitHub for what changed before assuming the
-# site itself is down.
+# Hall of Beorn has no published API. These /Export routes were found in
+# its open-source backend (github.com/danpoage/hall-of-beorn,
+# ExportController.cs + RouteConfig.cs) and confirmed working live. Being
+# unpublished, they could change without notice.
 #
-#   GET /Export/Scenarios
-#     -> [{Title, Slug, Product, Number, QuestCards: [], ScenarioCards: []}, ...]
-#     Every scenario Hall of Beorn knows about. QuestCards/ScenarioCards are
-#     always empty arrays here regardless of the scenario -- this endpoint
-#     is only useful for finding a scenario's exact Slug by Title (see
-#     find_scenario_slug), not for its card list.
+#   GET /Export/Scenarios            -> [{Title, Slug, Product, Number}, ...]
+#     Every scenario; only useful for finding a Slug by Title.
 #
-#   GET /Export/Scenarios/{slug}
-#     -> {Title, Slug, Product, Number, QuestCards: [...], ScenarioCards: [...]}
-#     `slug` must match one returned by the list endpoint above exactly,
-#     including case -- e.g. "Passage-Through-Mirkwood", not RingsDB's
-#     lowercase nameCanonical "passage-through-mirkwood" (these can differ;
-#     RingsDB and Hall of Beorn are independently-run sites that don't
-#     coordinate on slugs). An unrecognized slug returns HTTP 200 with a
-#     bare JSON string "Scenario {slug} not found", not a 404 or an object,
-#     so callers must check the response shape rather than the status code.
-#     - QuestCards: fully detailed quest/story cards. Each has Front/Back
-#       objects that already carry a direct image URL (Front.ImagePath /
-#       Back.ImagePath) -- no follow-up request needed per card.
-#     - ScenarioCards: the scenario's encounter deck, as {EncounterSet,
-#       Title, Slug, NormalQuantity, EasyQuantity, NightmareQuantity}. No
-#       image URL is included here; resolve one by looking this same Slug
-#       up in the bulk card index below.
+#   GET /Export/Scenarios/{slug}     -> {Title, Slug, QuestCards, ScenarioCards}
+#     `slug` must exactly match one from the list above (case-sensitive --
+#     RingsDB's lowercase nameCanonical often doesn't match). An unknown
+#     slug returns HTTP 200 with a bare JSON string, not a 404.
+#     QuestCards carry their own Front/Back image URLs. ScenarioCards (the
+#     encounter deck) only carry a Slug + per-mode quantities; resolve an
+#     image via the bulk card index below.
 #
-#   GET /Export/Cards/{set_type}
-#     -> [{code, name, ..., url, imagesrc}, ...] (RingsDB-shaped card records)
-#     Bulk export of every card in `set_type` ("OFFICIAL" for all official
-#     releases, no fan-made content). `url` is the card's detail page
-#     (".../LotR/Details/{slug}"); its trailing path segment is the same
-#     Slug used by ScenarioCards above, and `imagesrc` is the card's image.
+#   GET /Export/Cards/{set_type}     -> [{code, name, url, imagesrc}, ...]
+#     Bulk card export ("OFFICIAL" = all official releases). `url`'s last
+#     path segment is the same Slug used by ScenarioCards.
 EXPORT_SCENARIOS_LIST_URL = f"{HALL_BASE_URL}/Export/Scenarios"
 EXPORT_SCENARIO_URL_TEMPLATE = f"{HALL_BASE_URL}/Export/Scenarios/{{slug}}"
 EXPORT_CARDS_URL_TEMPLATE = f"{HALL_BASE_URL}/Export/Cards/{{set_type}}"
@@ -94,11 +71,8 @@ def fetch_all_scenarios() -> list[dict]:
 
 
 def find_scenario_slug(title: str, scenarios: list[dict]) -> str | None:
-    """Look up a scenario's exact Hall of Beorn slug by title (case-insensitive,
-    exact match). `scenarios` is the full list from fetch_all_scenarios() --
-    passed in rather than fetched here so callers processing multiple
-    scenarios in one run can fetch it once and reuse it. Returns None if no
-    scenario has that title."""
+    """Look up a scenario's exact slug by title (case-insensitive, exact
+    match against `scenarios`). None if no scenario has that title."""
     normalized = title.strip().lower()
     for scenario in scenarios:
         if scenario.get("Title", "").strip().lower() == normalized:
@@ -111,12 +85,10 @@ def normalize_slug(value: str) -> str:
 
 
 def find_scenario_slug_fuzzy(slug: str, scenarios: list[dict]) -> str | None:
-    """Find a scenario whose real Slug matches once punctuation/casing
-    differences are ignored. Hall of Beorn's own /LotR/Scenarios/{slug} HTML
-    page is more lenient about this than /Export/Scenarios/{slug} -- e.g. it
-    accepts "Passage-Through-Mirkwood-Campaign" for the real slug
-    "Passage-Through-Mirkwood-(Campaign)" -- so a slug pulled from a pasted
-    page URL can differ slightly from the exact one the Export API expects."""
+    """Find a scenario whose Slug matches once punctuation/casing is
+    ignored -- Hall of Beorn's HTML page accepts slightly looser slugs
+    than /Export/Scenarios/{slug} does (e.g. "...-Campaign" for the real
+    "...-(Campaign)"), so a slug from a pasted page URL may not match exactly."""
     normalized_target = normalize_slug(slug)
     for scenario in scenarios:
         candidate = scenario.get("Slug", "")
@@ -216,22 +188,11 @@ def fetch_scenario_entries(
     card_image_index: dict[str, str],
 ) -> list[CardEntry]:
     """
-    Fetch every card (quest deck + encounter deck) for a scenario via Hall of
-    Beorn's undocumented /Export JSON API (see the module-level comment
-    above for how these endpoints were found and what they return). Quest
-    cards come back fully detailed with image URLs already included;
-    encounter deck cards are resolved against a bulk card index keyed by
-    their detail-page slug. If a card's image can't be resolved, its
-    CardEntry.image_url is left None -- fetch_card in ringsdb.py raises
-    clearly for that case, which the caller's per-card error handling
-    collects instead of the card silently vanishing.
-
-    `scenarios` (fetch_all_scenarios()) and `card_image_index`
-    (load_card_image_index()) are both bulk, scenario-independent fetches --
-    passed in rather than fetched here so a caller processing several
-    scenarios in one run (e.g. a whole campaign) fetches each once and
-    reuses it, instead of re-fetching Hall of Beorn's full scenario list and
-    full official card index (a multi-MB payload) once per scenario.
+    Fetch every card (quest deck + encounter deck) for a scenario. Quest
+    cards carry their own image URLs; encounter cards resolve against
+    `card_image_index`. `scenarios`/`card_image_index` are passed in (not
+    fetched here) so a caller processing several scenarios in one run can
+    fetch each bulk payload once and reuse it.
     """
     mode = normalize_scenario_mode(scenario_mode)
     scenario = fetch_scenario_by_slug(scenario_slug, scenarios)
