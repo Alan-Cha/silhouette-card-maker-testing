@@ -12,6 +12,7 @@ The following plugins are currently available:
 * [Pokemon](pokemon)
 * [Yu-Gi-Oh!](yugioh)
 * [Altered](altered)
+* [Arkham Horror LCG](arkham_horror_lcg)
 * [Ashes Reborn](ashes_reborn)
 * [Bushiroad](bushiroad)
 * [Digimon](digimon)
