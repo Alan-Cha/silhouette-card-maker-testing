@@ -1,10 +1,12 @@
 from os import path
-from requests import Response, get
+from requests import Response, Session
 from requests.exceptions import HTTPError
 from time import sleep
 import filetype
 
 LIMITLESS_TCG_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/{set_id}/{set_id}_{card_no}_R_EN_LG.png'
+
+session = Session()
 LIMITLESS_POCKET_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/pocket/{set_id}/{set_id}_{card_no}_EN_SM.webp'
 # pokemontcg.io search API: queries by name/number and returns JSON with image
 # URLs. Requires two requests (search + image download).
@@ -45,7 +47,7 @@ _failed_tcg_sets = set()
 _failed_pocket_sets = set()
 
 def request_limitless(query: str) -> Response:
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()
@@ -55,7 +57,7 @@ def request_limitless(query: str) -> Response:
     return r
 
 def request_pokemontcg(url: str, params: dict = None) -> Response:
-    r = get(url, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(url, params=params, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()

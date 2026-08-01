@@ -1,13 +1,15 @@
 from os import path
-from requests import Response, get
+from requests import Response, Session
 from time import sleep
 
 CARD_ART_URL_TEMPLATE = 'https://en.onepiece-cardgame.com/images/cardlist/card/{card_number}.png'
 
 OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_number}{quantity_counter}.png'
 
+session = Session()
+
 def request_bandai(query: str) -> Response:
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()

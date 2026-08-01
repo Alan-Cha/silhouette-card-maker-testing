@@ -1,13 +1,15 @@
 from io import BytesIO
 from os import path
-from requests import Response, get
+from requests import Response, Session
 from time import sleep
 from PIL import Image
+
+session = Session()
 
 DECK_ID_URL_TEMPLATE = 'https://play-api.carde.io/v1/decks/{deck_id}'
 
 def request_elestrals(query: str) -> Response:
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()

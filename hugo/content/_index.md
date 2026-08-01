@@ -4,7 +4,7 @@ cascade:
   type: docs
 ---
 
-![](/images/display.jpg)
+![](/images/scm_banner.png)
 
 Ever wanted to make your own custom card game but without the hassle of a craft knife, a rotary cutter, or a paper guillotine? How about making your own proxies to playtest your favorite TCG?
 
@@ -36,7 +36,6 @@ Proxies should be easily identifiable as proxies. You may not use this repo to c
 * [examples/](https://github.com/Alan-Cha/silhouette-card-maker/tree/main/examples), a directory containing sample games
 * [plugins/](plugins/), a directory containing scripts for streamlining card image acquisition
 
-
 ## Supported Sizes
 
 The most common card sizes for games are:
@@ -54,25 +53,25 @@ The table below shows all possible paper and card size combinations and the layo
 
 | Format | `letter` | `tabloid` | `a4` | `a3` | `arch_b` |
 |---|---|---|---|---|---|
-| `standard` | 4x2 (8) | 4x4 (16) | 4x2 (8) | 6x3 (18) | 6x3 (18) |      
+| `standard` | 4x2 (8) | 4x4 (16) | 4x2 (8) | 6x3 (18) | 6x3 (18) |
 | `poker` | 4x2 (8) | 4x4 (16) | 4x2 (8) | 4x4 (16) | 6x3 (18) |
-| `bridge` | 4x2 (8) | 4x4 (16) | 3x3 (9) | 6x3 (18) | 7x3 (21) |        
+| `bridge` | 4x2 (8) | 4x4 (16) | 3x3 (9) | 6x3 (18) | 7x3 (21) |
 | `american_mini` | 4x4 (16) | 9x4 (36) | 4x4 (16) | 9x4 (36) | 10x4 (40) |
 | `bridge_square` | 3x4 (12) | 4x7 (28) | 3x4 (12) | 4x6 (24) | 4x7 (28) |
-| `business` | 2x5 (10) | 4x5 (20) | 2x5 (10) | 3x7 (21) | 3x8 (24) |    
-| `catan` | 3x3 (9) | 7x3 (21) | 5x2 (10) | 7x3 (21) | 5x5 (25) |        
-| `credit` | 2x4 (8) | 4x4 (16) | 2x5 (10) | 3x7 (21) | 3x7 (21) |       
-| `domino` | 5x2 (10) | 5x4 (20) | 5x2 (10) | 8x3 (24) | 9x3 (27) |      
+| `business` | 2x5 (10) | 4x5 (20) | 2x5 (10) | 3x7 (21) | 3x8 (24) |
+| `catan` | 3x3 (9) | 7x3 (21) | 5x2 (10) | 7x3 (21) | 5x5 (25) |
+| `credit` | 2x4 (8) | 4x4 (16) | 2x5 (10) | 3x7 (21) | 3x7 (21) |
+| `domino` | 5x2 (10) | 5x4 (20) | 5x2 (10) | 8x3 (24) | 9x3 (27) |
 | `domino_square` | 4x5 (20) | 5x9 (45) | 4x5 (20) | 6x8 (48) | 6x9 (54) |
-| `euro_business` | 3x3 (9) | 3x7 (21) | 3x3 (9) | 3x7 (21) | 3x7 (21) | 
-| `euro_mini` | 4x3 (12) | 9x3 (27) | 6x2 (12) | 8x4 (32) | 9x4 (36) |   
-| `japanese` | 4x2 (8) | 4x4 (16) | 3x3 (9) | 6x3 (18) | 7x3 (21) |      
+| `euro_business` | 3x3 (9) | 3x7 (21) | 3x3 (9) | 3x7 (21) | 3x7 (21) |
+| `euro_mini` | 4x3 (12) | 9x3 (27) | 6x2 (12) | 8x4 (32) | 9x4 (36) |
+| `japanese` | 4x2 (8) | 4x4 (16) | 3x3 (9) | 6x3 (18) | 7x3 (21) |
 | `jumbo` | 2x1 (2) | 4x1 (4) | 3x1 (3) | 3x2 (6) | 3x3 (9) |
-| `micro` | 7x4 (28) | 7x9 (63) | 5x6 (30) | 11x6 (66) | 12x6 (72) |     
-| `mini` | 5x3 (15) | 8x4 (32) | 4x4 (16) | 8x4 (32) | 9x4 (36) |        
-| `standard_double` | 2x2 (4) | 4x2 (8) | 2x2 (4) | 3x3 (9) | 3x3 (9) |  
+| `micro` | 7x4 (28) | 7x9 (63) | 5x6 (30) | 11x6 (66) | 12x6 (72) |
+| `mini` | 5x3 (15) | 8x4 (32) | 4x4 (16) | 8x4 (32) | 9x4 (36) |
+| `standard_double` | 2x2 (4) | 4x2 (8) | 2x2 (4) | 3x3 (9) | 3x3 (9) |
 | `tarot` | 2x2 (4) | 5x2 (10) | 2x2 (4) | 5x2 (10) | 4x3 (12) |
-| `70mm_square` | 3x2 (6) | 5x3 (15) | 3x2 (6) | 5x3 (15) | 5x4 (20) |  
+| `70mm_square` | 3x2 (6) | 5x3 (15) | 3x2 (6) | 5x3 (15) | 5x4 (20) |
 
 The table below shows each card size, sorted by size.
 

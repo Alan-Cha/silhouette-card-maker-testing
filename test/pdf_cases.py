@@ -7,9 +7,10 @@ Adding a new test case here automatically covers both.
 import os
 
 # Shared fixture paths
-IMAGES_DIR = os.path.join('test', 'images')       # card images used as input
-BACK_DIR = os.path.join('test', 'basic', 'back')  # back image for all tests
-EXPECTED_DIR = os.path.join('test', 'expected_pdfs')  # pre-generated reference PNGs
+IMAGES_DIR = os.path.join('test', 'images')                    # card images used as input
+BACK_DIR = os.path.join('test', 'basic', 'back')               # back image for all tests
+DS_DIR = os.path.join('test', 'basic', 'double_sided')         # empty; no double-sided cards in tests
+EXPECTED_DIR = os.path.join('test', 'expected_pdfs')           # pre-generated reference PNGs
 
 # Each entry: (name, extra_cli_args)
 # - name: identifies the test and maps to a subdirectory in EXPECTED_DIR
@@ -45,6 +46,9 @@ TEST_CASES = [
     ('registration4', ['--registration', '4']),
     ('registration4-tabloid', ['--registration', '4', '--paper_size', 'tabloid']),
 
+    ('registration_orientation-letter_standard', ['--registration_orientation', 'portrait']),
+    ('registration_orientation-letter_standard-borderless', ['--registration_orientation', 'landscape', '--borderless']),
+
     ('show_outline', ['--show_outline']),
     ('show_outline-domino', ['--show_outline', '--card_size', 'domino']),
 
@@ -52,7 +56,20 @@ TEST_CASES = [
     ('label-tabloid', ['--label', 'Test Label', '--paper_size', 'tabloid', '--only_fronts']),
 
     ('crop', ['--crop', '3mm', '--only_fronts']),
-    ('extend_corners', ['--extend_corners', '10', '--only_fronts']),
+    ('extend_edges', ['--extend_edges', '3', '--only_fronts']),
+    ('extend_edges_extreme', ['--extend_edges', '3mm', '--only_fronts']),
+    ('extend_corners', ['--extend_corners', '3.5mm', '--only_fronts']),
+    ('extend_corners_extreme', ['--extend_corners', '10mm', '--only_fronts']),
     ('fit_crop', ['--card_size', 'domino', '--fit', 'crop', '--only_fronts']),
     ('skip', ['--skip', '0', '--skip', '4']),
+
+    # Borderless templates
+    ('borderless-letter-standard', ['--borderless', '--only_fronts']),
+    ('borderless-a4-standard', ['--borderless', '--paper_size', 'a4', '--only_fronts']),
+    ('borderless-letter-poker', ['--borderless', '--card_size', 'poker', '--only_fronts']),
+    ('borderless-a4-poker', ['--borderless', '--paper_size', 'a4', '--card_size', 'poker', '--only_fronts']),
+    ('borderless-tabloid-standard', ['--borderless', '--paper_size', 'tabloid', '--only_fronts']),
+
+    ('extend_bleed', ['--extend_bleed', '3mm']),
+    ('extend_bleed_backs', ['--extend_bleed_backs', '3mm']),
 ]

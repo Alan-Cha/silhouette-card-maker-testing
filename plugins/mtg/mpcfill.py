@@ -27,6 +27,8 @@ from filetype.filetype import guess_extension
 
 from .common import remove_nonalphanumeric
 
+session = requests.Session()
+
 # Cache for fetched images: card_id -> decoded image bytes.
 # Populated by prefetch_mpcfill() and read by get_cached_image().
 _image_cache: dict[str, bytes] = {}
@@ -40,7 +42,7 @@ MAX_WORKERS = 8
 def request_mpcfill(card_id: str) -> bytes:
     """Fetch a single card image from MPCFill API and return decoded bytes."""
     base_url = "https://script.google.com/macros/s/AKfycbw8laScKBfxda2Wb0g63gkYDBdy8NWNxINoC4xDOwnCQ3JMFdruam1MdmNmN4wI5k4/exec?id="
-    r = requests.get(base_url + card_id, headers={"user-agent": "silhouette-card-maker/0.1", "accept": "*/*"})
+    r = session.get(base_url + card_id, headers={"user-agent": "silhouette-card-maker/0.1", "accept": "*/*"})
     r.raise_for_status()
     return b64decode(r.content)
 

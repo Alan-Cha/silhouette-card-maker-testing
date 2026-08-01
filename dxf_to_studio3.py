@@ -2,6 +2,9 @@
 """
 DXF to Studio3 Converter with Full Automation
 
+**Windows Only** - This script uses GUI automation to control Silhouette Studio
+on Windows. It will not work on macOS or Linux.
+
 This script automates Silhouette Studio with mouse interactions for:
 - Cutting mat selection (12x12 or 12x24)
 - Custom paper size entry
@@ -10,7 +13,8 @@ This script automates Silhouette Studio with mouse interactions for:
 - Registration mark settings
 
 Usage:
-    python dxf_to_studio3.py convert input.dxf output.studio3 --paper_size letter
+    python dxf_to_studio3.py single input.dxf output.studio3 --unit mm --paper_size letter
+    python dxf_to_studio3.py batch --unit mm
     python dxf_to_studio3.py calibrate
 
 Window Size Strategy:
@@ -29,12 +33,24 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
 from enum import Enum
+import platform
 
 import click
 
-from enums import Orientation
-from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, template_name
+from enums import Orientation, Variant, Unit
+from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, resolve_cutting_templates_dir, BORDERLESS_EXPANSION_MM
 import size_convert
+import page_manager
+
+# Platform check - this script only works on Windows
+if platform.system() != "Windows":
+    print(f"Error: dxf_to_studio3.py only works on Windows (current platform: {platform.system()})", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("This script uses GUI automation to control Silhouette Studio, which requires Windows.", file=sys.stderr)
+    print("To convert DXF files to .studio3 format on macOS/Linux, you must:", file=sys.stderr)
+    print("  1. Manually open the DXF file in Silhouette Studio", file=sys.stderr)
+    print("  2. Follow the steps in hugo/content/miscellaneous/template.md", file=sys.stderr)
+    sys.exit(1)
 
 # pyautogui: Used for mouse/keyboard automation (clicking UI elements, typing, hotkeys).
 # FAILSAFE=True enables abort-by-moving-mouse-to-corner safety feature.
@@ -69,8 +85,7 @@ ASSETS_DIR = Path(__file__).parent / "assets"
 CALIBRATION_FILE = ASSETS_DIR / "gui_coordinates.json"
 
 # Batch conversion defaults
-DEFAULT_DXF_DIR = Path(__file__).parent / "cutting_templates" / "dxf"
-DEFAULT_OUTPUT_DIR = Path(__file__).parent / "cutting_templates"
+TEMPLATES_DIR = resolve_cutting_templates_dir(Path(__file__).parent / "cutting_templates")
 
 
 
@@ -83,9 +98,11 @@ class CuttingMat(Enum):
 class RegistrationSettings:
     """Settings for registration marks.
 
+    All numeric values are in the user-specified unit (mm or in).
+    Values are passed directly to Silhouette Studio in that unit.
+
     Values are clamped by Silhouette Studio to its allowed range,
-    so 0 gives the minimum and 100 gives the maximum regardless
-    of whether the units are set to inches or mm.
+    so 0 gives the minimum and any very large value gives the maximum.
     """
     enabled: bool = True
     length: float = 0  # 0 will default to minimum allowed by Silhouette Studio
@@ -111,6 +128,25 @@ def determine_cutting_mat(width_in: float, height_in: float) -> CuttingMat:
     return CuttingMat.MAT_12X24
 
 
+def adjust_paper_for_borderless(paper_width: str, paper_height: str) -> tuple[str, str]:
+    """Adjust paper dimensions for borderless templates.
+
+    Tells Silhouette Studio the paper is larger by BORDERLESS_EXPANSION_MM so its
+    10mm minimum inset becomes an effective BORDERLESS_INSET_MM inset on the actual paper.
+
+    Args:
+        paper_width: Paper width as a unit string (e.g., "279.4mm", "11in").
+        paper_height: Paper height as a unit string (e.g., "215.9mm", "8.5in").
+
+    Returns:
+        (adjusted_width, adjusted_height) as unit strings with BORDERLESS_EXPANSION_MM added to each dimension.
+    """
+    width_mm = size_convert.size_to_mm(paper_width)
+    height_mm = size_convert.size_to_mm(paper_height)
+
+    return f"{width_mm + BORDERLESS_EXPANSION_MM}mm", f"{height_mm + BORDERLESS_EXPANSION_MM}mm"
+
+
 # =============================================================================
 # Utility Functions
 # =============================================================================
@@ -123,9 +159,16 @@ def type_in_field(value: str):
     The mouse must already be positioned on the field.
     """
     pyautogui.doubleClick()
-    time.sleep(SETTLE_DELAY)
     pyautogui.write(str(value))
-    time.sleep(SETTLE_DELAY)
+    pyautogui.press('enter')
+
+    # Repeat to ensrure the value is entered correctly
+    pyautogui.doubleClick()
+    pyautogui.write(str(value))
+    pyautogui.press('enter')
+    pyautogui.doubleClick()
+    pyautogui.write(str(value))
+
     pyautogui.press('enter')
     time.sleep(ACTION_DELAY)
 
@@ -398,7 +441,36 @@ class SilhouetteAutomation:
     # Page Setup
     # -------------------------------------------------------------------------
 
-    def setup_page(self, mat: CuttingMat, width_in: float, height_in: float, orientation: Orientation):
+    def is_constrain_media_checked(self) -> bool:
+        """Detect whether 'Constrain Media to Cutting Mat' is currently checked.
+
+        Takes a screenshot of the checkbox region and computes pixel variance.
+        The calibration JSON stores unchecked_variance and checked_variance as
+        reference thresholds; variance above the midpoint indicates checked.
+        Returns False (unchecked) if the element is not calibrated.
+        """
+        elem = self.calibration and self.calibration.get("elements", {}).get("constrain_media_checkbox")
+        if not elem:
+            print("  Warning: constrain_media_checkbox not calibrated; assuming unchecked.")
+            return False
+
+        win_x, win_y = self.get_window_origin()
+        cx = win_x + elem["relative"]["x"]
+        cy = win_y + elem["relative"]["y"]
+        region_size = 20
+        screenshot = pyautogui.screenshot(region=(cx - region_size // 2, cy - region_size // 2, region_size, region_size))
+        pixels = list(screenshot.getdata())
+        gray = [(r + g + b) / 3 for r, g, b in pixels]
+        mean = sum(gray) / len(gray)
+        variance = sum((v - mean) ** 2 for v in gray) / len(gray)
+
+        unchecked_var = elem.get("unchecked_variance", 0.2)
+        checked_var = elem.get("checked_variance", 2443.0)
+        threshold = (unchecked_var + checked_var) / 2
+        return variance > threshold
+
+    def setup_page(self, mat: CuttingMat, width_in: float, height_in: float, orientation: Orientation,
+                   keep_constrained: bool = True):
         """Configure page setup in four steps: cutting mat, mat dimensions, orientation, paper dimensions.
 
         Sets the media size to the cutting mat's maximum dimensions before
@@ -409,15 +481,24 @@ class SilhouetteAutomation:
 
         Args:
             mat: Cutting mat size (12x12 or 12x24).
-            width_in: Page width in inches.
-            height_in: Page height in inches.
+            width_in: Page width in the display unit.
+            height_in: Page height in the display unit.
             orientation: Page orientation (portrait or landscape).
+            keep_constrained: Whether to leave "Constrain Media to Cutting Mat" ON.
+                Should be False only for borderless 12x12 templates, where the virtual
+                paper may exceed the mat but square mat orientation doesn't matter.
+                See GitHub issue #136.
         """
-        print(f"  Setting up page: {mat.value} mat, {width_in:.2f}x{height_in:.2f}in, {orientation.value}")
+        print(f"  Setting up page: {mat.value} mat, {width_in:.2f}x{height_in:.2f}, {orientation.value}, keep_constrained={keep_constrained}")
 
         # Open the Page Setup panel once
         self.click_element("page_setup")
         time.sleep(ACTION_DELAY)
+
+        # Enable constrain so mat, media size, and orientation behave predictably.
+        if not self.is_constrain_media_checked():
+            print("  Enabling Constrain Media to Cutting Mat...")
+            self.click_element("constrain_media_checkbox")
 
         # Select cutting mat (12x12 or 12x24).
         self.click_element("cutting_mat_dropdown")
@@ -444,6 +525,13 @@ class SilhouetteAutomation:
             self.click_element("portrait_button")
         else:
             self.click_element("landscape_button")
+
+        # Conditionally disable constrain after setting orientation.
+        # TODO (#136): Remove this once all templates use unconstrained mode with
+        # portrait mat orientation, which is consistent across all mat types.
+        if not keep_constrained:
+            print("  Disabling Constrain Media to Cutting Mat...")
+            self.click_element("constrain_media_checkbox")
 
         # Set actual paper dimensions
         self.click_element("media_width_field")
@@ -485,10 +573,10 @@ class SilhouetteAutomation:
     def flip_vertically(self):
         """Select all objects and flip them vertically via the right-click context menu.
 
-        POLYLINE entities (used for smooth rounded-rectangle cutting paths) are
-        imported by Silhouette Studio with a vertical flip. This corrects the
-        orientation by selecting all objects and applying Flip Vertically through
-        the cutting path right-click context menu.
+        Corrects SS's image-fill mirroring on closed-polyline shapes (see
+        add_rounded_rectangle() in dxf_manager.py). Also mirrors the cutting
+        path, harmless today since shapes are symmetric (single uniform
+        corner radius).
         """
         print("  Flipping vertically...")
         pyautogui.hotkey('ctrl', 'a')
@@ -548,16 +636,18 @@ class SilhouetteAutomation:
         output_studio3: str,
         paper_width: str,
         paper_height: str,
+        unit: Unit,
         orientation: Orientation = Orientation.LANDSCAPE,
         center: bool = True,
-        registration: Optional[RegistrationSettings] = None
+        registration: Optional[RegistrationSettings] = None,
+        borderless: bool = False
     ):
         """
         Full conversion workflow:
         1. Open DXF
         2. Page setup (cutting mat, media size, orientation, dimensions)
         3. Center paths
-        4. Flip vertically (corrects vertical flip from POLYLINE DXF import)
+        4. Flip vertically (corrects the image-fill mirror on closed-polyline shapes)
         5. Set registration marks
         6. Save as .studio3
 
@@ -566,31 +656,43 @@ class SilhouetteAutomation:
             output_studio3: Path for the output .studio3 file.
             paper_width: Paper width as a unit string (e.g. "11in", "297mm").
             paper_height: Paper height as a unit string (e.g. "8.5in", "210mm").
+            unit: Unit for all numeric values ("mm" or "in"). Must match Silhouette Studio's unit setting.
             orientation: Page orientation (portrait or landscape).
             center: Whether to center paths on the page.
-            registration: Registration mark settings, or None to skip.
+            registration: Registration mark settings in the specified unit, or None to skip.
         """
         print(f"\nConverting: {input_dxf}")
 
         self.open_file(input_dxf)
 
-        # Convert page dimensions to inches for Silhouette Studio.
+        # Convert page dimensions to the specified unit for Silhouette Studio.
         # layouts.json stores paper sizes as landscape (width > height).
         # For portrait, swap so width < height matches Silhouette Studio's expectation.
+        if unit == Unit.MM:
+            width_value = size_convert.size_to_mm(paper_width)
+            height_value = size_convert.size_to_mm(paper_height)
+        else:  # unit == Unit.IN
+            width_value = size_convert.size_to_in(paper_width)
+            height_value = size_convert.size_to_in(paper_height)
+
+        if orientation == Orientation.PORTRAIT:
+            width_value, height_value = height_value, width_value
+
+        # Configure page setup (mat, media size, orientation, dimensions) in one pass
+        # Note: determine_cutting_mat expects inches for mat selection
         width_in = size_convert.size_to_in(paper_width)
         height_in = size_convert.size_to_in(paper_height)
         if orientation == Orientation.PORTRAIT:
             width_in, height_in = height_in, width_in
-
-        # Configure page setup (mat, media size, orientation, dimensions) in one pass
         mat = determine_cutting_mat(width_in, height_in)
-        self.setup_page(mat, width_in, height_in, orientation)
+        # See GitHub issue #136. TODO (#136): Remove this distinction once all templates
+        # use unconstrained mode with portrait mat orientation.
+        keep_constrained = not (borderless and mat == CuttingMat.MAT_12X12)
+        self.setup_page(mat, width_value, height_value, orientation, keep_constrained=keep_constrained)
 
         if center:
             self.center_to_page()
 
-        # POLYLINE entities are vertically flipped on import into Silhouette Studio.
-        # Flip vertically after centering to correct the orientation.
         self.flip_vertically()
 
         if registration:
@@ -654,8 +756,8 @@ CALIBRATION_ELEMENTS = [
     {
         "id": "cutting_mat_12x24",
         "name": "12x24 cutting mat option",
-        "description": "Open the cutting mat dropdown again and "
-                       "click the 12\" x 24\" option."
+        "description": "The cutting mat dropdown should be open. "
+                       "Click the 12\" x 24\" option."
     },
     {
         "id": "media_size_dropdown",
@@ -665,85 +767,89 @@ CALIBRATION_ELEMENTS = [
     {
         "id": "media_size_12x12",
         "name": "12x12 media size option",
-        "description": "The 12x12 cutting mat must be selected and the media size dropdown must be open. "
+        "description": "The 12x12 cutting mat must be selected and the media size dropdown should be open. "
                        "Click the 12\" x 12\" option."
     },
     {
         "id": "media_size_12x24",
         "name": "12x24 media size option",
-        "description": "Select the 12x24 cutting mat first, then open the media size dropdown again and "
-                       "click the 12\" x 24\" option."
+        "description": "The 12x24 cutting mat must be selected and the media size dropdown should be open. "
+                       "Click the 12\" x 24\" option."
     },
     {
         "id": "media_width_field",
         "name": "Media width input field",
-        "description": "The numerical input field for custom media width."
+        "description": "Click the numerical input field for custom media width."
     },
     {
         "id": "media_height_field",
         "name": "Media height input field",
-        "description": "The numerical input field for custom media height."
+        "description": "Click the numerical input field for custom media height."
     },
     {
         "id": "portrait_button",
         "name": "Portrait orientation button",
-        "description": "Scroll down if needed to find the orientation buttons."
+        "description": "Click the portrait orientation button."
     },
     {
         "id": "landscape_button",
         "name": "Landscape orientation button",
-        "description": "Next to the Portrait button"
+        "description": "Click the landscape orientation button."
     },
     # --- Transform ---
     {
         "id": "transform",
         "name": "Transform icon in sidebar",
-        "description": "Click the Transform tool icon in the left sidebar"
+        "description": "Click the Transform panel icon in the left sidebar"
     },
     {
         "id": "center_to_page",
         "name": "Center to Page button",
-        "description": "The Transform panel should now be open. "
-                       "Find the Center to Page button."
+        "description": "The Transform panel should be open. "
+                       "Click the Center to Page button."
     },
     # --- Print & Cut ---
     {
         "id": "print_cut",
         "name": "Print & Cut icon in sidebar",
-        "description": "Click the Print & Cut (registration marks) tool icon in the left sidebar"
+        "description": "Click the Print & Cut (registration marks) panel icon in the left sidebar"
     },
     {
         "id": "regmark_checkbox",
         "name": "Registration marks enable checkbox",
-        "description": "The Print & Cut panel should now be open. "
-                       "Find the checkbox to enable registration marks."
+        "description": "The Print & Cut panel should be open. "
+                       "Click the checkbox to enable registration marks."
     },
     {
         "id": "regmark_length_field",
         "name": "Registration mark length input field",
-        "description": "The numerical input field for mark length"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark length"
     },
     {
         "id": "regmark_thickness_field",
         "name": "Registration mark thickness input field",
-        "description": "The numerical input field for mark thickness"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark thickness"
     },
     {
         "id": "regmark_inset_field",
         "name": "Registration mark inset input field",
-        "description": "The numerical input field for mark inset"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark inset"
     },
     # --- Flip Vertically (right-click context menu) ---
     {
         "id": "cutting_path_menu",
-        "name": "Cutting path right-click target",
-        "description": "Click on any cutting path on the canvas "
+        "name": "Open cutting path menu (right-click)",
+        "description": "Select on any cutting path on the canvas "
                        "(used as the target for the right-click context menu)."
+                       "Right click anywhere to open the context menu."
     },
     {
         "id": "context_flip_vertically",
         "name": "Flip Vertically option in context menu",
-        "description": "Right-click a cutting path to open the context menu. "
+        "description": "The cutting path context menu should be open. "
                        "Click the 'Flip Vertically' option."
     },
 ]
@@ -753,14 +859,15 @@ CALIBRATION_ELEMENTS = [
 # Batch Conversion Helpers
 # =============================================================================
 
-def parse_dxf_filename(filename: str, config: LayoutConfig) -> tuple[str, str] | None:
-    """Extract paper_size and card_size from a DXF filename.
+def parse_dxf_filename(filename: str, config: LayoutConfig) -> tuple[str, str, Variant] | None:
+    """Extract paper_size, card_size, and variant from a DXF filename.
 
-    Expected format: {paper_size}-{card_size}-v{N}.dxf
+    Expected formats:
+      - {paper_size}-{card_size}-v{N}.dxf (default variant)
+      - {paper_size}-{card_size}-borderless-v{N}.dxf (borderless variant)
+
     Card sizes may contain underscores (e.g. poker_half, bridge_square).
-    Splits on the first hyphen to separate paper_size from the rest,
-    then strips the version suffix and checks if the remainder is a
-    known card size.
+    Returns (paper_size, card_size, variant) or None if parsing fails.
     """
     stem = Path(filename).stem
 
@@ -768,9 +875,21 @@ def parse_dxf_filename(filename: str, config: LayoutConfig) -> tuple[str, str] |
         if stem.startswith(paper_size + "-"):
             remainder = stem[len(paper_size) + 1:]
             # Strip version suffix (-v1, -v2, etc.)
-            card_size = re.sub(r"-v\d+$", "", remainder)
-            if paper_size in config.layouts and card_size in config.layouts[paper_size]:
-                return paper_size, card_size
+            remainder_no_version = re.sub(r"-v\d+$", "", remainder)
+
+            # Check for borderless variant
+            if remainder_no_version.endswith("-borderless"):
+                card_size = remainder_no_version[:-len("-borderless")]
+                variant = Variant.BORDERLESS
+            else:
+                card_size = remainder_no_version
+                variant = Variant.DEFAULT
+
+            # Verify the layout exists
+            if (paper_size in config.layouts and
+                card_size in config.layouts[paper_size] and
+                variant.value in config.layouts[paper_size][card_size]):
+                return paper_size, card_size, variant
 
     return None
 
@@ -788,35 +907,36 @@ def get_paper_dimensions(paper_size: str | None, config: LayoutConfig) -> tuple[
     return paper_def.width, paper_def.height
 
 
-def get_orientation_for_dxf(paper_size: str | None, card_size: str | None, config: LayoutConfig) -> Orientation:
-    """Look up the paper orientation for a paper/card size pair from layouts.json.
+def get_orientation_for_dxf(paper_size: str | None, card_size: str | None, variant: Variant | None, config: LayoutConfig) -> Orientation:
+    """Look up the paper orientation for a paper/card/variant combination from layouts.json.
 
-    Falls back to landscape if either size is None.
+    Falls back to landscape if any parameter is None.
     """
-    if paper_size is not None and card_size is not None:
-        return config.layouts[paper_size][card_size].orientation
+    if paper_size is not None and card_size is not None and variant is not None:
+        return config.layouts[paper_size][card_size][variant.value].orientation
 
     return Orientation.LANDSCAPE
 
 
-def get_max_length_for_dxf(paper_size: str | None, card_size: str | None, config: LayoutConfig, unit: str) -> float | None:
-    """Look up the max registration mark length for a paper/card size pair.
+def get_max_length_for_dxf(paper_size: str | None, card_size: str | None, variant: Variant | None, config: LayoutConfig, unit: Unit) -> float | None:
+    """Look up the max registration mark length for a paper/card/variant combination.
 
     Args:
         paper_size: Paper size key (e.g. "letter"), or None.
         card_size: Card size key (e.g. "poker"), or None.
+        variant: Variant enum (Variant.DEFAULT or Variant.BORDERLESS), or None.
         config: Loaded layout config.
-        unit: "mm" or "in".
+        unit: Unit.MM or Unit.IN.
 
     Returns:
         Max length in the requested unit, or None if not available.
     """
-    if paper_size is not None and card_size is not None:
-        layout_reg = config.layouts[paper_size][card_size].registration
+    if paper_size is not None and card_size is not None and variant is not None:
+        layout_reg = config.layouts[paper_size][card_size][variant.value].registration
         mm = size_convert.size_to_mm(layout_reg.length) if layout_reg is not None and layout_reg.length is not None else None
         if mm is None:
             return None
-        if unit == "in":
+        if unit == Unit.IN:
             return round(mm / 25.4, 4)
         return mm
 
@@ -844,15 +964,17 @@ def cli():
 @click.option("--orientation", type=click.Choice([o.value for o in Orientation], case_sensitive=False), default=Orientation.LANDSCAPE.value, show_default=True, help="Paper orientation.")
 @click.option("--no_center", is_flag=True, help="Don't center paths to page.")
 @click.option("--registration", is_flag=True, help="Enable registration marks.")
-@click.option("--reg_length", type=float, default=0, show_default=True, help="Registration mark length. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
-@click.option("--reg_thickness", type=float, default=0, show_default=True, help="Registration mark thickness. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
-@click.option("--reg_inset", type=float, default=0, show_default=True, help="Registration mark inset. 0 = minimum allowed by Silhouette Studio (unit depends on SS settings).")
-@click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds). Increase if Silhouette Studio is slow.")
-@click.option("--calibration_path", type=click.Path(), default=None, help="Path to calibration JSON. Default: assets/gui_coordinates.json.")
+@click.option("--unit", type=click.Choice([u.value for u in Unit], case_sensitive=False), required=True, help="Unit for registration mark values.")
+@click.option("--reg_length", type=float, default=0, show_default=True, help="Registration mark length. 0 = minimum allowed by Silhouette Studio.")
+@click.option("--reg_thickness", type=float, default=0, show_default=True, help="Registration mark thickness. 0 = minimum allowed by Silhouette Studio.")
+@click.option("--reg_inset", type=float, default=0, show_default=True, help="Registration mark inset. 0 = minimum allowed by Silhouette Studio.")
+@click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds).")
+@click.option("--calibration_path", type=click.Path(), default=None, help="Path to calibration JSON.")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
-def convert(input_file, output_file, paper_size, orientation, no_center, registration,
-            reg_length, reg_thickness, reg_inset, action_delay, calibration_path, studio_path):
-    """Convert a DXF file to .studio3 with paper size setup and registration marks."""
+def single(input_file, output_file, paper_size, orientation, no_center, registration, unit,
+           reg_length, reg_thickness, reg_inset, action_delay, calibration_path, studio_path):
+    """Convert a single DXF file to .studio3 with paper size setup and registration marks."""
+    unit = Unit(unit)
     orient = Orientation(orientation)
     reg_settings = None
     if registration:
@@ -897,6 +1019,7 @@ def convert(input_file, output_file, paper_size, orientation, no_center, registr
             output_file,
             paper_width=paper_width,
             paper_height=paper_height,
+            unit=unit,
             orientation=orient,
             center=not no_center,
             registration=reg_settings
@@ -943,31 +1066,52 @@ def calibrate(studio_path):
     # Start Silhouette Studio at fixed size
     _, window_rect = start_and_resize_studio(studio_path)
 
+    output_file = CALIBRATION_FILE
+    existing = load_calibration(output_file)
+    existing_elements = existing.get("elements", {}) if existing else {}
+
     click.echo()
-    version = click.prompt("What version of Silhouette Studio are you using?", default="unknown")
+    version = click.prompt(
+        "What version of Silhouette Studio are you using?",
+        default=existing.get("silhouette_studio_version", "unknown") if existing else "unknown"
+    )
     click.echo()
 
-    output_file = CALIBRATION_FILE
     click.echo(f"Calibration will be saved to: {output_file}")
+    if existing_elements:
+        click.echo(f"Loaded {len(existing_elements)} existing element(s); skipped elements keep their current coordinates.")
     click.echo()
 
     calibration = {
-        "version": "1.0",
         "silhouette_studio_version": version,
         "window": window_rect,
-        "elements": {},
+        "elements": dict(existing_elements),
         "notes": "All coordinates are relative to the window top-left corner"
     }
 
     try:
-        for element in CALIBRATION_ELEMENTS:
+        index = 0
+        while index < len(CALIBRATION_ELEMENTS):
+            element = CALIBRATION_ELEMENTS[index]
             click.echo(f"\n--- {element['name']} ---")
             click.echo(f"    {element['description']}")
 
-            response = input("Position mouse and press Enter (or 's' to skip): ").strip().lower()
+            response = input("Position mouse and press Enter (or 's' to skip, 'b' to go back): ").strip().lower()
+
+            if response == 'b':
+                if index == 0:
+                    click.echo("  Already at the first element.")
+                else:
+                    index -= 1
+                    click.echo("  Going back...")
+                continue
 
             if response == 's':
-                click.echo("  Skipped")
+                if element["id"] in calibration["elements"]:
+                    click.echo("  Skipped (kept existing coordinates)")
+                else:
+                    click.echo("  Skipped")
+                index += 1
                 continue
 
             pos = pyautogui.position()
@@ -982,6 +1126,7 @@ def calibrate(studio_path):
             }
 
             click.echo(f"  Recorded: relative=({rel_x}, {rel_y})")
+            index += 1
 
     except KeyboardInterrupt:
         click.echo("\n\nCalibration interrupted.")
@@ -1007,62 +1152,79 @@ def calibrate(studio_path):
 
 
 @cli.command()
-@click.option("--dxf_dir_path", type=click.Path(exists=True), default=str(DEFAULT_DXF_DIR), show_default=True, help="Directory containing DXF files.")
-@click.option("--output_dir_path", type=click.Path(), default=str(DEFAULT_OUTPUT_DIR), show_default=True, help="Output directory for .studio3 files.")
-@click.option("--unit", type=click.Choice(["mm", "in"], case_sensitive=False), required=True, help="Unit for registration mark values (must match Silhouette Studio's setting).")
+@click.option("--unit", type=click.Choice([u.value for u in Unit], case_sensitive=False), required=True, help="Unit for registration mark values.")
 @click.option("--studio_path", default=DEFAULT_STUDIO_PATH, show_default=True, help="Path to Silhouette Studio executable.")
 @click.option("--action_delay", type=float, default=ACTION_DELAY, show_default=True, help="Delay between UI actions (seconds).")
 @click.option("--calibration_path", type=click.Path(), default=None, help="Path to calibration JSON.")
 @click.option("--new", "generate_new", is_flag=True, help="Only convert layouts whose .studio3 file is missing (based on layouts.json versions).")
 @click.option("--dry_run", is_flag=True, help="List files that would be converted without running Silhouette Studio.")
-def batch(dxf_dir_path, output_dir_path, unit, studio_path, action_delay, calibration_path, generate_new, dry_run):
-    """Batch convert all DXF files in a directory to .studio3 with registration marks."""
-    dxf_path = Path(dxf_dir_path)
-    out_path = Path(output_dir_path)
+def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_run):
+    """Batch convert all DXF files in cutting_templates/ to .studio3 with registration marks."""
+    unit = Unit(unit)
+    out_path = TEMPLATES_DIR
     out_path.mkdir(parents=True, exist_ok=True)
 
     config = load_layout_config()
 
     if generate_new:
-        # Derive expected DXF/studio3 filenames from layouts.json
+        # Only DXFs that actually exist in out_path are candidates - out_path may only
+        # contain a subset of layouts.json's full catalog (e.g. when
+        # SCM_CUTTING_TEMPLATES_DIR is redirected to a companion project's own card
+        # sizes), so deriving candidates from layouts.json itself (like the old
+        # implementation did) would warn about every entry that will never exist there.
+        # Among the DXFs that do exist, skip ones whose .studio3 is already converted.
+        all_dxf_files = sorted(list((out_path / "dxf").glob("*.dxf")) + list((out_path / "borderless" / "dxf").glob("*.dxf")))
         dxf_files = []
-        for ps, cards in config.layouts.items():
-            for cs, layout_def in cards.items():
-                name = template_name(ps, cs, layout_def.version)
-                studio3_file = out_path / f"{name}.studio3"
-                if not studio3_file.exists():
-                    dxf_file = dxf_path / f"{name}.dxf"
-                    if dxf_file.exists():
-                        dxf_files.append(dxf_file)
-                    else:
-                        click.echo(f"  Warning: missing DXF {dxf_file.name} for {ps} + {cs}")
-        dxf_files.sort()
+        for dxf_file in all_dxf_files:
+            _, _, variant = parse_dxf_filename(dxf_file.name, config) or (None, None, None)
+            if variant == Variant.BORDERLESS:
+                studio3_file = out_path / "borderless" / dxf_file.with_suffix(".studio3").name
+            else:
+                studio3_file = out_path / dxf_file.with_suffix(".studio3").name
+            if not studio3_file.exists():
+                dxf_files.append(dxf_file)
     else:
-        dxf_files = sorted(dxf_path.glob("*.dxf"))
+        # Search both default and borderless DXF directories
+        dxf_files = sorted(list((out_path / "dxf").glob("*.dxf")) + list((out_path / "borderless" / "dxf").glob("*.dxf")))
 
     if not dxf_files:
         if generate_new:
             click.echo("All .studio3 files are up to date.")
         else:
-            click.echo(f"No DXF files found in {dxf_path}")
+            click.echo(f"No DXF files found in cutting_templates/dxf/ or cutting_templates/borderless/dxf/")
         return
 
     click.echo(f"Found {len(dxf_files)} DXF files to convert")
-    click.echo(f"Registration mark unit: {unit}")
-    click.echo()
 
     if dry_run:
         for dxf_file in dxf_files:
-            output_file = out_path / dxf_file.with_suffix(".studio3").name
-            paper_size, card_size = parse_dxf_filename(dxf_file.name, config) or (None, None)
-            orientation = get_orientation_for_dxf(paper_size, card_size, config)
+            paper_size, card_size, variant = parse_dxf_filename(dxf_file.name, config) or (None, None, None)
+            # Borderless templates go in borderless/ subdirectory
+            if variant == Variant.BORDERLESS:
+                output_file = out_path / "borderless" / dxf_file.with_suffix(".studio3").name
+            else:
+                output_file = out_path / dxf_file.with_suffix(".studio3").name
+            orientation = get_orientation_for_dxf(paper_size, card_size, variant, config)
             paper_w, paper_h = get_paper_dimensions(paper_size, config)
-            max_len = get_max_length_for_dxf(paper_size, card_size, config, unit)
-            len_str = f", max_length={max_len}{unit}" if max_len is not None else ""
+
+            # For borderless, show the adjusted (virtual) paper size that will be used
+            if variant == Variant.BORDERLESS:
+                paper_w, paper_h = adjust_paper_for_borderless(paper_w, paper_h)
+
+            max_len = get_max_length_for_dxf(paper_size, card_size, variant, config, unit)
+            len_str = f", max_length={max_len}{unit.value}" if max_len is not None else ""
             click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h}{len_str})")
+        click.echo()
+        click.echo(f"Registration mark unit: {unit.value}")
         click.echo()
         click.echo("Dry run complete. No files were converted.")
         return
+
+    for dxf_file in dxf_files:
+        click.echo(f"  {dxf_file.name}")
+    click.echo()
+    click.echo(f"Registration mark unit: {unit.value}")
+    click.echo()
 
     click.echo("=" * 60)
     click.echo("Batch DXF to Studio3 Converter")
@@ -1086,18 +1248,44 @@ def batch(dxf_dir_path, output_dir_path, unit, studio_path, action_delay, calibr
         errors = 0
 
         for dxf_file in dxf_files:
-            output_file = out_path / dxf_file.with_suffix(".studio3").name
-            paper_size, card_size = parse_dxf_filename(dxf_file.name, config) or (None, None)
-            orientation = get_orientation_for_dxf(paper_size, card_size, config)
+            paper_size, card_size, variant = parse_dxf_filename(dxf_file.name, config) or (None, None, None)
+            # Borderless templates go in borderless/ subdirectory
+            if variant == Variant.BORDERLESS:
+                output_file = out_path / "borderless" / dxf_file.with_suffix(".studio3").name
+                (out_path / "borderless").mkdir(parents=True, exist_ok=True)
+            else:
+                output_file = out_path / dxf_file.with_suffix(".studio3").name
+            orientation = get_orientation_for_dxf(paper_size, card_size, variant, config)
             paper_w, paper_h = get_paper_dimensions(paper_size, config)
-            max_len = get_max_length_for_dxf(paper_size, card_size, config, unit)
+            max_len = get_max_length_for_dxf(paper_size, card_size, variant, config, unit)
 
-            # Registration marks: always enabled, thickness=100,
-            # length set to the computed max for this layout.
+            # For borderless templates, adjust paper size to trick Silhouette Studio
+            # into using a smaller effective inset (by using 10mm inset on larger virtual paper)
+            if variant == Variant.BORDERLESS:
+                virtual_w, virtual_h = adjust_paper_for_borderless(paper_w, paper_h)
+                # Skip if the virtual paper size exceeds the 12x24 mat (see GitHub issue #136).
+                # TODO (#136): Remove this skip once templates use unconstrained mode.
+                mat_check = determine_cutting_mat(size_convert.size_to_in(paper_w), size_convert.size_to_in(paper_h))
+                if mat_check == CuttingMat.MAT_12X24:
+                    vw_in = size_convert.size_to_in(virtual_w)
+                    vh_in = size_convert.size_to_in(virtual_h)
+                    if min(vw_in, vh_in) > 12.0 or max(vw_in, vh_in) > 24.0:
+                        click.echo(f"  Skipping {dxf_file.name}: virtual paper exceeds 12x24 mat (see GitHub issue #136)")
+                        continue
+                paper_w, paper_h = virtual_w, virtual_h
+
+            # Convert registration mark values to the specified unit
+            # Inset: always MIN_REG_INSET_MM (Silhouette Studio's minimum)
+            inset_value = page_manager.MIN_REG_INSET_MM if unit == Unit.MM else page_manager.MIN_REG_INSET_MM / 25.4
+            thickness_value = page_manager.MAX_REG_THICKNESS_MM if unit == Unit.MM else page_manager.MAX_REG_THICKNESS_MM / 25.4
+
+            # Registration marks: always enabled, thickness and inset in specified unit,
+            # length set to the computed max for this layout (already in correct unit)
             reg_settings = RegistrationSettings(
                 enabled=True,
                 length=max_len if max_len is not None else 0,
-                thickness=100,
+                thickness=thickness_value,
+                inset=inset_value,
             )
 
             try:
@@ -1106,9 +1294,11 @@ def batch(dxf_dir_path, output_dir_path, unit, studio_path, action_delay, calibr
                     output_studio3=str(output_file),
                     paper_width=paper_w,
                     paper_height=paper_h,
+                    unit=unit,
                     orientation=orientation,
                     center=True,
                     registration=reg_settings,
+                    borderless=(variant == Variant.BORDERLESS),
                 )
                 converted += 1
             except Exception as e:

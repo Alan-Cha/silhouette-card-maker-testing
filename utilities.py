@@ -16,13 +16,30 @@ from pydantic import BaseModel, model_validator
 
 import page_manager
 import size_convert
-from enums import Registration, Orientation
+from enums import Registration, Orientation, OrientationMode, Variant
 
 # Specify directory locations
-asset_directory = 'assets'
+# Use Path(__file__).parent to ensure paths work regardless of where script is run from
+SCRIPT_DIR = Path(__file__).parent
+asset_directory = SCRIPT_DIR / 'assets'
 
 layouts_filename = 'layouts.json'
-layouts_path = os.path.join(asset_directory, layouts_filename)
+layouts_path = asset_directory / layouts_filename
+
+# Optional extra layout definitions to merge on top of layouts.json. Lets a layout-consuming
+# project layer its own card sizes, paper sizes, and layouts on top of this repo's without
+# modifying it. Opt-in: both are empty/unset by default, so load_layout_config() behaves
+# exactly as if this didn't exist. Two ways to supply extra files, merged in this order:
+#   1. Drop any number of *.json files into EXTRA_LAYOUTS_DIR (merged in filename order) -
+#      no configuration needed, just copy a file in.
+#   2. Point EXTRA_LAYOUTS_ENV at one or more file paths (os.pathsep-separated, merged in
+#      order) - for files that live outside EXTRA_LAYOUTS_DIR.
+EXTRA_LAYOUTS_DIR = asset_directory / 'extra_layouts'
+EXTRA_LAYOUTS_ENV = 'SCM_EXTRA_LAYOUTS'
+
+# Optional override for where cutting templates get written/read (default: SCRIPT_DIR-relative
+# cutting_templates/ directories in generate_dxf.py and dxf_to_studio3.py).
+CUTTING_TEMPLATES_DIR_ENV = 'SCM_CUTTING_TEMPLATES_DIR'
 
 # Specify valid mimetypes for images
 # List can be found here: https://github.com/h2non/filetype.py?tab=readme-ov-file#image
@@ -67,9 +84,14 @@ class RegistrationSettings(BaseModel):
     length: Optional[str] = None
 
 
+class VariantRegistrationSettings(BaseModel):
+    default: RegistrationSettings
+    borderless: RegistrationSettings
+
+
 class DefaultSettings(BaseModel):
     card_radius: str
-    registration: RegistrationSettings
+    registration: VariantRegistrationSettings
 
 
 class SpecialtyCardSizeDef(BaseModel):
@@ -89,6 +111,7 @@ class SpecialtyLayoutDef(BaseModel):
     card_size: SpecialtyCardSizeDef
     paper_size: SpecialtyPaperSizeDef
     orientation: Orientation = Orientation.LANDSCAPE
+    registration_orientation: Optional[Orientation] = None
     version: int = 1
     num_rows: Optional[int] = None
     num_cols: Optional[int] = None
@@ -118,6 +141,7 @@ class PaperSizeDef(BaseModel):
 
 class CardLayout(BaseModel):
     orientation: Orientation
+    registration_orientation: Optional[Orientation] = None
     version: int
     num_rows: Optional[int] = None
     num_cols: Optional[int] = None
@@ -128,14 +152,88 @@ class LayoutConfig(BaseModel):
     defaults: DefaultSettings
     card_sizes: Dict[str, CardSizeDef]
     paper_sizes: Dict[str, PaperSizeDef]
-    layouts: Dict[str, Dict[str, CardLayout]]
+    layouts: Dict[str, Dict[str, Dict[str, CardLayout]]]  # layouts[paper][card][variant]
     specialty_layouts: Optional[Dict[str, SpecialtyLayoutDef]] = None
 
 
+def extra_layout_paths() -> list[Path]:
+    """Return every extra layout file, in merge/precedence order.
+
+    Every *.json file found in EXTRA_LAYOUTS_DIR (sorted by filename), followed by every
+    file listed in EXTRA_LAYOUTS_ENV (an os.pathsep-separated list). Empty if neither is
+    configured.
+    """
+    dir_paths = sorted(EXTRA_LAYOUTS_DIR.glob('*.json')) if EXTRA_LAYOUTS_DIR.is_dir() else []
+    env_paths = [Path(p) for p in os.environ.get(EXTRA_LAYOUTS_ENV, '').split(os.pathsep) if p]
+    return dir_paths + env_paths
+
+
+def find_extra_layout_owner(section: str, key: str) -> Path | None:
+    """Return the first file from extra_layout_paths() whose `section` dict already
+    contains `key` (e.g. section='card_sizes', key='mtg'), or None if none do."""
+    for path in extra_layout_paths():
+        with open(path, 'r') as f:
+            if key in json.load(f).get(section, {}):
+                return path
+    return None
+
+
+def merge_extra_layouts(raw_config: dict) -> dict:
+    """Merge extra card_sizes/paper_sizes/layouts on top of raw_config, in place.
+
+    Merges every file from extra_layout_paths(), in order, into raw_config's
+    card_sizes/paper_sizes/layouts dicts. Each key (card size, paper size, or
+    paper+card+variant layout) must be new: raise ValueError on any collision with raw_config
+    or an earlier file in the merge, since these files are meant to be pure additions, not
+    overrides. No-op if extra_layout_paths() is empty.
+    """
+    for path in extra_layout_paths():
+        with open(path, 'r') as f:
+            extra = json.load(f)
+
+        for section in ('card_sizes', 'paper_sizes'):
+            for key, value in extra.get(section, {}).items():
+                if key in raw_config[section]:
+                    raise ValueError(f"'{key}' in {section} of {path} already defined")
+                raw_config[section][key] = value
+
+        for paper, cards in extra.get('layouts', {}).items():
+            for card, variants in cards.items():
+                for variant, layout_def in variants.items():
+                    if variant in raw_config['layouts'].get(paper, {}).get(card, {}):
+                        raise ValueError(f"layout '{paper}'/'{card}'/'{variant}' in {path} already defined")
+                    raw_config['layouts'].setdefault(paper, {}).setdefault(card, {})[variant] = layout_def
+
+    return raw_config
+
+
+def resolve_cutting_templates_dir(default: Path) -> Path:
+    """Return the CUTTING_TEMPLATES_DIR_ENV override if set, else default."""
+    override = os.environ.get(CUTTING_TEMPLATES_DIR_ENV)
+    return Path(override) if override else default
+
+
 def load_layout_config() -> LayoutConfig:
-    """Load and validate layouts.json from the assets directory."""
+    """Load and validate layouts.json from the assets directory, merging in any extra
+    layout definitions from EXTRA_LAYOUTS_ENV."""
     with open(layouts_path, 'r') as f:
-        return LayoutConfig(**json.load(f))
+        raw_config = json.load(f)
+    merge_extra_layouts(raw_config)
+    return LayoutConfig(**raw_config)
+
+
+# Borderless mode tricks Silhouette Studio into using a smaller effective inset than its
+# 10mm minimum (MIN_REG_INSET_MM) by inflating the declared paper size. The software
+# still places registration marks at 10mm from the declared edge, but since the declared
+# paper is larger than the real sheet, the marks land closer to the actual paper edge.
+#
+# BORDERLESS_INSET_MM: the effective inset on the real paper (from layouts.json defaults).
+# BORDERLESS_EXPANSION_MM: how much to add to each paper dimension in Silhouette Studio
+#   so that the 10mm studio inset becomes BORDERLESS_INSET_MM on the real sheet.
+#   Formula: each side gains (MIN_REG_INSET_MM - BORDERLESS_INSET_MM), times 2 for both sides.
+_layout_config = load_layout_config()
+BORDERLESS_INSET_MM = size_convert.size_to_mm(_layout_config.defaults.registration.borderless.inset)
+BORDERLESS_EXPANSION_MM = (page_manager.MIN_REG_INSET_MM - BORDERLESS_INSET_MM) * 2
 
 
 def resolve_card_size_alias(layout_config: LayoutConfig, card_size: str) -> str:
@@ -189,9 +287,18 @@ def get_all_specialty_layout_names(layout_config: LayoutConfig) -> List[str]:
     return sorted(layout_config.specialty_layouts.keys())
 
 
-def template_name(paper_size: str, card_size: str, version: int) -> str:
-    """Compose the standard template name: {paper_size}-{card_size}-v{version}."""
-    return f"{paper_size}-{card_size}-v{version}"
+def template_name(paper_size: str, card_size: str, variant: Variant, version: int) -> str:
+    """Compose the standard template name: {paper_size}-{card_size}-{variant}-v{version}.
+
+    Note: 'default' variant is omitted from the name for backwards compatibility.
+    Examples:
+        - default: letter-bridge-v4
+        - borderless: letter-bridge-borderless-v1
+    """
+    if variant == Variant.DEFAULT:
+        return f"{paper_size}-{card_size}-v{version}"
+    else:
+        return f"{paper_size}-{card_size}-{variant.value}-v{version}"
 
 
 # Known junk files across OSes
@@ -236,6 +343,52 @@ def parse_crop_string(crop_string: str | None, card_width: int, card_height: int
         return num, num
 
     raise ValueError(f"Invalid crop format: '{crop_string}'")
+
+def parse_dimension_string(dimension_string: str | None, ppi: int) -> int:
+    """
+    Parse a dimension string and return the value in pixels.
+
+    Supports the same formats as --crop for consistency:
+    - Physical units: "3mm", "0.125in"
+    - Pixels: "6.5", "10"
+    - Disabled: "0" or None
+
+    Args:
+        dimension_string: String like "3mm", "0.125in", "6.5" (pixels), or "0" to disable
+        ppi: Pixels per inch for the layout
+
+    Returns:
+        Dimension in pixels
+    """
+    if dimension_string is None or dimension_string == "0":
+        return 0
+
+    dimension_string = dimension_string.strip().lower()
+
+    if dimension_string == "0":
+        return 0
+
+    float_pattern = r"(?:\d+\.\d*|\.\d+|\d+)"
+
+    # Match "3mm" or "3.5mm"
+    mm_match = re.fullmatch(rf"({float_pattern})mm", dimension_string)
+    if mm_match:
+        value_mm = float(mm_match.group(1))
+        return math.floor(value_mm / 25.4 * ppi)
+
+    # Match "0.1in" or "0.125in"
+    in_match = re.fullmatch(rf"({float_pattern})in", dimension_string)
+    if in_match:
+        value_in = float(in_match.group(1))
+        return math.floor(value_in * ppi)
+
+    # Match single float like "6.5" or "4.5" (pixels)
+    single_match = re.fullmatch(float_pattern, dimension_string)
+    if single_match:
+        return int(float(dimension_string))
+
+    raise ValueError(f"Invalid dimension format: '{dimension_string}'")
+
 
 def convertInToCrop(crop_in: float, card_width_px: int, card_height_px: int) -> tuple[float, float]:
     # Convert from pixels to physical mm using DPI
@@ -304,6 +457,7 @@ def get_back_card_image_path(back_dir_path) -> str | None:
         return files[0]
 
     # Multiple back files detected, provide a selection menu
+    print("[0] No back image")
     for i, f in enumerate(files):
         print(f'[{i + 1}] {f}')
 
@@ -314,6 +468,8 @@ def get_back_card_image_path(back_dir_path) -> str | None:
             continue
 
         index = int(choice) - 1
+        if index == -1:
+            return None
         if index >= 0 and index < len(files):
             break
 
@@ -431,8 +587,102 @@ def crop_and_scale_image(
     return card_image, 0, 0, (scaled_bleed_width, scaled_bleed_height)
 
 
-def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: int, y: int, print_bleed: tuple[int, int]):
+def fill_rounded_corners(card_image: Image.Image, corner_radius: int) -> Image.Image:
+    """
+    Fill the rounded corner regions of a card image with bleed.
+
+    Assumes the card has rounded corners with the specified radius.
+    Pixels in the "cut zone" (outside the corner radius arc) are filled
+    by extending from the nearest pixel on the arc.
+
+    Args:
+        card_image: The card image to modify
+        corner_radius: The radius of the rounded corners in pixels
+
+    Returns:
+        A new image with filled corners
+    """
+    import math
+
+    # Create a copy so we don't modify the original
+    result = card_image.copy()
+    width, height = result.size
+
+    # Define the four corners: (corner_point, center_of_arc)
+    corners = [
+        ((0, 0), (corner_radius, corner_radius)),  # top-left
+        ((width, 0), (width - corner_radius, corner_radius)),  # top-right
+        ((0, height), (corner_radius, height - corner_radius)),  # bottom-left
+        ((width, height), (width - corner_radius, height - corner_radius)),  # bottom-right
+    ]
+
+    for (corner_x, corner_y), (arc_cx, arc_cy) in corners:
+        # Each rounded corner has a square region of size (corner_radius x corner_radius)
+        # that contains both the rounded arc and the "cut zone" beyond it
+        square_x_start = 0 if corner_x == 0 else width - corner_radius
+        square_y_start = 0 if corner_y == 0 else height - corner_radius
+        square_x_end = corner_radius if corner_x == 0 else width
+        square_y_end = corner_radius if corner_y == 0 else height
+
+        # Process each pixel in this corner's square
+        for local_x in range(square_x_start, square_x_end):
+            for local_y in range(square_y_start, square_y_end):
+                # Calculate distance from this pixel to the arc's center point
+                dist = math.sqrt((local_x - arc_cx) ** 2 + (local_y - arc_cy) ** 2)
+
+                # Pixels beyond the corner_radius are in the "cut zone" - the area that
+                # will be removed when the card is die-cut with rounded corners
+                if dist > corner_radius:
+                    # Use polar coordinates to find the nearest point on the arc:
+                    # 1. Calculate the angle from the arc center to this cut-zone pixel
+                    angle = math.atan2(local_y - arc_cy, local_x - arc_cx)
+
+                    # 2. Project that angle onto the arc at exactly corner_radius distance
+                    # This gives us the nearest "good" pixel on the rounded corner edge
+                    src_x = int(arc_cx + corner_radius * math.cos(angle))
+                    src_y = int(arc_cy + corner_radius * math.sin(angle))
+
+                    # Clamp to image bounds for safety
+                    src_x = max(0, min(width - 1, src_x))
+                    src_y = max(0, min(height - 1, src_y))
+
+                    # Copy the arc pixel into the cut zone, extending the card image
+                    # radially outward to fill what would otherwise be white corners
+                    try:
+                        pixel = result.getpixel((src_x, src_y))
+                        result.putpixel((local_x, local_y), pixel)
+                    except (IndexError, ValueError):
+                        pass
+
+    return result
+
+
+def draw_card_with_bleed(
+    card_image: Image.Image,
+    base_image: Image.Image,
+    x: int,
+    y: int,
+    print_bleed: tuple[int, int],
+    extra_bleed: tuple[int, int, int, int] = (0, 0, 0, 0)
+):
+    """
+    Draw a card with bleed on all edges.
+
+    Args:
+        card_image: The card image to draw
+        base_image: The base image to draw on
+        x, y: Position to place the card
+        print_bleed: Tuple of (bleed_width, bleed_height) in pixels
+        extra_bleed: Additional bleed for outer edges (top, right, bottom, left) in pixels
+    """
     bleed_width, bleed_height = print_bleed
+    extra_top, extra_right, extra_bottom, extra_left = extra_bleed
+
+    # Calculate total bleed for each edge
+    bleed_top = bleed_height + extra_top
+    bleed_bottom = bleed_height + extra_bottom
+    bleed_left = bleed_width + extra_left
+    bleed_right = bleed_width + extra_right
 
     width, height = card_image.size
     base_image.paste(card_image, (x, y))
@@ -447,24 +697,31 @@ def draw_card_with_bleed(card_image: Image.Image, base_image: Image.Image, x: in
                 start[0] + (bleed_i if axis == Axis.X else 0),
                 start[1] + (bleed_i if axis == Axis.Y else 0)
             )
-
             base_image.paste(card_image.crop(crop_box), pos)
+
+    def fill_corner(corner_pixel_x: int, corner_pixel_y: int,
+                    corner_x: int, corner_y: int,
+                    width: int, height: int):
+        """Fill a corner bleed region by tiling a single pixel."""
+        pixel = card_image.crop((corner_pixel_x, corner_pixel_y, corner_pixel_x + 1, corner_pixel_y + 1))
+        for dx in range(width):
+            for dy in range(height):
+                base_image.paste(pixel, (corner_x + dx, corner_y + dy))
 
     # Extend the edges of the cards to create print bleed
     # Top and bottom
-    extend_edge((0, 0, width, 1), (x, y - bleed_height), bleed_height, Axis.Y)
-    extend_edge((0, height - 1, width, height), (x, y + height), bleed_height, Axis.Y)
+    extend_edge((0, 0, width, 1), (x, y - bleed_top), bleed_top, Axis.Y)
+    extend_edge((0, height - 1, width, height), (x, y + height), bleed_bottom, Axis.Y)
 
     # Left and right
-    extend_edge((0, 0, 1, height), (x - bleed_width, y), bleed_width, Axis.X)
-    extend_edge((width - 1, 0, width, height), (x + width, y), bleed_width, Axis.X)
+    extend_edge((0, 0, 1, height), (x - bleed_left, y), bleed_left, Axis.X)
+    extend_edge((width - 1, 0, width, height), (x + width, y), bleed_right, Axis.X)
 
-    # Corners
-    for bleed_width, crop_x, pos_x in [(bleed_width, 0, x - bleed_width), (bleed_width, width - 1, x + width)]:
-        for bleed_height, crop_y, pos_y in [(bleed_height, 0, y - bleed_height), (bleed_height, height - 1, y + height)]:
-            for x_bleed_i in range(bleed_width):
-                for y_bleed_i in range(bleed_height):
-                    base_image.paste(card_image.crop((crop_x, crop_y, crop_x + 1, crop_y + 1)), (pos_x + x_bleed_i, pos_y + y_bleed_i))
+    # Fill four corners with tiled pixels from card corners
+    fill_corner(0, 0, x - bleed_left, y - bleed_top, bleed_left, bleed_top)  # Top-left
+    fill_corner(width - 1, 0, x + width, y - bleed_top, bleed_right, bleed_top)  # Top-right
+    fill_corner(0, height - 1, x - bleed_left, y + height, bleed_left, bleed_bottom)  # Bottom-left
+    fill_corner(width - 1, height - 1, x + width, y + height, bleed_right, bleed_bottom)  # Bottom-right
 
     return base_image
 
@@ -482,16 +739,25 @@ def draw_card_layout(
     crop: tuple[float, float],
     crop_backs: tuple[float, float],
     ppi_ratio: float,
-    extend_corners: int,
+    extend_edges: int,
+    extend_edges_backs: int,
+    extend_corners_radius: int,
+    extend_corners_backs_radius: int,
+    extend_bleed: int,
     flip: bool,
     fit: FitMode,
+    fit_backs: FitMode,
     orientation: Orientation
 ):
     num_cards = num_rows * num_cols
     crop_percent_x, crop_percent_y = crop
     crop_backs_percent_x, crop_backs_percent_y = crop_backs
 
-    extend_corners_thickness = math.floor(extend_corners * ppi_ratio)
+    extend_edges_thickness = math.floor(extend_edges * ppi_ratio)
+    extend_edges_backs_thickness = math.floor(extend_edges_backs * ppi_ratio)
+    extend_corners_thickness = math.floor(extend_corners_radius * ppi_ratio)
+    extend_corners_backs_thickness = math.floor(extend_corners_backs_radius * ppi_ratio)
+    extend_bleed_thickness = math.floor(extend_bleed * ppi_ratio)
 
     # Calculate the size of the card after scaling: "scaled size"
     scaled_width = math.floor(width * ppi_ratio)
@@ -523,14 +789,22 @@ def draw_card_layout(
         bleed_offset_y = 0
         synthetic_bleed = (scaled_bleed_width, scaled_bleed_height)
 
-        # Determine which crop percentages to use
+        # Select parameters based on card type (front vs back).
+        # Renaming to active_* allows us to use a single processing path below
+        # instead of duplicating the entire image processing logic for fronts and backs.
         if card_image is single_back_image:
             active_crop_x, active_crop_y = crop_backs_percent_x, crop_backs_percent_y
+            active_fit = fit_backs
+            active_extend_edges_thickness = extend_edges_backs_thickness
+            active_extend_corners_thickness = extend_corners_backs_thickness
         else:
             active_crop_x, active_crop_y = crop_percent_x, crop_percent_y
+            active_fit = fit
+            active_extend_edges_thickness = extend_edges_thickness
+            active_extend_corners_thickness = extend_corners_thickness
 
         # Apply cropping, scaling, and fit mode
-        if active_crop_x > 0 or active_crop_y > 0 or fit == FitMode.CROP:
+        if active_crop_x > 0 or active_crop_y > 0 or active_fit == FitMode.CROP:
             card_image, bleed_offset_x, bleed_offset_y, synthetic_bleed = crop_and_scale_image(
                 card_image,
                 active_crop_x,
@@ -539,28 +813,53 @@ def draw_card_layout(
                 scaled_height,
                 scaled_bleed_width,
                 scaled_bleed_height,
-                fit
+                active_fit
             )
         else:
             # No percentage crop and STRETCH mode: just scale to target size
             card_image = card_image.resize((scaled_width, scaled_height))
 
-        # Extend the corners if required
-        card_image = card_image.crop((
-            extend_corners_thickness,
-            extend_corners_thickness,
-            card_image.width - extend_corners_thickness,
-            card_image.height - extend_corners_thickness
-        ))
+        # Apply extend_edges: simple crop that affects all edges uniformly
+        if active_extend_edges_thickness > 0:
+            card_image = card_image.crop((
+                active_extend_edges_thickness,
+                active_extend_edges_thickness,
+                card_image.width - active_extend_edges_thickness,
+                card_image.height - active_extend_edges_thickness
+            ))
+
+        # If extend_corners is specified, fill the corner regions FIRST
+        # This modifies the card image so the bleed will be generated from the filled corners
+        if active_extend_corners_thickness > 0:
+            card_image = fill_rounded_corners(card_image, active_extend_corners_thickness)
 
         if flip and orientation == Orientation.LANDSCAPE:
             card_image = card_image.rotate(180)
 
         # Calculate final position
-        x = base_x + bleed_offset_x + extend_corners_thickness
-        y = base_y + bleed_offset_y + extend_corners_thickness
+        x = base_x + bleed_offset_x + active_extend_edges_thickness
+        y = base_y + bleed_offset_y + active_extend_edges_thickness
 
-        draw_card_with_bleed(card_image, base_image, x, y, (synthetic_bleed[0] + extend_corners_thickness, synthetic_bleed[1] + extend_corners_thickness))
+        # Calculate total bleed including synthetic bleed and edge extension
+        edge_bleed_width = synthetic_bleed[0] + active_extend_edges_thickness
+        edge_bleed_height = synthetic_bleed[1] + active_extend_edges_thickness
+
+        # Determine if this card is on an outer edge and should have extended bleed
+        # extra_bleed format: (top, right, bottom, left)
+        extra_bleed_top = extend_bleed_thickness if row == 0 else 0
+        extra_bleed_bottom = extend_bleed_thickness if row == num_rows - 1 else 0
+        extra_bleed_left = extend_bleed_thickness if col == 0 else 0
+        extra_bleed_right = extend_bleed_thickness if col == num_cols - 1 else 0
+
+        # Generate edge bleed (from the modified card if corners were filled)
+        draw_card_with_bleed(
+            card_image,
+            base_image,
+            x,
+            y,
+            (edge_bleed_width, edge_bleed_height),
+            (extra_bleed_top, extra_bleed_right, extra_bleed_bottom, extra_bleed_left)
+        )
 
 def draw_outline(
     page: Image.Image,
@@ -587,7 +886,7 @@ def draw_outline(
                 width=1,
             )
 
-def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, label: str, orientation: Orientation, label_margin_px: int):
+def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages: List[Image.Image], page_width: int, page_height: int, ppi_ratio: float, template: str, only_fronts: bool, label: str, orientation: Orientation, label_margin_px: int, borderless: bool):
     font = ImageFont.truetype(os.path.join(asset_directory, 'arial.ttf'), 40 * ppi_ratio)
 
     num_sheet = len(pages) + 1
@@ -617,10 +916,10 @@ def add_front_back_pages(front_page: Image.Image, back_page: Image.Image, pages:
         draw.text((label_x, label_y), label_text, fill=(0, 0, 0), anchor="mm", font=font)
 
     # Rotate portrait pages to landscape so the generated PDF is always landscape.
-    # This ensures offset_pdf.py works regardless of orientation detection.
+    # This ensures offset_pdf.py works regardless of card orientation detection.
     if orientation == Orientation.PORTRAIT:
-        front_page = front_page.rotate(-90, expand=True)
-        back_page = back_page.rotate(-90, expand=True)
+        front_page = front_page.rotate(90, expand=True)
+        back_page = back_page.rotate(90, expand=True)
 
     # Add a back page for every front page template
     pages.append(front_page)
@@ -659,6 +958,80 @@ def resolve_image_with_any_extension(path: str) -> str:
 
     return matches[0]
 
+
+def find_best_orientation(
+    orientation_mode: OrientationMode,
+    card_width: str,
+    card_height: str,
+    paper_width: str,
+    paper_height: str,
+    inset: str,
+    length: str,
+    ppi: int,
+    preferred: Orientation = Orientation.LANDSCAPE,
+) -> tuple[Orientation, page_manager.CardLayout]:
+    """Resolve an OrientationMode to a concrete Orientation and compute the layout.
+
+    OrientationMode represents user intent:
+      - LANDSCAPE or PORTRAIT: Force a specific orientation (manual control)
+      - OPTIMIZE: Try both orientations and automatically pick whichever fits more cards
+
+    Orientation is the concrete result (LANDSCAPE or PORTRAIT).
+
+    Args:
+        orientation_mode: User's orientation preference (manual or optimize).
+        card_width, card_height: Card dimensions as unit strings (e.g., "2.5in").
+        paper_width, paper_height: Paper dimensions as unit strings.
+        inset, length: Registration mark parameters as unit strings.
+        ppi: Pixels per inch for layout computation.
+        preferred: Tiebreaker orientation when OPTIMIZE finds equal card counts.
+
+    Returns:
+        (chosen_orientation, computed_layout)
+
+    Raises:
+        ValueError if no valid layout exists in any tried card orientation.
+    """
+    kwargs = dict(
+        card_width=card_width,
+        card_height=card_height,
+        paper_width=paper_width,
+        paper_height=paper_height,
+        inset=inset,
+        length=length,
+        ppi=ppi,
+    )
+
+    # Manual mode: user specified exact card orientation (LANDSCAPE or PORTRAIT)
+    if orientation_mode != OrientationMode.OPTIMIZE:
+        orientation = Orientation(orientation_mode.value)
+        return orientation, page_manager.generate_layout(orientation=orientation, **kwargs)
+
+    # Optimize mode: try both card orientations and pick the one that fits more cards
+    best_count = 0
+    best_orientation = preferred
+    best_computed = None
+
+    for orient in Orientation:
+        try:
+            computed = page_manager.generate_layout(orientation=orient, **kwargs)
+        except ValueError:
+            # This card orientation doesn't produce a valid layout, skip it
+            continue
+        # Count total cards: rows × columns
+        count = len(computed.x_pos) * len(computed.y_pos)
+        # Keep this card orientation if it fits more cards, or if it's a tie and matches preferred
+        if count > best_count or (count == best_count and orient == preferred):
+            best_count = count
+            best_orientation = orient
+            best_computed = computed
+
+    if best_computed is None:
+        raise ValueError("No valid layout in either card orientation.")
+
+    return best_orientation, best_computed
+
+
 def generate_pdf(
     front_dir_path: str,
     back_dir_path: str,
@@ -670,9 +1043,15 @@ def generate_pdf(
     registration: Registration,
     only_fronts: bool,
     fit: FitMode,
+    fit_backs: str | None,
     crop_string: str | None,
     crop_backs_string: str | None,
-    extend_corners: int,
+    extend_edges: str | None,
+    extend_edges_backs: str | None,
+    extend_corners: str | None,
+    extend_corners_backs: str | None,
+    extend_bleed: str | None,
+    extend_bleed_backs: str | None,
     ppi: int,
     quality: int,
     skip_indices: List[int],
@@ -680,6 +1059,8 @@ def generate_pdf(
     label: str,
     show_outline: bool = False,
     specialty: Optional[str] = None,
+    borderless: bool = False,
+    registration_orientation_override: Optional[str] = None,
 ):
     # Sanity checks for the different directories
     f_path = Path(front_dir_path)
@@ -714,7 +1095,7 @@ def generate_pdf(
         back_card_image_path = get_back_card_image_path(back_dir_path)
         use_default_back_page = back_card_image_path is None
         if use_default_back_page:
-            print(f'No back image provided in back image directory \"{back_dir_path}\". Using default instead.')
+            print(f'No back image provided in back image directory \"{back_dir_path}\".')
 
     front_image_filenames = get_image_file_paths(front_dir_path)
     ds_image_filenames = get_image_file_paths(ds_dir_path)
@@ -731,7 +1112,15 @@ def generate_pdf(
             raise Exception(f'Cannot use "--only_fronts" with double-sided cards. Remove cards from double-side image directory "{ds_dir_path}".')
 
     layout_config = load_layout_config()
-    default_reg = layout_config.defaults.registration
+    default_reg = layout_config.defaults.registration.default
+    registration_orientation_override = (
+        Orientation(registration_orientation_override)
+        if registration_orientation_override is not None
+        else None
+    )
+
+    if borderless and specialty:
+        raise Exception('Cannot use --borderless with --specialty. Specialty layouts define their own geometry.')
 
     if specialty:
         if not layout_config.specialty_layouts or specialty not in layout_config.specialty_layouts:
@@ -767,12 +1156,13 @@ def generate_pdf(
             )
 
         orientation = spec.orientation
+        registration_orientation = spec.registration_orientation or orientation
+        if registration_orientation_override is not None:
+            registration_orientation = registration_orientation_override
         template = f"{specialty}-v{spec.version}"
 
         lr = spec.registration or RegistrationSettings()
         effective_inset = lr.inset or default_reg.inset
-        effective_thickness = lr.thickness or default_reg.thickness
-        effective_length = lr.length or default_reg.length
 
     else:
         # Resolve aliases
@@ -789,21 +1179,37 @@ def generate_pdf(
             raise Exception(f'Unsupported paper size "{paper_size}". Try paper sizes: {list(layout_config.paper_sizes.keys())}.')
         paper_size_def = layout_config.paper_sizes[paper_size]
 
-        # Look up orientation and version from the layouts field (per paper+card combination)
+        # Select variant based on borderless flag
+        variant = Variant.BORDERLESS if borderless else Variant.DEFAULT
+
+        # Look up layout from nested structure: layouts[paper][card][variant]
         if paper_size not in layout_config.layouts or card_size not in layout_config.layouts[paper_size]:
             raise Exception(f'No layout defined for paper "{paper_size}" with card "{card_size}". Add it to layouts.json.')
-        layout_def = layout_config.layouts[paper_size][card_size]
+
+        card_layouts = layout_config.layouts[paper_size][card_size]
+        if variant.value not in card_layouts:
+            raise Exception(f'No {variant.value} layout defined for paper "{paper_size}" with card "{card_size}". Add it to layouts.json.')
+
+        layout_def = card_layouts[variant.value]
         orientation = layout_def.orientation
+        registration_orientation = layout_def.registration_orientation or orientation
+        if registration_orientation_override is not None:
+            registration_orientation = registration_orientation_override
         version = layout_def.version
 
-        # Effective registration: merge per-layout overrides on top of defaults
+        # Effective registration: merge per-layout overrides on top of variant defaults
         layout_reg = layout_def.registration
         lr = layout_reg or RegistrationSettings()
-        effective_inset = lr.inset or default_reg.inset
-        effective_thickness = lr.thickness or default_reg.thickness
-        effective_length = lr.length or default_reg.length
 
-        template = template_name(paper_size, card_size, version)
+        if borderless:
+            effective_inset = lr.inset or layout_config.defaults.registration.borderless.inset
+        else:
+            effective_inset = lr.inset or layout_config.defaults.registration.default.inset
+
+        template = template_name(paper_size, card_size, variant, version)
+
+    effective_thickness = lr.thickness or default_reg.thickness
+    effective_length = lr.length or default_reg.length
 
     # Corner exclusion zone = configured mark length + padding constant
     total_exclusion_mm = size_convert.size_to_mm(default_reg.length) + page_manager.REG_PADDING_MM
@@ -828,6 +1234,17 @@ def generate_pdf(
     # Determine the amount of x and y crop
     crop = parse_crop_string(crop_string, card_width_px, card_height_px)
     crop_backs = parse_crop_string(crop_backs_string, card_width_px, card_height_px)
+
+    # Parse extend_edges, extend_corners, and extend_bleed parameters
+    extend_edges_px = parse_dimension_string(extend_edges, layout_config.ppi)
+    extend_edges_backs_px = parse_dimension_string(extend_edges_backs, layout_config.ppi)
+    extend_corners_px = parse_dimension_string(extend_corners, layout_config.ppi)
+    extend_corners_backs_px = parse_dimension_string(extend_corners_backs, layout_config.ppi)
+    extend_bleed_px = parse_dimension_string(extend_bleed, layout_config.ppi)
+    extend_bleed_backs_px = parse_dimension_string(extend_bleed_backs, layout_config.ppi)
+
+    # Parse fit_backs parameter - if not specified, use the same fit mode as fronts
+    fit_backs_mode = FitMode(fit_backs) if fit_backs is not None else fit
 
     # Convert corner radius to pixels for outline drawing
     effective_card_radius = card_size_def.radius or layout_config.defaults.card_radius
@@ -856,11 +1273,34 @@ def generate_pdf(
     ppi_ratio = ppi / 300
 
     inset_px = size_convert.size_to_pixel(effective_inset, layout_config.ppi)
-    label_margin_px = math.floor((inset_px - 2 * MINIMUM_BLEED) * ppi_ratio)
+    thickness_px = size_convert.size_to_pixel(effective_thickness, layout_config.ppi)
+    if borderless:
+        # Different margin for borderless because of space constraints
+        label_margin_px = math.floor(inset_px * ppi_ratio)
+    else:
+        label_margin_px = math.floor((inset_px - thickness_px * 2) * ppi_ratio)
+
+    # Paper sizes are stored as landscape; portrait registration marks need swapped dimensions.
+    # When the registration orientation differs from the card layout, rotate the canvas back
+    # to match the layout so cards are placed correctly.
+    reg_is_portrait = registration_orientation == Orientation.PORTRAIT
+    reg_width  = paper_size_def.height if reg_is_portrait else paper_size_def.width
+    reg_height = paper_size_def.width  if reg_is_portrait else paper_size_def.height
 
     # Load an image with the registration marks
-    with page_manager.generate_reg_mark(paper_size_def.width, paper_size_def.height, effective_inset, effective_thickness, effective_length, layout_config.ppi, registration, orientation) as reg_im:
+    with page_manager.generate_reg_mark(
+        reg_width,
+        reg_height,
+        effective_inset,
+        effective_thickness,
+        effective_length,
+        layout_config.ppi,
+        registration,
+    ) as reg_im:
         reg_im = reg_im.resize([math.floor(reg_im.width * ppi_ratio), math.floor(reg_im.height * ppi_ratio)])
+
+        if registration_orientation != orientation:
+            reg_im = reg_im.rotate(90 if reg_is_portrait else -90, expand=True)
 
         # Create the array that will store the filled templates
         pages: List[Image.Image] = []
@@ -877,7 +1317,7 @@ def generate_pdf(
                 single_back_image = Image.open(back_card_image_path)
                 single_back_image = ImageOps.exif_transpose(single_back_image)
             except FileNotFoundError:
-                print(f'Cannot get back image "{back_card_image_path}". Using default instead.')
+                print(f'Cannot get back image "{back_card_image_path}".')
                 single_back_image = None
             except OSError as e:
                 raise OSError(f'Failed to load back image "{back_card_image_path}": {e}') from e
@@ -959,9 +1399,14 @@ def generate_pdf(
                 crop,
                 crop_backs,
                 ppi_ratio,
-                extend_corners,
+                extend_edges_px,
+                extend_edges_backs_px,
+                extend_corners_px,
+                extend_corners_backs_px,
+                extend_bleed_px,
                 flip=False,
                 fit=fit,
+                fit_backs=fit_backs_mode,
                 orientation=orientation,
             )
 
@@ -980,9 +1425,14 @@ def generate_pdf(
                 crop,
                 crop_backs,
                 ppi_ratio,
-                extend_corners,
+                extend_edges_px,
+                extend_edges_backs_px,
+                extend_corners_px,
+                extend_corners_backs_px,
+                extend_bleed_backs_px,
                 flip=True, # Flip the back sides
                 fit=fit,
+                fit_backs=fit_backs_mode,
                 orientation=orientation,
             )
 
@@ -1003,7 +1453,8 @@ def generate_pdf(
                 only_fronts,
                 label,
                 orientation,
-                label_margin_px
+                label_margin_px,
+                borderless
             )
 
         if len(pages) == 0:
@@ -1030,6 +1481,7 @@ def generate_pdf(
         else:
             pages[0].save(output_path, format='PDF', save_all=True, append_images=pages[1:], resolution=math.floor(300 * ppi_ratio), speed=0, subsampling=0, quality=quality)
             print(f'Generated PDF: {output_path}')
+
 
 class OffsetData(BaseModel):
     x_offset: int

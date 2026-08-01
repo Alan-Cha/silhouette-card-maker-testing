@@ -1,6 +1,6 @@
 # Custom Card Games with Silhouette Cutting Machines
 
-![](hugo/static/images/display.jpg)
+![Silhouette Card Maker Banner](hugo/static/images/scm_banner.png)
 
 Ever wanted to make your own custom card game but without the hassle of a craft knife, a rotary cutter, or a paper guillotine? How about making your own proxies to playtest your favorite TCG?
 
@@ -50,25 +50,25 @@ The table below shows all possible paper and card size combinations and the layo
 
 | Format | `letter` | `tabloid` | `a4` | `a3` | `arch_b` |
 |---|---|---|---|---|---|
-| `standard` | 4x2 (8) | 4x4 (16) | 4x2 (8) | 6x3 (18) | 6x3 (18) |      
+| `standard` | 4x2 (8) | 4x4 (16) | 4x2 (8) | 6x3 (18) | 6x3 (18) |
 | `poker` | 4x2 (8) | 4x4 (16) | 4x2 (8) | 4x4 (16) | 6x3 (18) |
-| `bridge` | 4x2 (8) | 4x4 (16) | 3x3 (9) | 6x3 (18) | 7x3 (21) |        
+| `bridge` | 4x2 (8) | 4x4 (16) | 3x3 (9) | 6x3 (18) | 7x3 (21) |
 | `american_mini` | 4x4 (16) | 9x4 (36) | 4x4 (16) | 9x4 (36) | 10x4 (40) |
 | `bridge_square` | 3x4 (12) | 4x7 (28) | 3x4 (12) | 4x6 (24) | 4x7 (28) |
-| `business` | 2x5 (10) | 4x5 (20) | 2x5 (10) | 3x7 (21) | 3x8 (24) |    
-| `catan` | 3x3 (9) | 7x3 (21) | 5x2 (10) | 7x3 (21) | 5x5 (25) |        
-| `credit` | 2x4 (8) | 4x4 (16) | 2x5 (10) | 3x7 (21) | 3x7 (21) |       
-| `domino` | 5x2 (10) | 5x4 (20) | 5x2 (10) | 8x3 (24) | 9x3 (27) |      
+| `business` | 2x5 (10) | 4x5 (20) | 2x5 (10) | 3x7 (21) | 3x8 (24) |
+| `catan` | 3x3 (9) | 7x3 (21) | 5x2 (10) | 7x3 (21) | 5x5 (25) |
+| `credit` | 2x4 (8) | 4x4 (16) | 2x5 (10) | 3x7 (21) | 3x7 (21) |
+| `domino` | 5x2 (10) | 5x4 (20) | 5x2 (10) | 8x3 (24) | 9x3 (27) |
 | `domino_square` | 4x5 (20) | 5x9 (45) | 4x5 (20) | 6x8 (48) | 6x9 (54) |
-| `euro_business` | 3x3 (9) | 3x7 (21) | 3x3 (9) | 3x7 (21) | 3x7 (21) | 
-| `euro_mini` | 4x3 (12) | 9x3 (27) | 6x2 (12) | 8x4 (32) | 9x4 (36) |   
-| `japanese` | 4x2 (8) | 4x4 (16) | 3x3 (9) | 6x3 (18) | 7x3 (21) |      
+| `euro_business` | 3x3 (9) | 3x7 (21) | 3x3 (9) | 3x7 (21) | 3x7 (21) |
+| `euro_mini` | 4x3 (12) | 9x3 (27) | 6x2 (12) | 8x4 (32) | 9x4 (36) |
+| `japanese` | 4x2 (8) | 4x4 (16) | 3x3 (9) | 6x3 (18) | 7x3 (21) |
 | `jumbo` | 2x1 (2) | 4x1 (4) | 3x1 (3) | 3x2 (6) | 3x3 (9) |
-| `micro` | 7x4 (28) | 7x9 (63) | 5x6 (30) | 11x6 (66) | 12x6 (72) |     
-| `mini` | 5x3 (15) | 8x4 (32) | 4x4 (16) | 8x4 (32) | 9x4 (36) |        
-| `standard_double` | 2x2 (4) | 4x2 (8) | 2x2 (4) | 3x3 (9) | 3x3 (9) |  
+| `micro` | 7x4 (28) | 7x9 (63) | 5x6 (30) | 11x6 (66) | 12x6 (72) |
+| `mini` | 5x3 (15) | 8x4 (32) | 4x4 (16) | 8x4 (32) | 9x4 (36) |
+| `standard_double` | 2x2 (4) | 4x2 (8) | 2x2 (4) | 3x3 (9) | 3x3 (9) |
 | `tarot` | 2x2 (4) | 5x2 (10) | 2x2 (4) | 5x2 (10) | 4x3 (12) |
-| `70mm_square` | 3x2 (6) | 5x3 (15) | 3x2 (6) | 5x3 (15) | 5x4 (20) |  
+| `70mm_square` | 3x2 (6) | 5x3 (15) | 3x2 (6) | 5x3 (15) | 5x4 (20) |
 
 The table below shows each card size, sorted by size.
 
@@ -106,9 +106,51 @@ The table below shows each paper size, sorted by size and standard.
 
 You can find all the cutting templates for Silhouette Studio in [`cutting_templates/`](cutting_templates/).
 
-## Donate
+## Plugins
 
-If you enjoyed using Silhouette Card Maker, consider [donating](https://www.paypal.com/donate/?hosted_button_id=ZH2XCSLXERBW8) to help support me and the project. Thank you!
+Plugins streamline the process for acquiring card images for various games.
+
+The [Magic: The Gathering plugin](plugins/mtg/README.md) supports various decklist formats, including **Archidekt**, **CubeCobra**, **Deckstats**, **MPCFill**, **MTGA**, **MTGO**, **Moxfield**, and **Scryfall** formats.
+
+The [Pokemon plugin](plugins/pokemon/README.md) supports **Limitless TCG** format.
+
+The [Yu-Gi-Oh! plugin](plugins/yugioh/README.md) supports **YDK** and **YDKE** formats.
+
+The [Altered plugin](plugins/altered/README.md) supports **Ajordat** format.
+
+The [Arkham Horror LCG plugin](plugins/arkham_horror_lcg/README.md) supports **ArkhamDB** format.
+
+The [Ashes Reborn plugin](plugins/ashes_reborn/README.md) supports **Ashes** and **Ashes DB** formats.
+
+The [Bushiroad plugin](plugins/bushiroad/README.md) supports **Bushiroad Deck Log** format for Cardfight Vanguard, Shadowverse: Evolve, Weiss Schwarz, Godzilla Card Game, and hololive.
+
+The [Digimon plugin](plugins/digimon/README.md) supports **Digimoncard.app**, **Digimoncard.dev**, **Digimoncard.io**, **DigimonMeta**, **Tabletop Simulator**, and **Untap** formats.
+
+The [Echoes of Astra plugin](plugins/echoes_of_astra/README.md) supports **AstraBuilder** format.
+
+The [Elestrals plugin](plugins/elestrals/README.md) supports **Elestrals** format.
+
+The [Final Fantasy plugin](plugins/final_fantasy/README.md) supports **OCTGN**, **Tabletop Simulator**, and **Untap** formats.
+
+The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
+
+The [Grand Archive plugin](plugins/grand_archive/README.md) supports **Omnideck** format.
+
+The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Egman Events**, **ExBurst**, and **Limitless TCG** formats.
+
+The [Lord of the Rings: Living Card Game plugin](plugins/lotr_lcg/README.md) supports **RingsDB decklists**, **RingsDB fellowships**, and **RingsDB scenarios**, using user-supplied local back scans.
+
+The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
+
+The [Netrunner plugin](plugins/netrunner/README.md) supports **bbCode** and **Jinteki** formats.
+
+The [One Piece plugin](plugins/one_piece/README.md) supports **Egman Events** and **OPTCG Simulator** formats.
+
+The [Riftbound plugin](plugins/riftbound/README.md) supports **Piltover Archive**, **Pixelborn**, and **Tabletop Simulator** formats.
+
+The [Sorcery: Contested Realm plugin](plugins/sorcery_contested_realm/README.md) supports **Curiosa** format.
+
+The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **Melee**, **Picklist**, and **SWUDB** formats.
 
 ## create_pdf.py
 `create_pdf.py` is a CLI tool that layouts your card images into a PDF with registration marks that can be cut out with the appropriate cutting template in [`cutting_templates/`](cutting_templates/).
@@ -157,49 +199,7 @@ python create_pdf.py --paper_size a4
 
 Get your PDF at `game/output/game.pdf`.
 
-### Plugins
-
-Plugins streamline the process for acquiring card images for various games.
-
-The [Magic: The Gathering plugin](plugins/mtg/README.md) supports various decklist formats, including **Archidekt**, **CubeCobra**, **Deckstats**, **MPCFill**, **MTGA**, **MTGO**, **Moxfield**, and **Scryfall** formats.
-
-The [Pokemon plugin](plugins/pokemon/README.md) supports **Limitless TCG** format.
-
-The [Yu-Gi-Oh! plugin](plugins/yugioh/README.md) supports **YDK** and **YDKE** formats.
-
-The [Altered plugin](plugins/altered/README.md) supports **Ajordat** format.
-
-The [Ashes Reborn plugin](plugins/ashes_reborn/README.md) supports **Ashes** and **Ashes DB** formats.
-
-The [Bushiroad plugin](plugins/bushiroad/README.md) supports **Bushiroad Deck Log** format for Cardfight Vanguard, Shadowverse: Evolve, Weiss Schwarz, Godzilla Card Game, and hololive.
-
-The [Digimon plugin](plugins/digimon/README.md) supports **Digimoncard.app**, **Digimoncard.dev**, **Digimoncard.io**, **DigimonMeta**, **Tabletop Simulator**, and **Untap** formats.
-
-The [Echoes of Astra plugin](plugins/echoes_of_astra/README.md) supports **AstraBuilder** format.
-
-The [Elestrals plugin](plugins/elestrals/README.md) supports **Elestrals** format.
-
-The [Final Fantasy plugin](plugins/final_fantasy/README.md) supports **OCTGN**, **Tabletop Simulator**, and **Untap** formats.
-
-The [Flesh and Blood plugin](plugins/flesh_and_blood/README.md) supports **Fabrary** format.
-
-The [Grand Archive plugin](plugins/grand_archive/README.md) supports **Omnideck** format.
-
-The [Gundam plugin](plugins/gundam/README.md) supports **DeckPlanet**, **Egman Events**, **ExBurst**, and **Limitless TCG** formats.
-
-The [Lorcana plugin](plugins/lorcana/README.md) supports **Dreamborn** format.
-
-The [Lord of the Rings: Living Card Game plugin](plugins/lotr_lcg/README.md) supports **RingsDB decklists**, **RingsDB fellowships**, and **RingsDB scenarios**, using user-supplied local back scans.
-
-The [Netrunner plugin](plugins/netrunner/README.md) supports **bbCode** and **Jinteki** formats.
-
-The [One Piece plugin](plugins/one_piece/README.md) supports **Egman Events** and **OPTCG Simulator** formats.
-
-The [Riftbound plugin](plugins/riftbound/README.md) supports **Piltover Archive**, **Pixelborn**, and **Tabletop Simulator** formats.
-
-The [Sorcery: Contested Realm plugin](plugins/sorcery_contested_realm/README.md) supports **Curiosa** format.
-
-The [Star Wars Unlimited plugin](plugins/star_wars_unlimited/README.md) supports **Melee**, **Picklist**, and **SWUDB** formats.
+**Note:** When printing the PDF with duplex printing (double-sided), use **long side flip** (flip on long edge) to ensure proper front and back alignment.
 
 ### Double-Sided Cards
 
@@ -207,14 +207,39 @@ To create double-sided cards, put front images in the `game/front/` folder and b
 
 ### Corner Artifacts
 
-If your card images have rounded corners, they may be missing print bleed in the PDF. Because of the missing print bleed, when the cards are cut, they may have a sliver of white on the corners.
+If your card images have rounded corners, they they may be missing print bleed in the PDF. Because of the missing bleed, when the cards are cut, they may have a sliver of white on the corners.
 
 ![Extend corners](hugo/static/images/extend_corners.jpg)
 
-The `--extend_corners` option can ameliorate this issue. You may need to experiment with the value but I recommend starting with `10`
+The `--extend_corners` option can ameliorate this issue by filling the corner regions beyond the corner radius arc with pixels sampled from the arc edge. This generates bleed that matches the rounded corners.
 
 ```sh
-python create_pdf.py --extend_corners 10
+python create_pdf.py --extend_corners 3.5mm
+```
+
+You may need to experiment with the corner radius value, but `3.5mm` is a good starting point for standard playing cards.
+
+### Edge Artifacts
+
+If your print bleed does not match your card image, then there may be an issue with your your card image.
+
+This typically occurs when there is a thin border (often 1 pixel) on one or more sides of your card image. The border is difficult to see but because the print bleed is generated from the border, the print bleed will not match the card image.
+
+```sh
+python create_pdf.py --extend_edges 3
+```
+
+You may need to experiment with the corner radius value, but `3` (pixels) is a good starting point for standard playing cards.
+
+## Extended Outer Bleed
+
+The distance between cards in a layout is fixed at 1.25 mm. However, extending the outer bleed of the outer cards can reduce the possibility of white edges appearing on cut cards.
+
+The `--extend_bleed` option extends the bleed on the outer edges of outer cards on **front pages** (odd-numbered pages), while `--extend_bleed_backs` extends the bleed on **back pages** (even-numbered pages).
+
+```sh
+python create_pdf.py --extend_bleed 2mm
+python create_pdf.py --extend_bleed_backs 2mm
 ```
 
 ### Skip Cards
@@ -237,6 +262,26 @@ python create_pdf.py --skip 0
 
 ![Skip back](hugo/static/images/skip_back.png)
 
+### Registration Marks
+
+`create_pdf.py` generates the 3-corner registration mark pattern by default.
+
+The release of the **Silhouette Cameo 5 Alpha** also introduced the new 4-corner registration mark pattern.
+
+To generate a PDF with the new 4-corner registration mark pattern, use the `--registration` option.
+
+```sh
+python create_pdf.py --registration 4
+```
+
+However, Silhouette Cameo 5 Alpha users can still use the 3-corner registration mark pattern by setting machine to **Cameo 5** in Silhouette Studio.
+
+To use a different registration mark orientation than the card layout, use the `--registration_orientation` option. This can be useful when printing a landscape card layout on paper loaded as portrait.
+
+```sh
+python create_pdf.py --registration_orientation portrait
+```
+
 ### CLI Options
 
 ```
@@ -244,44 +289,69 @@ Usage: create_pdf.py [OPTIONS]
 
 Options:
   --front_dir_path TEXT           The path to the directory containing the
-                                  card fronts.  [default: game\front]
+                                  card fronts.  [default: game/front]
   --back_dir_path TEXT            The path to the directory containing one or
-                                  more card backs.  [default: game\back]
+                                  more card backs.  [default: game/back]
   --double_sided_dir_path TEXT    The path to the directory containing card
                                   backs for double-sided cards.  [default:
-                                  game\double_sided]
+                                  game/double_sided]
   --output_path TEXT              The desired path to the output PDF.
-                                  [default: game\output\game.pdf]
+                                  [default: game/output/game.pdf]
   --output_images                 Create images instead of a PDF.
   --card_size [standard|poker|bridge|american_mini|bridge_square|business|catan|credit|domino|domino_square|euro_business|euro_mini|euro_poker|japanese|jumbo|micro|mini|mini_american|mini_euro|photo|standard_double|tarot|70mm_square]
                                   The desired card size.  [default: standard]
   --paper_size [letter|tabloid|a4|a3|arch_b|ansi_a|ansi_b]
                                   The desired paper size.  [default: letter]
-  --registration [3|4]            The desired registration.  [default: 3]
-  --only_fronts                   Only use the card fronts, exclude the card
-                                  backs.
-  --fit [stretch|crop]            How to fit images to card size. 'stretch'
-                                  allows distortion, 'crop' preserves aspect
-                                  ratio by center-cropping.  [default:
-                                  stretch]
-  --crop TEXT                     Crop the outer portion of front and double-
-                                  sided images. Examples: 3mm, 0.125in, 6.5.
-  --crop_backs TEXT               Crop the outer portion of back images.
-                                  Examples: 3mm, 0.125in, 6.5.
-  --extend_corners INTEGER RANGE  Reduce artifacts produced by rounded corners
-                                  in card images.  [default: 0; x>=0]
+  --registration [3|4]            The desired registration pattern.  [default:
+                                  3]
+  --registration_orientation [portrait|landscape]
+                                  Override the registration mark orientation
+                                  without changing the card layout.
+  --specialty [a4-commander|letter-commander]
+                                  Use a specialty layout. Overrides card_size,
+                                  paper_size, and registration settings.
+  --only_fronts                   Only generate front pages.
+  --fit [stretch|crop]            How to fit front and double-sided images to
+                                  card size. 'stretch' allows distortion,
+                                  'crop' preserves aspect ratio by center-
+                                  cropping.  [default: stretch]
+  --fit_backs [stretch|crop]      How to fit back images to card size.
+                                  'stretch' allows distortion, 'crop'
+                                  preserves aspect ratio by center-cropping.
+  --crop TEXT                     Crop card edges of front and double-sided
+                                  images (removes edges). Examples: 3mm,
+                                  0.125in, 6.5.
+  --crop_backs TEXT               Crop card edges of back images (removes
+                                  edges). Examples: 3mm, 0.125in, 6.5.
+  --extend_edges TEXT             Crop card edges and extend them for front
+                                  and double-sided images. Examples: 3mm,
+                                  0.125in.
+  --extend_edges_backs TEXT       Crop card edges and extend them for back
+                                  images only. Examples: 3mm, 0.125in.
+  --extend_corners TEXT           Extend rounded corner regions to reduce
+                                  corner artifacts for front and double-sided
+                                  images. Examples: 3mm, 0.125in.
+  --extend_corners_backs TEXT     Extend rounded corner regions to reduce
+                                  corner artifacts for back images only.
+                                  Examples: 3mm, 0.125in.
+  --extend_bleed TEXT             Extend the outer bleed of outer cards on
+                                  front pages (odd-numbered pages). Examples:
+                                  3mm, 0.125in.
+  --extend_bleed_backs TEXT       Extend the outer bleed of outer cards on
+                                  back pages (even-numbered pages). Examples:
+                                  3mm, 0.125in.
   --ppi INTEGER RANGE             Pixels per inch (PPI) when creating PDF.
                                   [default: 300; x>=0]
-  --quality INTEGER RANGE         File compression. A higher value corresponds
-                                  to better quality and larger file size.
-                                  [default: 100; 0<=x<=100]
+  --quality INTEGER RANGE         File compression quality.  [default: 100;
+                                  0<=x<=100]
   --load_offset                   Apply saved offsets. See `offset_pdf.py` for
                                   more information.
   --skip INTEGER RANGE            Skip a card based on its index. Useful for
                                   registration issues. Examples: 0, 4.  [x>=0]
   --label TEXT                    Apply a custom label to each page.
-  --show_outline                  Overlay a black outline of the cutting path
-                                  on each page.
+  --show_outline                  Show a white outline for cutting paths.
+  --borderless                    Use tighter inset to fit more cards per
+                                  page.
   --version                       Show the version and exit.
   --help                          Show this message and exit.
 ```
@@ -300,10 +370,10 @@ Crop the borders of the front and double-sided images by 3 mm on all sides. This
 python create_pdf.py --crop 3mm
 ```
 
-Remove the [rounded corners](#corner-artifacts) from the PDF and load the saved offset from [`offset_pdf.py`](#offset_pdfpy).
+Remove the [rounded corner artifacts](#corner-artifacts) and load the saved offset from [`offset_pdf.py`](#offset_pdfpy).
 
 ```sh
-python create_pdf.py --extend_corners 10 --load_offset
+python create_pdf.py --extend_corners 3.5mm --load_offset
 ```
 
 Produce a 600 pixels per inch (PPI) file with minimal compression.
@@ -322,7 +392,7 @@ It's pivotal to ensure that your card fronts and backs are aligned. The front an
 
 First, you must determine the offset by using the [calibration sheets](calibration/).
 
-`<paper size>_calibration.pdf` has a front page and a back page.
+`<paper size>-calibration.pdf` has a front page and a back page.
 
 ![Calibration](hugo/static/images/calibration.png)
 
@@ -342,7 +412,7 @@ The back page is the same grid of squares, except each square has a slight offse
 | (-2, -2) | (-1, -2) | ( 0, -2) | ( 1, -2) | ( 2, -2) |
 ```
 
-To determine the required offset, print out `<paper size>_calibration.pdf` with the card stock you plan to use.
+To determine the required offset, print out `<paper size>-calibration.pdf` with the card stock you plan to use.
 
 Shine a strong light on the front so you can see the shadows on the back. Determine which set of front and back squares are aligned. This set will provide your offset.
 
@@ -367,10 +437,10 @@ If no square on your calibration sheet matches, then you'll need to create a new
 To create an offset calibration sheet, use the `--pdf_path` option, targeting the calibration sheet of your paper size. For example:
 
 ```sh
-python offset_pdf.py --pdf_path calibration/letter_calibration.pdf --x_offset 30 --y_offset -10
+python offset_pdf.py --pdf_path calibration/letter-calibration.pdf --x_offset 30 --y_offset -10
 ```
 
-This will produce `calibration/letter_calibration_offset.pdf`, which is the same as calibration sheet but with an offset of (30, -10).
+This will produce `calibration/letter-calibration_offset.pdf`, which is the same as calibration sheet but with an offset of (30, -10).
 
 Print this out and determine which set of front and back squares are aligned. If none are aligned, try generating another offset calibration sheet with a different arbitrary offset.
 
@@ -382,10 +452,10 @@ Let's say there is a set of a front and back squares and the offset is (5, 5). Y
 
 The true offset if (35, -5).
 
-You can verify this is true by generating a offset calibration sheet using this offset.
+You can verify this is true by generating an offset calibration sheet using this offset.
 
 ```sh
-python offset_pdf.py --pdf_path calibration/letter_calibration.pdf --x_offset 35 --y_offset -5
+python offset_pdf.py --pdf_path calibration/letter-calibration.pdf --x_offset 35 --y_offset -5
 ```
 
 Print this out and the center set of front and back squares, (0, 0), should be aligned.
@@ -432,3 +502,7 @@ Options:
 ```sh
 python clean_up.py
 ```
+
+## Donate
+
+If you enjoyed using Silhouette Card Maker, consider [donating](https://www.paypal.com/donate/?hosted_button_id=ZH2XCSLXERBW8) to help support the project. Thank you!

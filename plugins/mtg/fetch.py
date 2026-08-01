@@ -4,7 +4,8 @@ import sys
 import click
 
 # Add parent directory to path to allow imports when run as a script
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, REPO_ROOT)
 
 from plugins.mtg.common import ScryfallLanguage
 from plugins.mtg.deck_formats import DeckFormat, parse_deck, extract_mpcfill_card_ids
@@ -12,8 +13,8 @@ from plugins.mtg.scryfall import get_handle_card as scryfall_get_handle_card
 from plugins.mtg.mpcfill import get_handle_card as mpc_get_handle_card, prefetch_mpcfill
 from utilities import ensure_directory
 
-front_directory = os.path.join('game', 'front')
-double_sided_directory = os.path.join('game', 'double_sided')
+front_directory = os.path.join(REPO_ROOT, 'game', 'front')
+double_sided_directory = os.path.join(REPO_ROOT, 'game', 'double_sided')
 
 @click.command()
 @click.argument('deck_path')

@@ -1,5 +1,5 @@
 from os import path
-from requests import Response, get
+from requests import Response, Session
 from time import sleep
 from enum import Enum
 from re import sub
@@ -11,8 +11,10 @@ class ImageServer(str, Enum):
     ASHES   = 'ashes'
     ASHESDB = 'ashesdb'
 
+session = Session()
+
 def request_ashes(query: str) -> Response:
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()

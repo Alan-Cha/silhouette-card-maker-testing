@@ -1,8 +1,10 @@
 from os import path
-from requests import Response, get, post
+from requests import Response, Session
 from time import sleep
 
 FFTCG_CARD_API_URL = 'https://fftcg.square-enix-games.com/na/get-cards'
+
+session = Session()
 
 def get_card_art_from_fftcg(card_name: str, serial_code: str, category: str = '') -> str:
     card_payload = {
@@ -23,7 +25,7 @@ def get_card_art_from_fftcg(card_name: str, serial_code: str, category: str = ''
         'special': '',
         'exactmatch': 1
     }
-    r = post(FFTCG_CARD_API_URL, json=card_payload, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.post(FFTCG_CARD_API_URL, json=card_payload, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()
@@ -42,7 +44,7 @@ def get_card_art_from_fftcg(card_name: str, serial_code: str, category: str = ''
     return cards[0].get('images').get('full')[0]
 
 def request_fftcg(query: str) -> Response:
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()

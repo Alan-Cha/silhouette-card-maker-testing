@@ -180,6 +180,16 @@ class TestSwudbAPI:
         assert name != ""
         assert title == ""
 
+    def test_fetch_name_and_title_with_special_characters(self):
+        """Test fetching card name and title with special characters like '?'.
+
+        This tests the URL encoding fix for cards like "Bib Fortuna | Die Wanna Wanga?"
+        which have question marks or other special characters in the title.
+        """
+        name, title = fetch_name_and_title("LAW_134")
+        assert name == "Bib Fortuna"
+        assert title == "Die Wanna Wanga?"
+
 
 @pytest.mark.integration
 class TestFullFetchWorkflow:
@@ -278,3 +288,24 @@ class TestFullFetchWorkflow:
 
         # Both sides should share the same filename (matched by index/name)
         assert front_files[0] == back_files[0]
+
+    def test_fetch_card_with_special_characters_in_title(self, temp_dirs):
+        """Test fetching a card with special characters (?, &, etc.) in the title.
+
+        This is a regression test for the bug where cards like "Bib Fortuna | Die Wanna Wanga?"
+        would fail to fetch because the '?' wasn't being URL-encoded in the API query.
+        """
+        front_dir, double_sided_dir = temp_dirs
+
+        deck_text = """Deck
+1 | Bib Fortuna | Die Wanna Wanga?"""
+
+        handle_card = get_handle_card(front_dir, double_sided_dir)
+        parse_deck(deck_text, DeckFormat.MELEE, handle_card)
+
+        files = os.listdir(front_dir)
+        assert len(files) >= 1, "Card with '?' in title should be fetched successfully"
+
+        for f in files:
+            file_path = os.path.join(front_dir, f)
+            assert os.path.getsize(file_path) > 0, "Fetched image should have content"

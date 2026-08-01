@@ -1,8 +1,10 @@
 from os import path
-from requests import Response, get
+from requests import Response, Session
 from time import sleep
 from re import sub
 from unicodedata import normalize, category
+
+session = Session()
 
 NETRUNNERDB_SET_URL_TEMPLATE = 'https://api-preview.netrunnerdb.com/api/v3/public/card_sets/{set_name}'
 NETRUNNERDB_URL_TEMPLATE = 'https://api-preview.netrunnerdb.com/api/v3/public/cards/{card_name}'
@@ -11,7 +13,7 @@ NRO_PROXY_URL_TEMPLATE = 'https://nro-public.s3.nl-ams.scw.cloud/nro/card-printi
 OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}.png'
 
 def request_api(query: str) -> Response:
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()

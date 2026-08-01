@@ -1,5 +1,5 @@
 from os import path
-from requests import get
+from requests import Session
 from time import sleep
 from json import dumps
 import re
@@ -8,6 +8,8 @@ def remove_nonalphanumeric(s: str) -> str:
     return re.sub(r'[^\w]', '', s)
 
 CURIOSA_API_BASE = 'https://curiosa.io/api/trpc/'
+
+session = Session()
 CURIOSA_REFERER = 'https://curiosa.io/'
 
 DECK_ENDPOINTS = [

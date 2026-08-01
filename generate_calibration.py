@@ -11,13 +11,16 @@ front and back dot positions to measure and correct printer misalignment.
 import math
 import os
 import re
+from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 import size_convert
 from utilities import load_layout_config
 
 # Specify directory locations
-asset_directory = 'assets'
+# Use Path(__file__).parent to ensure paths work regardless of where script is run from
+SCRIPT_DIR = Path(__file__).parent
+asset_directory = SCRIPT_DIR / 'assets'
 
 # Static distance from page margin used for all page labels and axis text
 MARGIN = 150

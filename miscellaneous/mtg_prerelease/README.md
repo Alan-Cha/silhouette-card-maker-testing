@@ -12,7 +12,7 @@ You can apply foil to either proxies or genuine cards.
 
 Additionally, you can use the Print and Cut feature to align the date stamp as well.
 
-## Supply list
+## Supply List
 
 Silhouette heat pens are compatiable with Cameo 5, Cameo 5 Plus, Cameo Pro (Mark 2), Portrait 4, and Curio 2.
 

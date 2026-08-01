@@ -1,9 +1,11 @@
 from os import path
-from requests import Response, get
+from requests import Response, Session
 from time import sleep
 import re
 
 ASTRA_DECK_URL_TEMPLATE = 'https://pphqxjttokwymgemkqvh.supabase.co/rest/v1/decks?select=id,is_public,deck_cards(quantity,cards(*))&id=eq.{deck_id}'
+
+session = Session()
 
 # Supabase public/anon key - this is intentionally public and safe to commit.
 # It only provides read access to public decks via Row Level Security (RLS).
@@ -17,7 +19,7 @@ def get_astra_deck(deck_id: str):
     }
 
     url = ASTRA_DECK_URL_TEMPLATE.format(deck_id=deck_id)
-    resp = get(url, headers=headers, timeout=20)
+    resp = session.get(url, headers=headers, timeout=20)
     resp.raise_for_status()
     data = resp.json()
 
@@ -26,7 +28,7 @@ def get_astra_deck(deck_id: str):
     return decklist
 
 def request_astra(query: str) -> Response:
-    r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+    r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
 
     # Check for 2XX response code
     r.raise_for_status()

@@ -3,13 +3,14 @@ from os import path
 from click import command, argument, Choice, option
 
 # Add parent directory to path to allow imports when run as a script
-sys.path.insert(0, path.join(path.dirname(__file__), '..', '..'))
+REPO_ROOT = path.abspath(path.join(path.dirname(__file__), '..', '..'))
+sys.path.insert(0, REPO_ROOT)
 
 from plugins.ashes_reborn.deck_formats import DeckFormat, parse_deck
 from plugins.ashes_reborn.ashes import get_handle_card, ImageServer
 from utilities import ensure_directory
 
-front_directory = path.join('game', 'front')
+front_directory = path.join(REPO_ROOT, 'game', 'front')
 
 @command()
 @argument('deck_path')

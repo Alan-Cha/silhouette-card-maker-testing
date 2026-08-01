@@ -4,13 +4,14 @@ import sys
 import click
 
 # Add parent directory to path to allow imports when run as a script
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, REPO_ROOT)
 
 from plugins.lorcana.deck_formats import DeckFormat, parse_deck
 from plugins.lorcana.lorcast import get_handle_card
 from utilities import ensure_directory
 
-front_directory = os.path.join('game', 'front')
+front_directory = os.path.join(REPO_ROOT, 'game', 'front')
 
 @click.command()
 @click.argument('deck_path')

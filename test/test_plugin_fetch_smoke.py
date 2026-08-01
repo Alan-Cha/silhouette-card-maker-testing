@@ -16,6 +16,7 @@ from click.testing import CliRunner
 # List of all plugins with their fetch modules and supported formats
 PLUGINS = [
     ('altered', 'plugins.altered.fetch', ['ajordat']),
+    ('arkham_horror_lcg', 'plugins.arkham_horror_lcg.fetch', ['arkhamdb_json']),
     ('ashes_reborn', 'plugins.ashes_reborn.fetch', ['ashes']),
     ('bushiroad', 'plugins.bushiroad.fetch', ['bushiroad']),
     ('digimon', 'plugins.digimon.fetch', ['digimon']),

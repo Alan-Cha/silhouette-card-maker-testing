@@ -8,7 +8,7 @@ weight: 10
 ## Equipment
 
 * [Cutting machine (Cameo 5 Alpha)](https://www.silhouetteamerica.com/silhouette-cameo-5-alpha?affiliate_code=uKx6VtFWmI&referring_service=link) (coupon code: `DIYBOARDGAMES`) / [Amazon alternative](https://amzn.to/3K7NJtF)
-* [Laminator](https://www.amazon.com/dp/B0F6N8TXFK?ref=t_ac_view_request_product_image&campaignId=amzn1.campaign.1FDU7KAU45M7O&linkCode=tr1&tag=alansmarke01f-20&linkId=amzn1.campaign.1FDU7KAU45M7O_1764700659395)
+* [Laminator](https://www.amazon.com/dp/B0F6N8TXFK?ref=t_ac_view_request_product_image&campaignId=amzn1.campaign.ET52GHJDS39S&linkCode=tr1&tag=alansmarke01f-20&linkId=amzn1.campaign.ET52GHJDS39S_1777295175439)
 * Printer
 * [Printer cable (USB 2.0)](https://amzn.to/4jeHsrI)
 * Computer

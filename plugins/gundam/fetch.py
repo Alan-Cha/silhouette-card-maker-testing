@@ -3,14 +3,15 @@ from os import path
 from click import command, argument, Choice
 
 # Add parent directory to path to allow imports when run as a script
-sys.path.insert(0, path.join(path.dirname(__file__), '..', '..'))
+REPO_ROOT = path.abspath(path.join(path.dirname(__file__), '..', '..'))
+sys.path.insert(0, REPO_ROOT)
 
 from plugins.gundam.deck_formats import DeckFormat, parse_deck
 from plugins.gundam.gundam import get_handle_card
 from utilities import ensure_directory
 
-front_directory = path.join('game', 'front')
-double_sided_directory = path.join('game', 'double_sided')
+front_directory = path.join(REPO_ROOT, 'game', 'front')
+double_sided_directory = path.join(REPO_ROOT, 'game', 'double_sided')
 
 @command()
 @argument('deck_path')

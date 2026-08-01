@@ -1,6 +1,6 @@
 from os import path
 from io import BytesIO
-from requests import Response, get
+from requests import Response, Session
 from time import sleep
 from PIL import Image
 from re import sub
@@ -8,6 +8,8 @@ from unicodedata import normalize, category
 from enum import Enum
 
 DECK_API_URL = 'https://decklog-en.bushiroad.com/system/app/api/view/{deck_code}'
+
+session = Session()
 
 class GameTitle(str, Enum):
     CARDFIGHT_VANGUARD = 'Cardfight Vanguard'
@@ -34,9 +36,9 @@ game_image_url_mapping = {
 
 def request_bushiroad(query: str, referer: str = '') -> Response:
     if referer == '':
-        r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
+        r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
     else:
-        r = get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*', 'referer': referer})
+        r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*', 'referer': referer})
 
     # Check for 2XX response code
     r.raise_for_status()
