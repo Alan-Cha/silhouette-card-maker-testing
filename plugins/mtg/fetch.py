@@ -7,6 +7,7 @@ import click
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, REPO_ROOT)
 
+from plugins.mtg import remote
 from plugins.mtg.common import ScryfallLanguage
 from plugins.mtg.deck_formats import DeckFormat, parse_deck, extract_mpcfill_card_ids
 from plugins.mtg.scryfall import get_handle_card as scryfall_get_handle_card
@@ -94,6 +95,8 @@ def cli(
         front_directory,
         double_sided_directory,
     )
+
+    remote.cache_trim()
 
 if __name__ == '__main__':
     cli()
