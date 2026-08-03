@@ -1,8 +1,11 @@
+from io import BytesIO
 from os import path
 from requests import Response, Session
 from time import sleep
 from re import sub
 from unicodedata import normalize, category
+
+from PIL import Image
 
 session = Session()
 
@@ -41,16 +44,17 @@ def fetch_card(
 
     # Get the latest printing id
     latest_print_id = json.get('data').get('attributes').get('latest_printing_id')
-    card_art = request_api(NRO_PROXY_URL_TEMPLATE.format(print_id=latest_print_id)).content
+    card_art_bytes = request_api(NRO_PROXY_URL_TEMPLATE.format(print_id=latest_print_id)).content
 
-    if card_art is not None:
+    if card_art_bytes is not None:
+        # Decode the webp image and convert it to a real PNG
+        card_art = Image.open(BytesIO(card_art_bytes)).convert('RGBA')
 
         # Save image based on quantity
         for counter in range(quantity):
             image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=sanitized, quantity_counter=str(counter+1)))
 
-            with open(image_path, 'wb') as f:
-                f.write(card_art)
+            card_art.save(image_path, format='PNG')
 
 def is_valid_set(set_name: str) -> bool:
     # Attempt to query for set info
