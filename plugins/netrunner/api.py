@@ -6,8 +6,8 @@ from unicodedata import normalize, category
 
 session = Session()
 
-NETRUNNERDB_SET_URL_TEMPLATE = 'https://api-preview.netrunnerdb.com/api/v3/public/card_sets/{set_name}'
-NETRUNNERDB_URL_TEMPLATE = 'https://api-preview.netrunnerdb.com/api/v3/public/cards/{card_name}'
+NETRUNNERDB_SET_URL_TEMPLATE = 'https://api.netrunnerdb.com/api/v3/public/card_sets/{set_name}'
+NETRUNNERDB_URL_TEMPLATE = 'https://api.netrunnerdb.com/api/v3/public/cards/{card_name}'
 NRO_PROXY_URL_TEMPLATE = 'https://nro-public.s3.nl-ams.scw.cloud/nro/card-printings/v2/webp/english/card/{print_id}.webp'
 
 OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}.png'
