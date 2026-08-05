@@ -30,6 +30,7 @@ for _stream in (sys.stdout, sys.stderr):
             _stream.reconfigure(encoding='utf-8', errors='backslashreplace')
         except Exception:
             pass
+del _stream
 
 # Specify directory locations
 # Use Path(__file__).parent to ensure paths work regardless of where script is run from
