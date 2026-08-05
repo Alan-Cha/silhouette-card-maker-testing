@@ -1,11 +1,10 @@
-from io import BytesIO
 from os import path
 from requests import Response, Session
 from time import sleep
 from re import sub
 from unicodedata import normalize, category
 
-from PIL import Image
+import filetype
 
 session = Session()
 
@@ -13,7 +12,7 @@ NETRUNNERDB_SET_URL_TEMPLATE = 'https://api.netrunnerdb.com/api/v3/public/card_s
 NETRUNNERDB_URL_TEMPLATE = 'https://api.netrunnerdb.com/api/v3/public/cards/{card_name}'
 NRO_PROXY_URL_TEMPLATE = 'https://nro-public.s3.nl-ams.scw.cloud/nro/card-printings/v2/webp/english/card/{print_id}.webp'
 
-OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}.png'
+OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}{extension}'
 
 def request_api(query: str) -> Response:
     r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
@@ -47,14 +46,17 @@ def fetch_card(
     card_art_bytes = request_api(NRO_PROXY_URL_TEMPLATE.format(print_id=latest_print_id)).content
 
     if card_art_bytes is not None:
-        # Decode the webp image and convert it to a real PNG
-        card_art = Image.open(BytesIO(card_art_bytes)).convert('RGBA')
+        # The NRO proxy serves WebP; detect the real type rather than assuming .png,
+        # so the file extension always matches its actual content.
+        kind = filetype.guess(card_art_bytes)
+        extension = f'.{kind.extension}' if kind else '.png'
 
         # Save image based on quantity
         for counter in range(quantity):
-            image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=sanitized, quantity_counter=str(counter+1)))
+            image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=sanitized, quantity_counter=str(counter+1), extension=extension))
 
-            card_art.save(image_path, format='PNG')
+            with open(image_path, 'wb') as f:
+                f.write(card_art_bytes)
 
 def is_valid_set(set_name: str) -> bool:
     # Attempt to query for set info
