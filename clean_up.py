@@ -2,9 +2,33 @@
 import os
 import shutil
 
+VALID_IMAGE_EXTENSIONS = (
+    # ".vnd.dwg",
+    # ".x-xcf",
+    ".jpeg",
+    ".jpg",
+    ".jpx",
+    # ".jxl",
+    ".png",
+    ".apng",
+    ".gif",
+    ".webp",
+    # ".x-canon-cr2",
+    ".tiff",
+    ".bmp",
+    # ".vnd.ms-photo",
+    # ".vnd.adobe.photoshop",
+    # ".x-icon",
+    # ".heic",
+    ".avif",
+    ".qoi",
+    ".dds",
+)
+
+
 def delete_files():
-    root_path = 'game'
-    image_folders = ['front', 'double_sided']
+    root_path = "game"
+    image_folders = ["front", "double_sided"]
     i = 0
 
     for folder_name in image_folders:
@@ -13,19 +37,20 @@ def delete_files():
         for item in os.listdir(working_path):
             full_path = os.path.join(working_path, item)
 
-            if os.path.basename(full_path) == 'EMPTY.md':
+            if os.path.splitext(full_path)[1].lower() not in VALID_IMAGE_EXTENSIONS:
                 continue
 
             if os.path.isfile(full_path):
                 os.remove(full_path)
-                print(f'Deleted file {full_path}')
+                print(f"Deleted file {full_path}")
                 i += 1
             elif os.path.isdir(full_path):
                 shutil.rmtree(full_path)
-                print(f'Deleted directory {full_path}')
+                print(f"Deleted directory {full_path}")
                 i += 1
 
-    print(f'Deleted {i} item{"s" if i != 1 else ""}')
+    print(f"Deleted {i} item{'s' if i != 1 else ''}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     delete_files()

@@ -8,7 +8,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from plugins.ashes_reborn.deck_formats import DeckFormat, parse_deck
 from plugins.ashes_reborn.ashes import get_handle_card, ImageServer
-from utilities import ensure_directory
+from src.paths import ensure_directory
 
 front_directory = path.join(REPO_ROOT, 'game', 'front')
 

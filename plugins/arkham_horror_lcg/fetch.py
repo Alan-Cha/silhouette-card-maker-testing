@@ -9,7 +9,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from plugins.arkham_horror_lcg.deck_formats import DeckFormat, parse_deck
 from plugins.arkham_horror_lcg.api import get_handle_card
-from utilities import ensure_directory
+from src.paths import ensure_directory
 
 front_directory = os.path.join(REPO_ROOT, 'game', 'front')
 double_sided_directory = os.path.join(REPO_ROOT, 'game', 'double_sided')

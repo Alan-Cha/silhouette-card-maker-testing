@@ -14,8 +14,8 @@ import re
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-import size_convert
-from utilities import load_layout_config
+from src import measurements
+from src.layouts import load_layout_config
 
 # Specify directory locations
 # Use Path(__file__).parent to ensure paths work regardless of where script is run from
@@ -28,8 +28,8 @@ MARGIN = 150
 layout_config = load_layout_config()
 
 for paper_size, paper_def in layout_config.paper_sizes.items():
-    print_width = size_convert.size_to_pixel(paper_def.width, layout_config.ppi)
-    print_height = size_convert.size_to_pixel(paper_def.height, layout_config.ppi)
+    print_width = measurements.size_to_pixel(paper_def.width, layout_config.ppi)
+    print_height = measurements.size_to_pixel(paper_def.height, layout_config.ppi)
 
     # Generate a blank white base image
     im = Image.new('RGB', (print_width, print_height), 'white')

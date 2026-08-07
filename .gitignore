@@ -3,29 +3,29 @@
 venv
 __pycache__
 
-game/back/*
+game/back/**
 !game/back/README.md
-game/front/*
+game/front/**
 !game/front/README.md
-game/double_sided/*
+game/double_sided/**
 !game/double_sided/README.md
-game/output/*
+game/output/**
 !game/output/README.md
-game/decklist/*
+game/decklist/**
 !game/decklist/README.md
 
 data
 
 images/*.xcf
 
-test/*/output/*
+test/*/output/**
 !test/*/output/README.md
 
 # DXF files are generated artifacts, only commit .studio3 files
 cutting_templates/dxf/
 cutting_templates/borderless/dxf/
 
-assets/extra_layouts/*
+assets/extra_layouts/**
 !assets/extra_layouts/README.md
 
 hugo/public/

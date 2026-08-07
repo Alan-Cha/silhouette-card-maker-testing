@@ -2,7 +2,7 @@
 name = "silhouette-card-maker"
 version = "1.6.0"
 description = "Card maker tool for Silhouette cutting machines"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]

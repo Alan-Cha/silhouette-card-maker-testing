@@ -25,11 +25,25 @@ from pathlib import Path
 
 import click
 
-import page_manager
+from src import page_manager
+from src.page_manager import BORDERLESS_EXPANSION_MM
 import dxf_manager
-import size_convert
-from enums import Orientation, OrientationMode, Variant
-from utilities import LayoutConfig, load_layout_config, template_name, resolve_card_size_alias, resolve_paper_size_alias, get_all_card_size_names, get_all_paper_size_names, find_best_orientation, resolve_cutting_templates_dir, extra_layout_paths, find_extra_layout_owner, BORDERLESS_INSET_MM, BORDERLESS_EXPANSION_MM
+from src import measurements
+from src.enums import Orientation, OrientationMode, Variant
+
+from src.layouts import (
+    LayoutConfig,
+    load_layout_config,
+    resolve_card_size_alias,
+    resolve_paper_size_alias,
+    resolve_cutting_templates_dir,
+    get_all_card_size_names,
+    get_all_paper_size_names,
+    find_extra_layout_owner,
+    extra_layout_paths,
+)
+
+from src.pdf import create_template_name, find_best_orientation
 
 SCRIPT_DIR = Path(__file__).parent
 CUTTING_TEMPLATES_DIR = resolve_cutting_templates_dir(SCRIPT_DIR / "cutting_templates")
@@ -48,9 +62,17 @@ def borderless_fits_12x24_mat(paper_width: str, paper_height: str) -> bool:
     This restriction will be lifted in the future by always leaving constrain OFF
     and assuming portrait mat orientation, which is consistent across all mat types.
     """
-    virtual_w_in = (size_convert.size_to_mm(paper_width) + BORDERLESS_EXPANSION_MM) / 25.4
-    virtual_h_in = (size_convert.size_to_mm(paper_height) + BORDERLESS_EXPANSION_MM) / 25.4
-    return min(virtual_w_in, virtual_h_in) <= 12.0 and max(virtual_w_in, virtual_h_in) <= 24.0
+    virtual_w_in = (
+        measurements.size_to_mm(paper_width) + BORDERLESS_EXPANSION_MM
+    ) / 25.4
+    virtual_h_in = (
+        measurements.size_to_mm(paper_height) + BORDERLESS_EXPANSION_MM
+    ) / 25.4
+    return (
+        min(virtual_w_in, virtual_h_in) <= 12.0
+        and max(virtual_w_in, virtual_h_in) <= 24.0
+    )
+
 
 layout_config = load_layout_config()
 card_size_choices = get_all_card_size_names(layout_config)
@@ -83,7 +105,9 @@ def generate_single_dxf(
     orientation = layout_def.orientation
     version = layout_def.version
 
-    total_length_mm = size_convert.size_to_mm(variant_reg.length) + page_manager.REG_PADDING_MM
+    total_length_mm = (
+        measurements.size_to_mm(variant_reg.length) + page_manager.REG_PADDING_MM
+    )
     computed = page_manager.generate_layout(
         orientation=orientation,
         card_width=card_def.width,
@@ -100,7 +124,7 @@ def generate_single_dxf(
     num_cols = len(x_pos)
     num_rows = len(y_pos)
 
-    name = template_name(paper_size, card_size, variant, version)
+    name = create_template_name(paper_size, card_size, variant, version)
 
     # Write to the specified output directory
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -117,7 +141,9 @@ def generate_single_dxf(
     )
 
     num_cards = num_cols * num_rows
-    print(f"  {paper_size} + {card_size} ({variant}): {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_file}")
+    print(
+        f"  {paper_size} + {card_size} ({variant}): {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_file}"
+    )
     return num_cols, num_rows, computed.max_length_mm
 
 
@@ -129,19 +155,92 @@ def cli():
 
 @cli.command()
 @click.argument("output_file", type=click.Path())
-@click.option("--card_size", type=click.Choice(card_size_choices, case_sensitive=False), help="Card size. Cannot be combined with --card_height/--card_width.")
-@click.option("--paper_size", type=click.Choice(paper_size_choices, case_sensitive=False), help="Paper size. Cannot be combined with --paper_height/--paper_width.")
-@click.option("--card_height", type=str, default=None, help="Card length (height) as a size string (e.g. '88mm', '3.5in'). Requires --card_width. Cannot be combined with --card_size.")
-@click.option("--card_width", type=str, default=None, help="Card width as a size string (e.g. '63mm', '2.5in'). Requires --card_height. Cannot be combined with --card_size.")
-@click.option("--card_radius", type=str, default=None, help="Card corner radius as a size string (e.g. '3mm'). Overrides the default radius for the card size. Defaults to 3mm when using --card_height/--card_width.")
-@click.option("--card_name", type=str, default=None, help="Override the card label used for the output filename and --save.")
-@click.option("--paper_height", type=str, default=None, help="Paper length (longer dimension) as a size string (e.g. '11in', '297mm'). Requires --paper_width. Cannot be combined with --paper_size.")
-@click.option("--paper_width", type=str, default=None, help="Paper width (shorter dimension) as a size string (e.g. '8.5in', '210mm'). Requires --paper_height. Cannot be combined with --paper_size.")
-@click.option("--paper_name", type=str, default=None, help="Override the paper label used for the output filename and --save.")
-@click.option("--variant", type=click.Choice(["default", "borderless"], case_sensitive=False), default="default", show_default=True, help="Template variant.")
-@click.option("--orientation", type=click.Choice([e.value for e in OrientationMode], case_sensitive=False), default=OrientationMode.OPTIMIZE.value, show_default=True, help="Page orientation: optimize (auto-select), landscape, or portrait.")
-@click.option("--save", is_flag=True, help="Save new card/paper sizes and layout combination to assets/layouts.json.")
-def single(output_file, paper_size, card_size, card_height, card_width, card_radius, paper_height, paper_width, card_name, paper_name, variant, orientation, save):
+@click.option(
+    "--card_size",
+    type=click.Choice(card_size_choices, case_sensitive=False),
+    help="Card size. Cannot be combined with --card_height/--card_width.",
+)
+@click.option(
+    "--paper_size",
+    type=click.Choice(paper_size_choices, case_sensitive=False),
+    help="Paper size. Cannot be combined with --paper_height/--paper_width.",
+)
+@click.option(
+    "--card_height",
+    type=str,
+    default=None,
+    help="Card length (height) as a size string (e.g. '88mm', '3.5in'). Requires --card_width. Cannot be combined with --card_size.",
+)
+@click.option(
+    "--card_width",
+    type=str,
+    default=None,
+    help="Card width as a size string (e.g. '63mm', '2.5in'). Requires --card_height. Cannot be combined with --card_size.",
+)
+@click.option(
+    "--card_radius",
+    type=str,
+    default=None,
+    help="Card corner radius as a size string (e.g. '3mm'). Overrides the default radius for the card size. Defaults to 3mm when using --card_height/--card_width.",
+)
+@click.option(
+    "--card_name",
+    type=str,
+    default=None,
+    help="Override the card label used for the output filename and --save.",
+)
+@click.option(
+    "--paper_height",
+    type=str,
+    default=None,
+    help="Paper length (longer dimension) as a size string (e.g. '11in', '297mm'). Requires --paper_width. Cannot be combined with --paper_size.",
+)
+@click.option(
+    "--paper_width",
+    type=str,
+    default=None,
+    help="Paper width (shorter dimension) as a size string (e.g. '8.5in', '210mm'). Requires --paper_height. Cannot be combined with --paper_size.",
+)
+@click.option(
+    "--paper_name",
+    type=str,
+    default=None,
+    help="Override the paper label used for the output filename and --save.",
+)
+@click.option(
+    "--variant",
+    type=click.Choice(["default", "borderless"], case_sensitive=False),
+    default="default",
+    show_default=True,
+    help="Template variant.",
+)
+@click.option(
+    "--orientation",
+    type=click.Choice([e.value for e in OrientationMode], case_sensitive=False),
+    default=OrientationMode.OPTIMIZE.value,
+    show_default=True,
+    help="Page orientation: optimize (auto-select), landscape, or portrait.",
+)
+@click.option(
+    "--save",
+    is_flag=True,
+    help="Save new card/paper sizes and layout combination to assets/layouts.json.",
+)
+def single(
+    output_file,
+    paper_size,
+    card_size,
+    card_height,
+    card_width,
+    card_radius,
+    paper_height,
+    paper_width,
+    card_name,
+    paper_name,
+    variant,
+    orientation,
+    save,
+):
     """Generate a single DXF file with full control over output path."""
     config = load_layout_config()
 
@@ -153,7 +252,9 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
     has_card_dims = card_height is not None or card_width is not None
 
     if has_card_size and has_card_dims:
-        raise click.UsageError("Cannot use --card_size together with --card_height or --card_width.")
+        raise click.UsageError(
+            "Cannot use --card_size together with --card_height or --card_width."
+        )
     if card_height is not None and card_width is None:
         raise click.UsageError("--card_height requires --card_width.")
     if card_width is not None and card_height is None:
@@ -164,16 +265,22 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
     has_paper_dims = paper_height is not None or paper_width is not None
 
     if has_paper_size and has_paper_dims:
-        raise click.UsageError("Cannot use --paper_size together with --paper_height or --paper_width.")
+        raise click.UsageError(
+            "Cannot use --paper_size together with --paper_height or --paper_width."
+        )
     if paper_height is not None and paper_width is None:
         raise click.UsageError("--paper_height requires --paper_width.")
     if paper_width is not None and paper_height is None:
         raise click.UsageError("--paper_width requires --paper_height.")
 
     if not has_card_size and not has_card_dims:
-        raise click.UsageError("Provide --card_size or (--card_height and --card_width).")
+        raise click.UsageError(
+            "Provide --card_size or (--card_height and --card_width)."
+        )
     if not has_paper_size and not has_paper_dims:
-        raise click.UsageError("Provide --paper_size or (--paper_height and --paper_width).")
+        raise click.UsageError(
+            "Provide --paper_size or (--paper_height and --paper_width)."
+        )
 
     # Resolve aliases
     if has_card_size:
@@ -186,12 +293,18 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
         card_def = config.card_sizes[card_size]
         resolved_card_width = card_def.width
         resolved_card_height = card_def.height
-        resolved_card_radius = card_radius if card_radius is not None else (card_def.radius or config.defaults.card_radius)
+        resolved_card_radius = (
+            card_radius
+            if card_radius is not None
+            else (card_def.radius or config.defaults.card_radius)
+        )
         card_label = card_size
     else:
         resolved_card_width = card_width
         resolved_card_height = card_height
-        resolved_card_radius = card_radius if card_radius is not None else config.defaults.card_radius
+        resolved_card_radius = (
+            card_radius if card_radius is not None else config.defaults.card_radius
+        )
         card_label = f"{card_width}x{card_height}"
 
     # Resolve paper parameters (stored as landscape: longer dim = width)
@@ -201,8 +314,8 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
         resolved_paper_height = paper_def.height
         paper_label = paper_size
     else:
-        pl_mm = size_convert.size_to_mm(paper_height)
-        pw_mm = size_convert.size_to_mm(paper_width)
+        pl_mm = measurements.size_to_mm(paper_height)
+        pw_mm = measurements.size_to_mm(paper_width)
         if pl_mm >= pw_mm:
             resolved_paper_width = paper_height
             resolved_paper_height = paper_width
@@ -234,11 +347,13 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
         reg = config.defaults.registration.default
     ppi = config.ppi
 
-    total_length_mm = size_convert.size_to_mm(reg.length) + page_manager.REG_PADDING_MM
+    total_length_mm = measurements.size_to_mm(reg.length) + page_manager.REG_PADDING_MM
 
-    card_w_px = size_convert.size_to_pixel(resolved_card_width, ppi)
-    card_h_px = size_convert.size_to_pixel(resolved_card_height, ppi)
-    preferred = Orientation.PORTRAIT if card_w_px == card_h_px else Orientation.LANDSCAPE
+    card_w_px = measurements.size_to_pixel(resolved_card_width, ppi)
+    card_h_px = measurements.size_to_pixel(resolved_card_height, ppi)
+    preferred = (
+        Orientation.PORTRAIT if card_w_px == card_h_px else Orientation.LANDSCAPE
+    )
 
     try:
         template_inset = reg.inset
@@ -273,7 +388,9 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
     )
 
     num_cards = num_cols * num_rows
-    print(f"  {paper_label} + {card_label} ({variant}): {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_path}")
+    print(
+        f"  {paper_label} + {card_label} ({variant}): {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_path}"
+    )
 
     if save:
         # Prefer the extra file that already defines this card size (or, failing that, this
@@ -282,13 +399,13 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
         # file, then this repo's own layouts.json, so opt-in extra sizes stay out of it.
         extra_paths = extra_layout_paths()
         save_path = (
-            find_extra_layout_owner('card_sizes', card_label)
-            or find_extra_layout_owner('paper_sizes', paper_label)
+            find_extra_layout_owner("card_sizes", card_label)
+            or find_extra_layout_owner("paper_sizes", paper_label)
             or (extra_paths[-1] if extra_paths else LAYOUTS_PATH)
         )
 
         if save_path.exists():
-            with open(save_path, 'r') as f:
+            with open(save_path, "r") as f:
                 raw_config = json.load(f)
         else:
             raw_config = {}
@@ -307,7 +424,9 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
                 "height": resolved_card_height,
                 "radius": resolved_card_radius,
             }
-            print(f"  Saved new card size '{card_label}': {resolved_card_width} x {resolved_card_height}, radius {resolved_card_radius}")
+            print(
+                f"  Saved new card size '{card_label}': {resolved_card_width} x {resolved_card_height}, radius {resolved_card_radius}"
+            )
             changed = True
 
         if paper_label not in config.paper_sizes:
@@ -315,7 +434,9 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
                 "width": resolved_paper_width,
                 "height": resolved_paper_height,
             }
-            print(f"  Saved new paper size '{paper_label}': {resolved_paper_width} x {resolved_paper_height}")
+            print(
+                f"  Saved new paper size '{paper_label}': {resolved_paper_width} x {resolved_paper_height}"
+            )
             changed = True
 
         # Check if layout exists for this paper/card/variant combination
@@ -342,9 +463,9 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
 
         if changed:
             save_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(save_path, 'w') as f:
+            with open(save_path, "w") as f:
                 json.dump(raw_config, f, indent=4)
-                f.write('\n')
+                f.write("\n")
         else:
             print("  No new entries to save.")
 
@@ -352,8 +473,18 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
 
 
 @cli.command()
-@click.option("--all", "generate_all", is_flag=True, help="Regenerate all DXF files for every paper/card/variant combination.")
-@click.option("--optimize", "optimize_all", is_flag=True, help="Generate DXF files for all combinations, optimizing orientation for maximum cards.")
+@click.option(
+    "--all",
+    "generate_all",
+    is_flag=True,
+    help="Regenerate all DXF files for every paper/card/variant combination.",
+)
+@click.option(
+    "--optimize",
+    "optimize_all",
+    is_flag=True,
+    help="Generate DXF files for all combinations, optimizing orientation for maximum cards.",
+)
 def batch(generate_all, optimize_all):
     """Batch generate DXF files to cutting_templates/ directory structure.
 
@@ -371,7 +502,7 @@ def batch(generate_all, optimize_all):
         return
 
     # --all or --new
-    with open(LAYOUTS_PATH, 'r') as f:
+    with open(LAYOUTS_PATH, "r") as f:
         raw_config = json.load(f)
 
     generated = 0
@@ -386,7 +517,7 @@ def batch(generate_all, optimize_all):
         for cs, variants in cards.items():
             for variant_str, layout_def in variants.items():
                 variant = Variant(variant_str)
-                name = template_name(ps, cs, variant, layout_def.version)
+                name = create_template_name(ps, cs, variant, layout_def.version)
 
                 # Determine output directory based on variant
                 if variant == Variant.BORDERLESS:
@@ -409,20 +540,31 @@ def batch(generate_all, optimize_all):
                 # mode with portrait mat orientation.
                 if variant == Variant.BORDERLESS:
                     paper_def = config.paper_sizes[ps]
-                    actual_max_in = max(
-                        size_convert.size_to_mm(paper_def.width),
-                        size_convert.size_to_mm(paper_def.height),
-                    ) / 25.4
-                    if actual_max_in > 12.0 and not borderless_fits_12x24_mat(paper_def.width, paper_def.height):
-                        print(f"  Skipping {ps} + {cs} (borderless): virtual paper size exceeds 12x24 mat (see issue #136)")
+                    actual_max_in = (
+                        max(
+                            measurements.size_to_mm(paper_def.width),
+                            measurements.size_to_mm(paper_def.height),
+                        )
+                        / 25.4
+                    )
+                    if actual_max_in > 12.0 and not borderless_fits_12x24_mat(
+                        paper_def.width, paper_def.height
+                    ):
+                        print(
+                            f"  Skipping {ps} + {cs} (borderless): virtual paper size exceeds 12x24 mat (see issue #136)"
+                        )
                         skipped += 1
                         continue
 
                 try:
-                    num_cols, num_rows, ml_mm = generate_single_dxf(cs, ps, variant, config, variant_dir)
+                    num_cols, num_rows, ml_mm = generate_single_dxf(
+                        cs, ps, variant, config, variant_dir
+                    )
                     raw_config["layouts"][ps][cs][variant_str]["num_rows"] = num_rows
                     raw_config["layouts"][ps][cs][variant_str]["num_cols"] = num_cols
-                    raw_config["layouts"][ps][cs][variant_str]["registration"] = {"length": f"{ml_mm}mm"}
+                    raw_config["layouts"][ps][cs][variant_str]["registration"] = {
+                        "length": f"{ml_mm}mm"
+                    }
                     generated += 1
                 except Exception as e:
                     print(f"  Error: {ps} + {cs} ({variant}): {e}")
@@ -430,11 +572,11 @@ def batch(generate_all, optimize_all):
                     errors += 1
 
     if error_list:
-        print(f'Errors: {error_list}')
+        print(f"Errors: {error_list}")
 
-    with open(LAYOUTS_PATH, 'w') as f:
+    with open(LAYOUTS_PATH, "w") as f:
         json.dump(raw_config, f, indent=4)
-        f.write('\n')
+        f.write("\n")
 
     print()
     summary = f"Generated {generated} DXF files ({errors} errors)"
@@ -469,7 +611,7 @@ def generate_all_optimized(config: LayoutConfig, out: Path):
     For existing layouts, re-optimizes orientation and bumps the version if
     it changes. For missing combinations, creates a new layout entry at v1.
     """
-    with open(LAYOUTS_PATH, 'r') as f:
+    with open(LAYOUTS_PATH, "r") as f:
         raw_config = json.load(f)
 
     generated = 0
@@ -495,12 +637,19 @@ def generate_all_optimized(config: LayoutConfig, out: Path):
                 # TODO (#136): Remove this restriction once all templates use unconstrained
                 # mode with portrait mat orientation.
                 if variant == Variant.BORDERLESS:
-                    actual_max_in = max(
-                        size_convert.size_to_mm(paper_def.width),
-                        size_convert.size_to_mm(paper_def.height),
-                    ) / 25.4
-                    if actual_max_in > 12.0 and not borderless_fits_12x24_mat(paper_def.width, paper_def.height):
-                        print(f"  Skipping {paper_size} + {card_size} (borderless): virtual paper size exceeds 12x24 mat (see issue #136)")
+                    actual_max_in = (
+                        max(
+                            measurements.size_to_mm(paper_def.width),
+                            measurements.size_to_mm(paper_def.height),
+                        )
+                        / 25.4
+                    )
+                    if actual_max_in > 12.0 and not borderless_fits_12x24_mat(
+                        paper_def.width, paper_def.height
+                    ):
+                        print(
+                            f"  Skipping {paper_size} + {card_size} (borderless): virtual paper size exceeds 12x24 mat (see issue #136)"
+                        )
                         continue
 
                 try:
@@ -511,7 +660,10 @@ def generate_all_optimized(config: LayoutConfig, out: Path):
                         variant_reg = config.defaults.registration.default
 
                     ppi = config.ppi
-                    total_length_mm = size_convert.size_to_mm(variant_reg.length) + page_manager.REG_PADDING_MM
+                    total_length_mm = (
+                        measurements.size_to_mm(variant_reg.length)
+                        + page_manager.REG_PADDING_MM
+                    )
 
                     version = layout_def.version
 
@@ -531,7 +683,9 @@ def generate_all_optimized(config: LayoutConfig, out: Path):
                             preferred=preferred,
                         )
                     except ValueError:
-                        print(f"  {paper_size} + {card_size} ({variant}): no valid layout in either orientation, skipping")
+                        print(
+                            f"  {paper_size} + {card_size} ({variant}): no valid layout in either orientation, skipping"
+                        )
                         continue
 
                     best_count = len(best_computed.x_pos) * len(best_computed.y_pos)
@@ -539,20 +693,32 @@ def generate_all_optimized(config: LayoutConfig, out: Path):
                     num_rows = len(best_computed.y_pos)
 
                     # Check if orientation or layout changed
-                    if (best_orientation != layout_def.orientation
-                            or num_cols != layout_def.num_cols
-                            or num_rows != layout_def.num_rows):
+                    if (
+                        best_orientation != layout_def.orientation
+                        or num_cols != layout_def.num_cols
+                        or num_rows != layout_def.num_rows
+                    ):
                         version += 1
                         updated += 1
 
                     # Update layout definition
-                    raw_config["layouts"][paper_size][card_size][variant_str]["orientation"] = best_orientation.value
-                    raw_config["layouts"][paper_size][card_size][variant_str]["version"] = version
-                    raw_config["layouts"][paper_size][card_size][variant_str]["num_rows"] = num_rows
-                    raw_config["layouts"][paper_size][card_size][variant_str]["num_cols"] = num_cols
-                    raw_config["layouts"][paper_size][card_size][variant_str]["registration"] = {"length": f"{best_computed.max_length_mm}mm"}
+                    raw_config["layouts"][paper_size][card_size][variant_str][
+                        "orientation"
+                    ] = best_orientation.value
+                    raw_config["layouts"][paper_size][card_size][variant_str][
+                        "version"
+                    ] = version
+                    raw_config["layouts"][paper_size][card_size][variant_str][
+                        "num_rows"
+                    ] = num_rows
+                    raw_config["layouts"][paper_size][card_size][variant_str][
+                        "num_cols"
+                    ] = num_cols
+                    raw_config["layouts"][paper_size][card_size][variant_str][
+                        "registration"
+                    ] = {"length": f"{best_computed.max_length_mm}mm"}
 
-                    name = template_name(paper_size, card_size, variant, version)
+                    name = create_template_name(paper_size, card_size, variant, version)
 
                     # Determine output directory based on variant
                     if variant == Variant.BORDERLESS:
@@ -563,12 +729,18 @@ def generate_all_optimized(config: LayoutConfig, out: Path):
                     output_file = variant_dir / f"{name}.dxf"
 
                     dxf_manager.generate_dxf(
-                        card_def.width, card_def.height, card_def.radius or config.defaults.card_radius,
-                        best_computed.x_pos, best_computed.y_pos, ppi,
+                        card_def.width,
+                        card_def.height,
+                        card_def.radius or config.defaults.card_radius,
+                        best_computed.x_pos,
+                        best_computed.y_pos,
+                        ppi,
                         output_path=str(output_file),
                     )
 
-                    print(f"  {paper_size} + {card_size} ({variant}): {num_cols}x{num_rows} ({best_count} cards), max_length={best_computed.max_length_mm}mm -> {output_file}")
+                    print(
+                        f"  {paper_size} + {card_size} ({variant}): {num_cols}x{num_rows} ({best_count} cards), max_length={best_computed.max_length_mm}mm -> {output_file}"
+                    )
                     generated += 1
 
                 except Exception as e:
@@ -577,11 +749,11 @@ def generate_all_optimized(config: LayoutConfig, out: Path):
                     errors += 1
 
     if error_list:
-        print(f'Errors: {error_list}')
+        print(f"Errors: {error_list}")
 
-    with open(LAYOUTS_PATH, 'w') as f:
+    with open(LAYOUTS_PATH, "w") as f:
         json.dump(raw_config, f, indent=4)
-        f.write('\n')
+        f.write("\n")
 
     print()
     summary = f"Generated {generated} DXF files ({errors} errors)"

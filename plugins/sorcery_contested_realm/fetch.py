@@ -8,7 +8,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from plugins.sorcery_contested_realm.deck_formats import DeckFormat, parse_deck
 from plugins.sorcery_contested_realm.curiosa import get_handle_card
-from utilities import ensure_directory
+from src.paths import ensure_directory
 
 front_directory = path.join(REPO_ROOT, 'game', 'front')
 

@@ -1,9 +1,9 @@
 import math
 import ezdxf
 import re
-import size_convert
 from ezdxf import units
 from typing import List
+from src import measurements
 
 # Write fixed timestamps and GUIDs so regenerated files are deterministic.
 ezdxf.options.write_fixed_meta_data_for_testing = True
@@ -59,14 +59,14 @@ def generate_dxf(card_width: str, card_height: str, card_radius: str, x_pos: Lis
     in_width = re.fullmatch(rf"({float_pattern})in", card_width)
     if in_width:
         doc.units = units.IN
-        width = size_convert.size_to_in(card_width)
-        height = size_convert.size_to_in(card_height)
-        radius = size_convert.size_to_in(card_radius)
+        width = measurements.size_to_in(card_width)
+        height = measurements.size_to_in(card_height)
+        radius = measurements.size_to_in(card_radius)
     else:
         doc.units = units.MM
-        width = size_convert.size_to_mm(card_width)
-        height = size_convert.size_to_mm(card_height)
-        radius = size_convert.size_to_mm(card_radius)
+        width = measurements.size_to_mm(card_width)
+        height = measurements.size_to_mm(card_height)
+        radius = measurements.size_to_mm(card_radius)
 
     msp = doc.modelspace()
 

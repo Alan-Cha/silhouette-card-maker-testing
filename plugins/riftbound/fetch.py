@@ -8,7 +8,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from plugins.riftbound.deck_formats import DeckFormat, parse_deck
 from plugins.riftbound.api import fetch_card_art, ImageServer, get_handle_card
-from utilities import ensure_directory
+from src.paths import ensure_directory
 
 front_directory = path.join(REPO_ROOT, 'game', 'front')
 double_sided_directory = path.join(REPO_ROOT, 'game', 'double_sided')

@@ -1,5 +1,5 @@
-import size_convert
-from utilities import load_layout_config
+from src import measurements
+from src.layouts import load_layout_config
 
 
 def format_number(n):
@@ -16,8 +16,8 @@ def generate_tables():
 
     def card_size_sort_key(name):
         card = config.card_sizes[name]
-        w_mm = size_convert.size_to_mm(card.width)
-        h_mm = size_convert.size_to_mm(card.height)
+        w_mm = measurements.size_to_mm(card.width)
+        h_mm = measurements.size_to_mm(card.height)
         return (-max(w_mm, h_mm), -min(w_mm, h_mm), name)
 
     priority = ["standard", "poker", "bridge"]
@@ -73,10 +73,10 @@ def generate_tables():
     for card in card_order_by_size:
         info = config.card_sizes[card]
 
-        w_in = size_convert.size_to_in(info.width)
-        h_in = size_convert.size_to_in(info.height)
-        w_mm = size_convert.size_to_mm(info.width)
-        h_mm = size_convert.size_to_mm(info.height)
+        w_in = measurements.size_to_in(info.width)
+        h_in = measurements.size_to_in(info.height)
+        w_mm = measurements.size_to_mm(info.width)
+        h_mm = measurements.size_to_mm(info.height)
 
         in_str = f"{format_number(min(w_in, h_in))} x {format_number(max(w_in, h_in))}"
         mm_str = f"{format_number(min(w_mm, h_mm))} x {format_number(max(w_mm, h_mm))}"
@@ -100,10 +100,10 @@ def generate_tables():
     for paper in paper_order:
         info = config.paper_sizes[paper]
 
-        w_in = size_convert.size_to_in(info.width)
-        h_in = size_convert.size_to_in(info.height)
-        w_mm = size_convert.size_to_mm(info.width)
-        h_mm = size_convert.size_to_mm(info.height)
+        w_in = measurements.size_to_in(info.width)
+        h_in = measurements.size_to_in(info.height)
+        w_mm = measurements.size_to_mm(info.width)
+        h_mm = measurements.size_to_mm(info.height)
 
         in_str = f"{format_number(min(w_in, h_in))} x {format_number(max(w_in, h_in))}"
         mm_str = f"{format_number(min(w_mm, h_mm))} x {format_number(max(w_mm, h_mm))}"
