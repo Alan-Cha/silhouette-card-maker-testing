@@ -4,7 +4,11 @@ from time import sleep
 from re import sub
 from .deck_formats import Pitch
 
-CARD_URL_TEMPLATE = 'https://cards.fabtcg.com/api/search/v1/cards/?name={card_name}{pitch}'
+# CardVault's card_id endpoint takes a deterministic slug rather than a search
+# query: <slugified-name>[-<pitch value>]. E.g. "Energy Potion" at blue pitch
+# (3) is 'energy-potion-3'. Cards without a pitch (weapons, equipment, heroes)
+# use just the bare slug.
+CARD_URL_TEMPLATE = 'https://api.cardvault.fabtcg.com/carddb/api/v1/card_id/{card_id}/'
 
 OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}.png'
 
@@ -20,6 +24,15 @@ def request_fabtcg(query: str) -> Response:
 
     return r
 
+def build_card_id(name: str, pitch: Pitch) -> str:
+    sanitized = sub(r'[^A-Za-z0-9 ]+', '', name)
+    slug = sub(r'\s+', '-', sanitized.strip()).lower()
+
+    if pitch != Pitch.NONE:
+        slug = f'{slug}-{pitch.value}'
+
+    return slug
+
 def fetch_card(
     index: int,
     quantity: int,
@@ -27,15 +40,43 @@ def fetch_card(
     pitch: Pitch,
     front_img_dir: str,
 ):
-    # Query for card info
+    # Look up card info by its deterministic card_id
     sanitized = sub(r'[^A-Za-z0-9 ]+', '', name)
-    slugified = sub(r'\s+', '+', sanitized).lower()
-    pitch_argument = f'&pitch_lookup=exact&pitch={pitch.value}' if pitch != Pitch.NONE else ''
+    card_id = build_card_id(name, pitch)
 
-    url = CARD_URL_TEMPLATE.format(card_name=slugified,pitch=pitch_argument)
+    url = CARD_URL_TEMPLATE.format(card_id=card_id)
     card_response = request_fabtcg(url)
 
-    card_art_url = card_response.json().get('results')[0].get('image').get('normal')
+    results = card_response.json().get('results') or []
+
+    if not results:
+        raise ValueError(f"CardVault returned no results for card_id '{card_id}' (name='{name}')")
+
+    card_prints = results[0].get('card_prints') or []
+
+    # Prefer the regular (non-foil) English printing; fall back to whatever's
+    # first available if that specific combination isn't present.
+    chosen_face = None
+
+    for card_print in card_prints:
+        for face in card_print.get('faces') or []:
+            if face.get('face_language') == 'en' and face.get('finish_type') == 'regular':
+                chosen_face = face
+                break
+        if chosen_face is not None:
+            break
+
+    if chosen_face is None:
+        for card_print in card_prints:
+            faces = card_print.get('faces') or []
+            if faces:
+                chosen_face = faces[0]
+                break
+
+    if chosen_face is None:
+        raise ValueError(f"No printable face found for card_id '{card_id}' (name='{name}')")
+
+    card_art_url = chosen_face.get('image', {}).get('normal')
     card_art_response = request_fabtcg(card_art_url)
 
     if card_art_response is not None:
