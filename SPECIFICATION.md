@@ -72,7 +72,7 @@ This file serves as the authoritative reference for SCM's template specification
 
 Cards are positioned **1.25 mm** apart (center to center of the gap), defined as `CARD_DISTANCE = "1.25mm"` in [page_manager.py](page_manager.py)
 
-The maximum bleed is half the card distance, which is **6.125 mm**.
+The maximum bleed is half the card distance, which is **0.625 mm**.
 
 ### Corner Radius
 
