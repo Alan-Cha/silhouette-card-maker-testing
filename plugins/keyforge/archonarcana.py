@@ -108,12 +108,15 @@ def query_page_image(title: str) -> Optional[Tuple[str, Optional[str]]]:
         'piprop': 'original',
         'redirects': '1',
         'format': 'json',
+        # formatversion=2 returns query.pages as an array instead of an object
+        # keyed by page ID, and a real boolean for "missing" instead of "".
+        'formatversion': '2',
     }
 
-    pages = request_archonarcana(API_URL, params=params).json().get('query', {}).get('pages', {})
-    page = next(iter(pages.values()), None)
+    pages = request_archonarcana(API_URL, params=params).json().get('query', {}).get('pages', [])
+    page = pages[0] if pages else None
 
-    if page is None or 'missing' in page:
+    if page is None or page.get('missing'):
         return None
 
     return page.get('title', title), page.get('original', {}).get('source')

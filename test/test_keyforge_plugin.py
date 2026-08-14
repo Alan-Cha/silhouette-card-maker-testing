@@ -129,13 +129,13 @@ class TestQueryPageImage:
     def test_returns_title_and_image_for_existing_page(self):
         data = {
             'query': {
-                'pages': {
-                    '11067': {
+                'pages': [
+                    {
                         'pageid': 11067,
                         'title': 'Ecto-Charge',
                         'original': {'source': 'https://example.com/939-070.png'},
                     }
-                }
+                ]
             }
         }
         with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
@@ -147,13 +147,13 @@ class TestQueryPageImage:
         data = {
             'query': {
                 'redirects': [{'from': 'Ecto Charge', 'to': 'Ecto-Charge'}],
-                'pages': {
-                    '11067': {
+                'pages': [
+                    {
                         'pageid': 11067,
                         'title': 'Ecto-Charge',
                         'original': {'source': 'https://example.com/939-070.png'},
                     }
-                }
+                ]
             }
         }
         with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
@@ -162,9 +162,7 @@ class TestQueryPageImage:
     def test_returns_title_with_none_image_when_page_has_no_image(self):
         data = {
             'query': {
-                'pages': {
-                    '123': {'pageid': 123, 'title': 'Some Page'}
-                }
+                'pages': [{'pageid': 123, 'title': 'Some Page'}]
             }
         }
         with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
@@ -173,13 +171,16 @@ class TestQueryPageImage:
     def test_returns_none_for_missing_page(self):
         data = {
             'query': {
-                'pages': {
-                    '-1': {'title': 'Not A Real Card', 'missing': ''}
-                }
+                'pages': [{'title': 'Not A Real Card', 'missing': True}]
             }
         }
         with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
             assert query_page_image('Not A Real Card') is None
+
+    def test_returns_none_for_empty_pages_array(self):
+        data = {'query': {'pages': []}}
+        with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
+            assert query_page_image('Anything') is None
 
 
 # --- Unit Tests for Card Resolution Control Flow ---
