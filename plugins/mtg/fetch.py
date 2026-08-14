@@ -11,7 +11,7 @@ from plugins.mtg.common import ScryfallLanguage
 from plugins.mtg.deck_formats import DeckFormat, parse_deck, extract_mpcfill_card_ids
 from plugins.mtg.scryfall import get_handle_card as scryfall_get_handle_card
 from plugins.mtg.mpcfill import get_handle_card as mpc_get_handle_card, prefetch_mpcfill
-from utilities import ensure_directory
+from utilities import configure_console_encoding, ensure_directory
 
 front_directory = os.path.join(REPO_ROOT, 'game', 'front')
 double_sided_directory = os.path.join(REPO_ROOT, 'game', 'double_sided')
@@ -96,4 +96,5 @@ def cli(
     )
 
 if __name__ == '__main__':
+    configure_console_encoding()
     cli()

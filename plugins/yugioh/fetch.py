@@ -8,7 +8,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from plugins.yugioh.deck_formats import DeckFormat, parse_deck
 from plugins.yugioh.ygoprodeck import fetch_card_art
-from utilities import ensure_directory
+from utilities import configure_console_encoding, ensure_directory
 
 front_directory = os.path.join(REPO_ROOT, 'game', 'front')
 double_sided_directory = os.path.join(REPO_ROOT, 'game', 'double_sided')
@@ -30,4 +30,5 @@ def cli(deck_path: str, format: DeckFormat):
         fetch_card_art(passcode, quantity, front_directory)
 
 if __name__ == '__main__':
+    configure_console_encoding()
     cli()
