@@ -7,7 +7,7 @@ import shutil
 import tempfile
 import pytest
 
-from plugins.lorcana.deck_formats import DeckFormat, parse_deck, parse_dreamborn_list
+from plugins.lorcana.deck_formats import CardVariant, DeckFormat, parse_deck, parse_dreamborn_list
 from plugins.lorcana.lorcast import request_lorcast, get_handle_card, format_lorcast_query, remove_nonalphanumeric
 
 
@@ -23,11 +23,11 @@ class TestDreambornFormat:
 2 Diablo - Obedient Raven"""
 
         parsed_cards = []
-        def collect_card(index, name, enchanted, quantity):
+        def collect_card(index, name, variant, quantity):
             parsed_cards.append({
                 'index': index,
                 'name': name,
-                'enchanted': enchanted,
+                'variant': variant,
                 'quantity': quantity
             })
 
@@ -35,7 +35,7 @@ class TestDreambornFormat:
 
         assert len(parsed_cards) == 3
         assert parsed_cards[0]['name'] == "Elsa, Spirit of Winter"
-        assert parsed_cards[0]['enchanted'] == False
+        assert parsed_cards[0]['variant'] is None
         assert parsed_cards[0]['quantity'] == 1
         assert parsed_cards[1]['name'] == "Magic Broom, Illuminary Keeper"
         assert parsed_cards[1]['quantity'] == 4
@@ -46,20 +46,141 @@ class TestDreambornFormat:
 2 Elsa, Spirit of Winter"""
 
         parsed_cards = []
-        def collect_card(index, name, enchanted, quantity):
+        def collect_card(index, name, variant, quantity):
             parsed_cards.append({
                 'index': index,
                 'name': name,
-                'enchanted': enchanted,
+                'variant': variant,
                 'quantity': quantity
             })
 
         parse_dreamborn_list(deck_text, collect_card)
 
         assert len(parsed_cards) == 2
-        assert parsed_cards[0]['name'] == "Anna - True-Hearted "
-        assert parsed_cards[0]['enchanted'] == True
-        assert parsed_cards[1]['enchanted'] == False
+        assert parsed_cards[0]['name'] == "Anna - True-Hearted"
+        assert parsed_cards[0]['variant'] == CardVariant.ENCHANTED
+        assert parsed_cards[1]['variant'] is None
+
+    def test_parse_dreamborn_with_epic_and_iconic(self):
+        """Test parsing Dreamborn format with epic and iconic markers."""
+        deck_text = """1 Max Goof - Rockin' Teen *EPIC*
+1 Mickey Mouse - Brave Little Prince *ICONIC*"""
+
+        parsed_cards = []
+        def collect_card(index, name, variant, quantity):
+            parsed_cards.append({
+                'index': index,
+                'name': name,
+                'variant': variant,
+                'quantity': quantity
+            })
+
+        parse_dreamborn_list(deck_text, collect_card)
+
+        assert len(parsed_cards) == 2
+        assert parsed_cards[0]['name'] == "Max Goof - Rockin' Teen"
+        assert parsed_cards[0]['variant'] == CardVariant.EPIC
+        assert parsed_cards[1]['name'] == "Mickey Mouse - Brave Little Prince"
+        assert parsed_cards[1]['variant'] == CardVariant.ICONIC
+
+    def test_parse_dreamborn_with_epic_shorthand(self):
+        """Test parsing Dreamborn format with the *EP* epic shorthand marker."""
+        deck_text = """1 Max Goof - Rockin' Teen *EP*"""
+
+        parsed_cards = []
+        def collect_card(index, name, variant, quantity):
+            parsed_cards.append({
+                'index': index,
+                'name': name,
+                'variant': variant,
+                'quantity': quantity
+            })
+
+        parse_dreamborn_list(deck_text, collect_card)
+
+        assert len(parsed_cards) == 1
+        assert parsed_cards[0]['name'] == "Max Goof - Rockin' Teen"
+        assert parsed_cards[0]['variant'] == CardVariant.EPIC
+
+    def test_parse_dreamborn_with_promo(self):
+        """Test parsing Dreamborn format with promo marker."""
+        deck_text = """1 Kuzco - Temperamental Emperor *PROMO*"""
+
+        parsed_cards = []
+        def collect_card(index, name, variant, quantity):
+            parsed_cards.append({
+                'index': index,
+                'name': name,
+                'variant': variant,
+                'quantity': quantity
+            })
+
+        parse_dreamborn_list(deck_text, collect_card)
+
+        assert len(parsed_cards) == 1
+        assert parsed_cards[0]['name'] == "Kuzco - Temperamental Emperor"
+        assert parsed_cards[0]['variant'] == CardVariant.PROMO
+
+    def test_parse_dreamborn_with_shorthand_markers(self):
+        """Test parsing Dreamborn format with single-letter variant markers."""
+        deck_text = """1 Mickey Mouse - Brave Little Prince *I*
+1 Kuzco - Temperamental Emperor *P*"""
+
+        parsed_cards = []
+        def collect_card(index, name, variant, quantity):
+            parsed_cards.append({
+                'index': index,
+                'name': name,
+                'variant': variant,
+                'quantity': quantity
+            })
+
+        parse_dreamborn_list(deck_text, collect_card)
+
+        assert len(parsed_cards) == 2
+        assert parsed_cards[0]['name'] == "Mickey Mouse - Brave Little Prince"
+        assert parsed_cards[0]['variant'] == CardVariant.ICONIC
+        assert parsed_cards[1]['name'] == "Kuzco - Temperamental Emperor"
+        assert parsed_cards[1]['variant'] == CardVariant.PROMO
+
+    def test_parse_dreamborn_with_specific_print(self):
+        """Test parsing Dreamborn format with a specific-print marker (set only)."""
+        deck_text = """1 Mickey Mouse - True Friend *P1*"""
+
+        parsed_cards = []
+        def collect_card(index, name, variant, quantity):
+            parsed_cards.append({
+                'index': index,
+                'name': name,
+                'variant': variant,
+                'quantity': quantity
+            })
+
+        parse_dreamborn_list(deck_text, collect_card)
+
+        assert len(parsed_cards) == 1
+        assert parsed_cards[0]['name'] == "Mickey Mouse - True Friend"
+        assert parsed_cards[0]['variant'] == "set:P1"
+
+    def test_parse_dreamborn_with_specific_print_and_collector_number(self):
+        """Test parsing Dreamborn format with a set + collector number marker."""
+        deck_text = """1 Mickey Mouse - True Friend *P2-15*
+1 Mickey Mouse - True Friend *P2-36*"""
+
+        parsed_cards = []
+        def collect_card(index, name, variant, quantity):
+            parsed_cards.append({
+                'index': index,
+                'name': name,
+                'variant': variant,
+                'quantity': quantity
+            })
+
+        parse_dreamborn_list(deck_text, collect_card)
+
+        assert len(parsed_cards) == 2
+        assert parsed_cards[0]['variant'] == "set:P2 cn:15"
+        assert parsed_cards[1]['variant'] == "set:P2 cn:36"
 
     def test_parse_dreamborn_with_x_quantity(self):
         """Test parsing Dreamborn format with 'x' in quantity."""
@@ -67,7 +188,7 @@ class TestDreambornFormat:
 3x Merlin, Goat"""
 
         parsed_cards = []
-        def collect_card(index, name, enchanted, quantity):
+        def collect_card(index, name, variant, quantity):
             parsed_cards.append({
                 'index': index,
                 'name': name,
@@ -94,12 +215,22 @@ class TestUtilityFunctions:
 
     def test_format_lorcast_query(self):
         """Test Lorcast query formatting."""
-        query = format_lorcast_query("Elsa, Spirit of Winter", False)
+        query = format_lorcast_query("Elsa, Spirit of Winter", None)
         assert "+" in query
         assert "rarity:enchanted" not in query
 
-        query_enchanted = format_lorcast_query("Anna - True-Hearted", True)
+        query_enchanted = format_lorcast_query("Anna - True-Hearted", CardVariant.ENCHANTED.value)
         assert "rarity:enchanted" in query_enchanted
+
+        query_epic = format_lorcast_query("Max Goof - Rockin' Teen", CardVariant.EPIC.value)
+        assert "rarity:epic" in query_epic
+
+        query_iconic = format_lorcast_query("Mickey Mouse - Brave Little Prince", CardVariant.ICONIC.value)
+        assert "rarity:iconic" in query_iconic
+
+        query_print = format_lorcast_query("Mickey Mouse - True Friend", "set:P2 cn:15")
+        assert "set:P2" in query_print
+        assert "cn:15" in query_print
 
 
 # --- Integration Tests for API and Image Fetching ---
@@ -114,6 +245,35 @@ class TestLorcastAPI:
         assert response.status_code == 200
         json_data = response.json()
         assert 'results' in json_data
+
+    def test_format_lorcast_query_epic(self):
+        """Test that the epic variant resolves to the actual epic printing."""
+        query = format_lorcast_query("Aladdin - Barreling Through", CardVariant.EPIC.value)
+        response = request_lorcast(f'https://api.lorcast.com/v0/cards/search?q={query}')
+        card = response.json()['results'][0]
+        assert card['rarity'] == 'Epic'
+
+    def test_format_lorcast_query_iconic(self):
+        """Test that the iconic variant resolves to the actual iconic printing."""
+        query = format_lorcast_query("Ariel - Ethereal Voice", CardVariant.ICONIC.value)
+        response = request_lorcast(f'https://api.lorcast.com/v0/cards/search?q={query}')
+        card = response.json()['results'][0]
+        assert card['rarity'] == 'Iconic'
+
+    def test_format_lorcast_query_promo(self):
+        """Test that the promo variant resolves to the actual promo printing."""
+        query = format_lorcast_query("Kuzco - Temperamental Emperor", CardVariant.PROMO.value)
+        response = request_lorcast(f'https://api.lorcast.com/v0/cards/search?q={query}')
+        card = response.json()['results'][0]
+        assert card['rarity'] == 'Promo'
+
+    def test_format_lorcast_query_specific_print(self):
+        """Test that a set + collector number marker resolves to the exact printing."""
+        query = format_lorcast_query("Mickey Mouse - True Friend", "set:P2 cn:15")
+        response = request_lorcast(f'https://api.lorcast.com/v0/cards/search?q={query}')
+        card = response.json()['results'][0]
+        assert card['set']['code'] == 'P2'
+        assert card['collector_number'] == '15'
 
 
 @pytest.mark.integration

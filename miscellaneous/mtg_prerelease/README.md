@@ -1,6 +1,6 @@
 # MTG Prerelease Date Stamp
 
-*Note: This tutorial is highly experimental. Your milelage may vary.*
+*Note: This tutorial is highly experimental. Your mileage may vary.*
 
 For years, Wizards of the Coast produced prerelease cards with a date stamp. These prerelease cards have been discontinued but it is possible to replicate these stamps using a Silhouette cutting machine.
 
@@ -14,7 +14,7 @@ Additionally, you can use the Print and Cut feature to align the date stamp as w
 
 ## Supply List
 
-Silhouette heat pens are compatiable with Cameo 5, Cameo 5 Plus, Cameo Pro (Mark 2), Portrait 4, and Curio 2.
+Silhouette heat pens are compatible with Cameo 5, Cameo 5 Plus, Cameo Pro (Mark 2), Portrait 4, and Curio 2.
 
 They come in three different sizes (coupon code: `DIYBOARDGAMES`):
 * [Super fine (0.5 mm)](https://www.silhouetteamerica.com/heat-pen-super-fine-oxz?affiliate_code=uKx6VtFWmI&referring_service=link) 

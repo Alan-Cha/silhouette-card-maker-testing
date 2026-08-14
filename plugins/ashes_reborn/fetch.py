@@ -8,7 +8,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from plugins.ashes_reborn.deck_formats import DeckFormat, parse_deck
 from plugins.ashes_reborn.ashes import get_handle_card, ImageServer
-from utilities import ensure_directory
+from utilities import configure_console_encoding, ensure_directory
 
 front_directory = path.join(REPO_ROOT, 'game', 'front')
 
@@ -32,4 +32,5 @@ def cli(deck_path: str, format: DeckFormat, source: ImageServer):
     )
 
 if __name__ == '__main__':
+    configure_console_encoding()
     cli()

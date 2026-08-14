@@ -8,7 +8,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from plugins.one_piece.deck_formats import DeckFormat, parse_deck
 from plugins.one_piece.one_piece import get_handle_card
-from utilities import ensure_directory
+from utilities import configure_console_encoding, ensure_directory
 
 front_directory = path.join(REPO_ROOT, 'game', 'front')
 
@@ -28,4 +28,5 @@ def cli(deck_path: str, format: DeckFormat):
         parse_deck(deck_text, format, get_handle_card(front_directory))
 
 if __name__ == '__main__':
+    configure_console_encoding()
     cli()

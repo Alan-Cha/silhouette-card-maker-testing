@@ -8,7 +8,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from plugins.bushiroad.deck_formats import DeckFormat, parse_deck
 from plugins.bushiroad.bushiroad import get_handle_card
-from utilities import ensure_directory
+from utilities import configure_console_encoding, ensure_directory
 
 front_directory = path.join(REPO_ROOT, 'game', 'front')
 back_directory = path.join(REPO_ROOT, 'game', 'double_sided')
@@ -34,4 +34,5 @@ def cli(deck_path: str, format: DeckFormat):
     )
 
 if __name__ == '__main__':
+    configure_console_encoding()
     cli()

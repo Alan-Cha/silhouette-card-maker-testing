@@ -3,10 +3,13 @@ import re
 import requests
 import time
 from io import BytesIO
+from typing import Optional
 
 from PIL import Image
 
 session = requests.Session()
+
+_promo_set_codes_cache: Optional[list] = None
 
 def request_lorcast(
     query: str,
@@ -22,8 +25,38 @@ def request_lorcast(
 
     return r
 
-def format_lorcast_query(name: str, enchanted: bool) -> str:
-    return re.sub(r'[^\w]', '+', name) + "+" + enchanted*"rarity:enchanted"
+def get_promo_set_codes() -> list:
+    # Lorcast's `rarity:` search filter does not recognize "promo" as a value,
+    # even though "Promo" is a real rarity in the card data. To find promo
+    # printings, look up sets whose code isn't a normal numbered set (e.g.
+    # "P1", "cp", "D23") since promo cards are only printed in those sets.
+    # The result is cached since sets rarely change within a single run.
+    global _promo_set_codes_cache
+
+    if _promo_set_codes_cache is None:
+        sets_json = request_lorcast('https://api.lorcast.com/v0/sets').json()['results']
+        # Normal (non-promo) sets are expected to have a purely numerical set code.
+        _promo_set_codes_cache = [s['code'] for s in sets_json if not s['code'].isdigit()]
+
+    return _promo_set_codes_cache
+
+def format_lorcast_query(name: str, variant: Optional[str]) -> str:
+    query = re.sub(r'[^\w]', '+', name)
+
+    if variant == 'promo':
+        promo_set_codes = get_promo_set_codes()
+        if not promo_set_codes:
+            raise ValueError('No promo set codes found from Lorcast API')
+        set_clause = '+or+'.join(f'set:{code}' for code in promo_set_codes)
+        query += f'+({set_clause})'
+    elif variant and variant.startswith('set:'):
+        # A specific print marker (e.g. "set:P2 cn:15") built by
+        # deck_formats.py to select an exact printing - append it as-is.
+        query += '+' + variant.replace(' ', '+')
+    elif variant:
+        query += f'+rarity:{variant}'
+
+    return query
 
 def remove_nonalphanumeric(s: str) -> str:
     return re.sub(r'[^\w]', '', s)
@@ -32,12 +65,12 @@ def fetch_card(
     index: int,
     quantity: int,
     name: str,
-    enchanted: bool,
+    variant: Optional[str],
     front_img_dir: str,
 ):
     # Filter out symbols from card names
     clean_card_name = remove_nonalphanumeric(name)
-    card_query = format_lorcast_query(name, enchanted)
+    card_query = format_lorcast_query(name, variant)
 
     card_info_query = f'https://api.lorcast.com/v0/cards/search?q={card_query}'
 
@@ -68,12 +101,12 @@ def fetch_card(
 def get_handle_card(
     front_img_dir: str,
 ):
-    def configured_fetch_card(index: int, name: str, enchanted: bool, quantity: int = 1):
+    def configured_fetch_card(index: int, name: str, variant: Optional[str], quantity: int = 1):
         fetch_card(
             index,
             quantity,
             name,
-            enchanted,
+            variant,
             front_img_dir,
         )
 

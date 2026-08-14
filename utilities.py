@@ -5,6 +5,7 @@ import math
 import filetype
 import os
 import re
+import sys
 from glob import glob
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -18,6 +19,18 @@ import page_manager
 import size_convert
 from enums import Registration, Orientation, OrientationMode, Variant
 
+def configure_console_encoding() -> None:
+    """Reconfigure stdout/stderr to UTF-8, so printing non-ASCII card names
+    doesn't crash with UnicodeEncodeError on narrow console codepages (e.g.
+    Windows cp1252). Call once at CLI startup, not at import time, so this
+    module doesn't rewrite an embedding process's stdout/stderr as a side effect."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            try:
+                stream.reconfigure(encoding='utf-8', errors='backslashreplace')
+            except Exception:
+                pass
+
 # Specify directory locations
 # Use Path(__file__).parent to ensure paths work regardless of where script is run from
 SCRIPT_DIR = Path(__file__).parent
@@ -25,6 +38,21 @@ asset_directory = SCRIPT_DIR / 'assets'
 
 layouts_filename = 'layouts.json'
 layouts_path = asset_directory / layouts_filename
+
+# Optional extra layout definitions to merge on top of layouts.json. Lets a layout-consuming
+# project layer its own card sizes, paper sizes, and layouts on top of this repo's without
+# modifying it. Opt-in: both are empty/unset by default, so load_layout_config() behaves
+# exactly as if this didn't exist. Two ways to supply extra files, merged in this order:
+#   1. Drop any number of *.json files into EXTRA_LAYOUTS_DIR (merged in filename order) -
+#      no configuration needed, just copy a file in.
+#   2. Point EXTRA_LAYOUTS_ENV at one or more file paths (os.pathsep-separated, merged in
+#      order) - for files that live outside EXTRA_LAYOUTS_DIR.
+EXTRA_LAYOUTS_DIR = asset_directory / 'extra_layouts'
+EXTRA_LAYOUTS_ENV = 'SCM_EXTRA_LAYOUTS'
+
+# Optional override for where cutting templates get written/read (default: SCRIPT_DIR-relative
+# cutting_templates/ directories in generate_dxf.py and dxf_to_studio3.py).
+CUTTING_TEMPLATES_DIR_ENV = 'SCM_CUTTING_TEMPLATES_DIR'
 
 # Specify valid mimetypes for images
 # List can be found here: https://github.com/h2non/filetype.py?tab=readme-ov-file#image
@@ -50,6 +78,11 @@ valid_mimetypes = (
     "image/qoi",
     "image/dds"
 )
+
+def guess_extension(data: bytes, default: str = '.png') -> str:
+    """Sniff the file extension from raw image bytes, falling back to `default`."""
+    kind = filetype.guess(data)
+    return f'.{kind.extension}' if kind else default
 
 # Approximately 1.25mm of bleed assuming 300 PPI: ceil(1.25mm * 1in/25.4mm * 300ppi)
 MINIMUM_BLEED = 15
@@ -141,10 +174,70 @@ class LayoutConfig(BaseModel):
     specialty_layouts: Optional[Dict[str, SpecialtyLayoutDef]] = None
 
 
+def extra_layout_paths() -> list[Path]:
+    """Return every extra layout file, in merge/precedence order.
+
+    Every *.json file found in EXTRA_LAYOUTS_DIR (sorted by filename), followed by every
+    file listed in EXTRA_LAYOUTS_ENV (an os.pathsep-separated list). Empty if neither is
+    configured.
+    """
+    dir_paths = sorted(EXTRA_LAYOUTS_DIR.glob('*.json')) if EXTRA_LAYOUTS_DIR.is_dir() else []
+    env_paths = [Path(p) for p in os.environ.get(EXTRA_LAYOUTS_ENV, '').split(os.pathsep) if p]
+    return dir_paths + env_paths
+
+
+def find_extra_layout_owner(section: str, key: str) -> Path | None:
+    """Return the first file from extra_layout_paths() whose `section` dict already
+    contains `key` (e.g. section='card_sizes', key='mtg'), or None if none do."""
+    for path in extra_layout_paths():
+        with open(path, 'r') as f:
+            if key in json.load(f).get(section, {}):
+                return path
+    return None
+
+
+def merge_extra_layouts(raw_config: dict) -> dict:
+    """Merge extra card_sizes/paper_sizes/layouts on top of raw_config, in place.
+
+    Merges every file from extra_layout_paths(), in order, into raw_config's
+    card_sizes/paper_sizes/layouts dicts. Each key (card size, paper size, or
+    paper+card+variant layout) must be new: raise ValueError on any collision with raw_config
+    or an earlier file in the merge, since these files are meant to be pure additions, not
+    overrides. No-op if extra_layout_paths() is empty.
+    """
+    for path in extra_layout_paths():
+        with open(path, 'r') as f:
+            extra = json.load(f)
+
+        for section in ('card_sizes', 'paper_sizes'):
+            for key, value in extra.get(section, {}).items():
+                if key in raw_config[section]:
+                    raise ValueError(f"'{key}' in {section} of {path} already defined")
+                raw_config[section][key] = value
+
+        for paper, cards in extra.get('layouts', {}).items():
+            for card, variants in cards.items():
+                for variant, layout_def in variants.items():
+                    if variant in raw_config['layouts'].get(paper, {}).get(card, {}):
+                        raise ValueError(f"layout '{paper}'/'{card}'/'{variant}' in {path} already defined")
+                    raw_config['layouts'].setdefault(paper, {}).setdefault(card, {})[variant] = layout_def
+
+    return raw_config
+
+
+def resolve_cutting_templates_dir(default: Path) -> Path:
+    """Return the CUTTING_TEMPLATES_DIR_ENV override if set, else default."""
+    override = os.environ.get(CUTTING_TEMPLATES_DIR_ENV)
+    return Path(override) if override else default
+
+
 def load_layout_config() -> LayoutConfig:
-    """Load and validate layouts.json from the assets directory."""
+    """Load and validate layouts.json from the assets directory, merging in any extra
+    layout definitions from EXTRA_LAYOUTS_ENV."""
     with open(layouts_path, 'r') as f:
-        return LayoutConfig(**json.load(f))
+        raw_config = json.load(f)
+    merge_extra_layouts(raw_config)
+    return LayoutConfig(**raw_config)
 
 
 # Borderless mode tricks Silhouette Studio into using a smaller effective inset than its

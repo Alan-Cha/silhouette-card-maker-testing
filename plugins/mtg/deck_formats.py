@@ -8,16 +8,14 @@ from enum import Enum
 from typing import Callable, Tuple
 from xml.etree import ElementTree as ET
 
-from pyparsing import line
-
 from plugins.mtg.patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 
 import cloudscraper
-import filetype
 import mtg_parser
 import requests
 
 from plugins.mtg.common import remove_nonalphanumeric
+from utilities import guess_extension
 
 card_data_tuple = Tuple[str, str, int, int]
 
@@ -372,8 +370,7 @@ def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, do
                 clean_name = remove_nonalphanumeric(name)
                 response = requests.get(image_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
                 response.raise_for_status()
-                kind = filetype.guess(response.content)
-                ext = f'.{kind.extension}' if kind else '.png'
+                ext = guess_extension(response.content)
                 for counter in range(quantity):
                     image_path = os.path.join(front_img_dir, f'{str(index)}{clean_name}{str(counter + 1)}{ext}')
                     with open(image_path, 'wb') as f:
@@ -383,8 +380,7 @@ def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, do
                     print(f'Fetching back image from URL: {image_back_url}')
                     back_response = requests.get(image_back_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
                     back_response.raise_for_status()
-                    back_kind = filetype.guess(back_response.content)
-                    back_ext = f'.{back_kind.extension}' if back_kind else '.png'
+                    back_ext = guess_extension(back_response.content)
                     for counter in range(quantity):
                         image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_name}{str(counter + 1)}{back_ext}')
                         with open(image_path, 'wb') as f:
@@ -405,14 +401,39 @@ def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, do
 #     MTGJSON, Scryfall, Tapped Out, TCGPlayer
 def parse_url(deck_url, handle_card: Callable) -> None:
     scraper = cloudscraper.create_scraper()
-    cards = mtg_parser.parse_deck(deck_url, scraper)
+    try:
+        cards = mtg_parser.parse_deck(deck_url, scraper)
+    except Exception as e:
+        print(f"Error while fetching deck from URL: {deck_url} ({e})")
+        return
+
     if not cards:
-        print(f"Failed to parse deck from URL: {deck_url}")
+        # mtg_parser returns None when no parser recognizes the URL (unsupported
+        # site or malformed link), as opposed to a recognized site failing to fetch.
+        print(f"URL not recognized by any supported site: {deck_url}")
         return
 
     error_lines = []
+    card_iter = iter(cards)
+    index = 0
 
-    for index, card in enumerate(cards, start=1):
+    while True:
+        try:
+            card = next(card_iter)
+        except StopIteration:
+            break
+        except Exception as e:
+            # mtg_parser lazily fetches/parses per card, so a site-side issue
+            # (deck deleted, made private, malformed API response, etc.) only
+            # surfaces here, mid-iteration, rather than when parse_deck() is called.
+            print(
+                f"Failed to parse deck from URL: {deck_url}. "
+                f"The deck may be private, deleted, or the URL may be incorrect. "
+                f"(underlying error: {e!r})"
+            )
+            break
+
+        index += 1
         name = card.name
         set_code = card.extension
         collector_number = card.number
@@ -427,7 +448,7 @@ def parse_url(deck_url, handle_card: Callable) -> None:
             handle_card(index, name, set_code, collector_number, quantity)
         except Exception as e:
             print(f'Error: {e}')
-            error_lines.append((line, e))
+            error_lines.append((name, e))
 
     if len(error_lines) > 0:
         print(f'Errors: {error_lines}')

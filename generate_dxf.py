@@ -29,10 +29,11 @@ import page_manager
 import dxf_manager
 import size_convert
 from enums import Orientation, OrientationMode, Variant
-from utilities import LayoutConfig, load_layout_config, template_name, resolve_card_size_alias, resolve_paper_size_alias, get_all_card_size_names, get_all_paper_size_names, find_best_orientation, BORDERLESS_INSET_MM, BORDERLESS_EXPANSION_MM
+from utilities import LayoutConfig, load_layout_config, template_name, resolve_card_size_alias, resolve_paper_size_alias, get_all_card_size_names, get_all_paper_size_names, find_best_orientation, resolve_cutting_templates_dir, extra_layout_paths, find_extra_layout_owner, BORDERLESS_INSET_MM, BORDERLESS_EXPANSION_MM
 
 SCRIPT_DIR = Path(__file__).parent
-OUTPUT_DIR = SCRIPT_DIR / "cutting_templates" / "dxf"
+CUTTING_TEMPLATES_DIR = resolve_cutting_templates_dir(SCRIPT_DIR / "cutting_templates")
+OUTPUT_DIR = CUTTING_TEMPLATES_DIR / "dxf"
 LAYOUTS_PATH = SCRIPT_DIR / "assets" / "layouts.json"
 
 
@@ -275,12 +276,32 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
     print(f"  {paper_label} + {card_label} ({variant}): {num_cols}x{num_rows} ({num_cards} cards), max_length={computed.max_length_mm}mm -> {output_path}")
 
     if save:
-        with open(LAYOUTS_PATH, 'r') as f:
-            raw_config = json.load(f)
+        # Prefer the extra file that already defines this card size (or, failing that, this
+        # paper size), so a layout lands alongside the size it's for rather than an unrelated
+        # file when more than one extra layout file is in use. Falls back to the last extra
+        # file, then this repo's own layouts.json, so opt-in extra sizes stay out of it.
+        extra_paths = extra_layout_paths()
+        save_path = (
+            find_extra_layout_owner('card_sizes', card_label)
+            or find_extra_layout_owner('paper_sizes', paper_label)
+            or (extra_paths[-1] if extra_paths else LAYOUTS_PATH)
+        )
+
+        if save_path.exists():
+            with open(save_path, 'r') as f:
+                raw_config = json.load(f)
+        else:
+            raw_config = {}
+        raw_config.setdefault("card_sizes", {})
+        raw_config.setdefault("paper_sizes", {})
+        raw_config.setdefault("layouts", {})
 
         changed = False
 
-        if card_label not in raw_config["card_sizes"]:
+        # Existence checks use `config` (the already-merged view loaded at the top of this
+        # command) rather than raw_config, since raw_config may be just a delta file that
+        # doesn't redefine sizes already present in the base layouts.json or an earlier delta.
+        if card_label not in config.card_sizes:
             raw_config["card_sizes"][card_label] = {
                 "width": resolved_card_width,
                 "height": resolved_card_height,
@@ -289,7 +310,7 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
             print(f"  Saved new card size '{card_label}': {resolved_card_width} x {resolved_card_height}, radius {resolved_card_radius}")
             changed = True
 
-        if paper_label not in raw_config["paper_sizes"]:
+        if paper_label not in config.paper_sizes:
             raw_config["paper_sizes"][paper_label] = {
                 "width": resolved_paper_width,
                 "height": resolved_paper_height,
@@ -299,9 +320,9 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
 
         # Check if layout exists for this paper/card/variant combination
         layout_exists = (
-            paper_label in raw_config["layouts"]
-            and card_label in raw_config["layouts"].get(paper_label, {})
-            and variant in raw_config["layouts"][paper_label].get(card_label, {})
+            paper_label in config.layouts
+            and card_label in config.layouts.get(paper_label, {})
+            and variant in config.layouts[paper_label].get(card_label, {})
         )
 
         if not layout_exists:
@@ -320,7 +341,8 @@ def single(output_file, paper_size, card_size, card_height, card_width, card_rad
             changed = True
 
         if changed:
-            with open(LAYOUTS_PATH, 'w') as f:
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(save_path, 'w') as f:
                 json.dump(raw_config, f, indent=4)
                 f.write('\n')
         else:

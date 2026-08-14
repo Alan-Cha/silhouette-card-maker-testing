@@ -2,7 +2,8 @@ from os import path
 from requests import Response, Session
 from requests.exceptions import HTTPError
 from time import sleep
-import filetype
+
+from utilities import guess_extension
 
 LIMITLESS_TCG_URL_TEMPLATE = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/{set_id}/{set_id}_{card_no}_R_EN_LG.png'
 
@@ -125,10 +126,10 @@ def fetch_card(
         except Exception as e:
             raise Exception(f'Failed to fetch card "{card_name}" (set: {set_id}, number: {card_number}): {e}')
 
-    file_ext = filetype.guess(card_art).extension
+    extension = guess_extension(card_art)
 
     for counter in range(quantity):
-        image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}.{file_ext}')
+        image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}{extension}')
 
         with open(image_path, 'wb') as f:
             f.write(card_art)

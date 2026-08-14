@@ -23,9 +23,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Set
 
 import requests
-from filetype.filetype import guess_extension
 
 from .common import remove_nonalphanumeric
+from utilities import guess_extension
 
 session = requests.Session()
 
@@ -115,8 +115,8 @@ def write_slot_image(
         return
 
     clean_name = remove_nonalphanumeric(name)
-    card_art_ext = guess_extension(card_art)
-    image_path = os.path.join(output_dir, f'{slot}{clean_name}.{card_art_ext}')
+    extension = guess_extension(card_art)
+    image_path = os.path.join(output_dir, f'{slot}{clean_name}{extension}')
 
     with open(image_path, 'wb') as f:
         f.write(card_art)

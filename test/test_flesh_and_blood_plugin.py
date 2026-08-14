@@ -8,7 +8,7 @@ import tempfile
 import pytest
 
 from plugins.flesh_and_blood.deck_formats import DeckFormat, parse_deck, parse_fabrary, Pitch
-from plugins.flesh_and_blood.fabtcg import request_fabtcg, get_handle_card
+from plugins.flesh_and_blood.fabtcg import request_fabtcg, get_handle_card, build_card_id, CARD_URL_TEMPLATE
 
 
 # --- Unit Tests for Deck Format Parsing ---
@@ -115,7 +115,8 @@ class TestFabtcgAPI:
 
     def test_fabtcg_api_availability(self):
         """Test that FabTCG API is available and responding."""
-        response = request_fabtcg("https://cards.fabtcg.com/api/search/v1/cards/?name=sink+below")
+        card_id = build_card_id("Sink Below", Pitch.RED)
+        response = request_fabtcg(CARD_URL_TEMPLATE.format(card_id=card_id))
         assert response.status_code == 200
 
 

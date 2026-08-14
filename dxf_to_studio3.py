@@ -38,7 +38,7 @@ import platform
 import click
 
 from enums import Orientation, Variant, Unit
-from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, template_name, BORDERLESS_EXPANSION_MM
+from utilities import load_layout_config, get_all_paper_size_names, resolve_paper_size_alias, LayoutConfig, resolve_cutting_templates_dir, BORDERLESS_EXPANSION_MM
 import size_convert
 import page_manager
 
@@ -85,7 +85,7 @@ ASSETS_DIR = Path(__file__).parent / "assets"
 CALIBRATION_FILE = ASSETS_DIR / "gui_coordinates.json"
 
 # Batch conversion defaults
-TEMPLATES_DIR = Path(__file__).parent / "cutting_templates"
+TEMPLATES_DIR = resolve_cutting_templates_dir(Path(__file__).parent / "cutting_templates")
 
 
 
@@ -573,9 +573,10 @@ class SilhouetteAutomation:
     def flip_vertically(self):
         """Select all objects and flip them vertically via the right-click context menu.
 
-        DXF files are imported by Silhouette Studio with a vertical flip. This corrects
-        the orientation by selecting all objects and applying Flip Vertically through
-        the cutting path right-click context menu.
+        Corrects SS's image-fill mirroring on closed-polyline shapes (see
+        add_rounded_rectangle() in dxf_manager.py). Also mirrors the cutting
+        path, harmless today since shapes are symmetric (single uniform
+        corner radius).
         """
         print("  Flipping vertically...")
         pyautogui.hotkey('ctrl', 'a')
@@ -646,7 +647,7 @@ class SilhouetteAutomation:
         1. Open DXF
         2. Page setup (cutting mat, media size, orientation, dimensions)
         3. Center paths
-        4. Flip vertically (corrects vertical flip from DXF import)
+        4. Flip vertically (corrects the image-fill mirror on closed-polyline shapes)
         5. Set registration marks
         6. Save as .studio3
 
@@ -692,8 +693,6 @@ class SilhouetteAutomation:
         if center:
             self.center_to_page()
 
-        # DXF files are imported into Silhouette Studio with a vertical flip.
-        # Flip vertically after centering to correct the orientation.
         self.flip_vertically()
 
         if registration:
@@ -757,8 +756,8 @@ CALIBRATION_ELEMENTS = [
     {
         "id": "cutting_mat_12x24",
         "name": "12x24 cutting mat option",
-        "description": "Open the cutting mat dropdown again and "
-                       "click the 12\" x 24\" option."
+        "description": "The cutting mat dropdown should be open. "
+                       "Click the 12\" x 24\" option."
     },
     {
         "id": "media_size_dropdown",
@@ -768,85 +767,89 @@ CALIBRATION_ELEMENTS = [
     {
         "id": "media_size_12x12",
         "name": "12x12 media size option",
-        "description": "The 12x12 cutting mat must be selected and the media size dropdown must be open. "
+        "description": "The 12x12 cutting mat must be selected and the media size dropdown should be open. "
                        "Click the 12\" x 12\" option."
     },
     {
         "id": "media_size_12x24",
         "name": "12x24 media size option",
-        "description": "Select the 12x24 cutting mat first, then open the media size dropdown again and "
-                       "click the 12\" x 24\" option."
+        "description": "The 12x24 cutting mat must be selected and the media size dropdown should be open. "
+                       "Click the 12\" x 24\" option."
     },
     {
         "id": "media_width_field",
         "name": "Media width input field",
-        "description": "The numerical input field for custom media width."
+        "description": "Click the numerical input field for custom media width."
     },
     {
         "id": "media_height_field",
         "name": "Media height input field",
-        "description": "The numerical input field for custom media height."
+        "description": "Click the numerical input field for custom media height."
     },
     {
         "id": "portrait_button",
         "name": "Portrait orientation button",
-        "description": "Scroll down if needed to find the orientation buttons."
+        "description": "Click the portrait orientation button."
     },
     {
         "id": "landscape_button",
         "name": "Landscape orientation button",
-        "description": "Next to the Portrait button"
+        "description": "Click the landscape orientation button."
     },
     # --- Transform ---
     {
         "id": "transform",
         "name": "Transform icon in sidebar",
-        "description": "Click the Transform tool icon in the left sidebar"
+        "description": "Click the Transform panel icon in the left sidebar"
     },
     {
         "id": "center_to_page",
         "name": "Center to Page button",
-        "description": "The Transform panel should now be open. "
-                       "Find the Center to Page button."
+        "description": "The Transform panel should be open. "
+                       "Click the Center to Page button."
     },
     # --- Print & Cut ---
     {
         "id": "print_cut",
         "name": "Print & Cut icon in sidebar",
-        "description": "Click the Print & Cut (registration marks) tool icon in the left sidebar"
+        "description": "Click the Print & Cut (registration marks) panel icon in the left sidebar"
     },
     {
         "id": "regmark_checkbox",
         "name": "Registration marks enable checkbox",
-        "description": "The Print & Cut panel should now be open. "
-                       "Find the checkbox to enable registration marks."
+        "description": "The Print & Cut panel should be open. "
+                       "Click the checkbox to enable registration marks."
     },
     {
         "id": "regmark_length_field",
         "name": "Registration mark length input field",
-        "description": "The numerical input field for mark length"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark length"
     },
     {
         "id": "regmark_thickness_field",
         "name": "Registration mark thickness input field",
-        "description": "The numerical input field for mark thickness"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark thickness"
     },
     {
         "id": "regmark_inset_field",
         "name": "Registration mark inset input field",
-        "description": "The numerical input field for mark inset"
+        "description": "The Print & Cut panel should be open. "
+                       "Click the numerical input field for mark inset"
     },
     # --- Flip Vertically (right-click context menu) ---
     {
         "id": "cutting_path_menu",
-        "name": "Cutting path right-click target",
-        "description": "Click on any cutting path on the canvas "
+        "name": "Open cutting path menu (right-click)",
+        "description": "Select on any cutting path on the canvas "
                        "(used as the target for the right-click context menu)."
+                       "Right click anywhere to open the context menu."
     },
     {
         "id": "context_flip_vertically",
         "name": "Flip Vertically option in context menu",
-        "description": "Right-click a cutting path to open the context menu. "
+        "description": "The cutting path context menu should be open. "
                        "Click the 'Flip Vertically' option."
     },
 ]
@@ -1063,30 +1066,52 @@ def calibrate(studio_path):
     # Start Silhouette Studio at fixed size
     _, window_rect = start_and_resize_studio(studio_path)
 
+    output_file = CALIBRATION_FILE
+    existing = load_calibration(output_file)
+    existing_elements = existing.get("elements", {}) if existing else {}
+
     click.echo()
-    version = click.prompt("What version of Silhouette Studio are you using?", default="unknown")
+    version = click.prompt(
+        "What version of Silhouette Studio are you using?",
+        default=existing.get("silhouette_studio_version", "unknown") if existing else "unknown"
+    )
     click.echo()
 
-    output_file = CALIBRATION_FILE
     click.echo(f"Calibration will be saved to: {output_file}")
+    if existing_elements:
+        click.echo(f"Loaded {len(existing_elements)} existing element(s); skipped elements keep their current coordinates.")
     click.echo()
 
     calibration = {
         "silhouette_studio_version": version,
         "window": window_rect,
-        "elements": {},
+        "elements": dict(existing_elements),
         "notes": "All coordinates are relative to the window top-left corner"
     }
 
     try:
-        for element in CALIBRATION_ELEMENTS:
+        index = 0
+        while index < len(CALIBRATION_ELEMENTS):
+            element = CALIBRATION_ELEMENTS[index]
             click.echo(f"\n--- {element['name']} ---")
             click.echo(f"    {element['description']}")
 
-            response = input("Position mouse and press Enter (or 's' to skip): ").strip().lower()
+            response = input("Position mouse and press Enter (or 's' to skip, 'b' to go back): ").strip().lower()
+
+            if response == 'b':
+                if index == 0:
+                    click.echo("  Already at the first element.")
+                else:
+                    index -= 1
+                    click.echo("  Going back...")
+                continue
 
             if response == 's':
-                click.echo("  Skipped")
+                if element["id"] in calibration["elements"]:
+                    click.echo("  Skipped (kept existing coordinates)")
+                else:
+                    click.echo("  Skipped")
+                index += 1
                 continue
 
             pos = pyautogui.position()
@@ -1101,6 +1126,7 @@ def calibrate(studio_path):
             }
 
             click.echo(f"  Recorded: relative=({rel_x}, {rel_y})")
+            index += 1
 
     except KeyboardInterrupt:
         click.echo("\n\nCalibration interrupted.")
@@ -1141,26 +1167,22 @@ def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_r
     config = load_layout_config()
 
     if generate_new:
-        # Derive expected DXF/studio3 filenames from layouts.json
+        # Only DXFs that actually exist in out_path are candidates - out_path may only
+        # contain a subset of layouts.json's full catalog (e.g. when
+        # SCM_CUTTING_TEMPLATES_DIR is redirected to a companion project's own card
+        # sizes), so deriving candidates from layouts.json itself (like the old
+        # implementation did) would warn about every entry that will never exist there.
+        # Among the DXFs that do exist, skip ones whose .studio3 is already converted.
+        all_dxf_files = sorted(list((out_path / "dxf").glob("*.dxf")) + list((out_path / "borderless" / "dxf").glob("*.dxf")))
         dxf_files = []
-        for ps, cards in config.layouts.items():
-            for cs, variants in cards.items():
-                for var_str, layout_def in variants.items():
-                    var = Variant(var_str)
-                    name = template_name(ps, cs, var, layout_def.version)
-                    # Borderless templates go in borderless/ subdirectory
-                    if var == Variant.BORDERLESS:
-                        studio3_file = out_path / "borderless" / f"{name}.studio3"
-                        dxf_file = out_path / "borderless" / "dxf" / f"{name}.dxf"
-                    else:
-                        studio3_file = out_path / f"{name}.studio3"
-                        dxf_file = out_path / "dxf" / f"{name}.dxf"
-                    if not studio3_file.exists():
-                        if dxf_file.exists():
-                            dxf_files.append(dxf_file)
-                        else:
-                            click.echo(f"  Warning: missing DXF {dxf_file.name} for {ps} + {cs} + {var}")
-        dxf_files.sort()
+        for dxf_file in all_dxf_files:
+            _, _, variant = parse_dxf_filename(dxf_file.name, config) or (None, None, None)
+            if variant == Variant.BORDERLESS:
+                studio3_file = out_path / "borderless" / dxf_file.with_suffix(".studio3").name
+            else:
+                studio3_file = out_path / dxf_file.with_suffix(".studio3").name
+            if not studio3_file.exists():
+                dxf_files.append(dxf_file)
     else:
         # Search both default and borderless DXF directories
         dxf_files = sorted(list((out_path / "dxf").glob("*.dxf")) + list((out_path / "borderless" / "dxf").glob("*.dxf")))
@@ -1173,8 +1195,6 @@ def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_r
         return
 
     click.echo(f"Found {len(dxf_files)} DXF files to convert")
-    click.echo(f"Registration mark unit: {unit}")
-    click.echo()
 
     if dry_run:
         for dxf_file in dxf_files:
@@ -1192,11 +1212,19 @@ def batch(unit, studio_path, action_delay, calibration_path, generate_new, dry_r
                 paper_w, paper_h = adjust_paper_for_borderless(paper_w, paper_h)
 
             max_len = get_max_length_for_dxf(paper_size, card_size, variant, config, unit)
-            len_str = f", max_length={max_len}{unit}" if max_len is not None else ""
+            len_str = f", max_length={max_len}{unit.value}" if max_len is not None else ""
             click.echo(f"  {dxf_file.name} -> {output_file.name} ({orientation.value}, {paper_w} x {paper_h}{len_str})")
+        click.echo()
+        click.echo(f"Registration mark unit: {unit.value}")
         click.echo()
         click.echo("Dry run complete. No files were converted.")
         return
+
+    for dxf_file in dxf_files:
+        click.echo(f"  {dxf_file.name}")
+    click.echo()
+    click.echo(f"Registration mark unit: {unit.value}")
+    click.echo()
 
     click.echo("=" * 60)
     click.echo("Batch DXF to Studio3 Converter")

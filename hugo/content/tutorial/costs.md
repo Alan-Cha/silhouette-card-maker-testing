@@ -18,7 +18,7 @@ You could make a deck of **100 cards for $10**!
 
 Sure, there may be a significant upfront cost to get started but you can quickly recoup the cost, especially if you're already accustomed to ordering custom cards online, paying for shipping, and sleeving up cards.
 
-These businesses and they charge as much as $2 per card and $0.75 cents per card for bulk orders. That's a farcry from $0.10 per card!
+These businesses and they charge as much as $2 per card and $0.75 cents per card for bulk orders. That's a far cry from $0.10 per card!
 
 The most expensive purchase you'll likely make is the cutting machine, which can cost $300.
 

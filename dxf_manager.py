@@ -11,11 +11,22 @@ ezdxf.options.write_fixed_meta_data_for_testing = True
 def add_rounded_rectangle(msp, x, y, width, height, radius):
     """Add a rounded rectangle as a single closed LWPOLYLINE with bulge factors.
 
-    Uses LWPOLYLINE with bulge-encoded arcs so Silhouette Studio sees one
-    connected path and renders smooth line-to-arc transitions.
+    Uses LWPOLYLINE with bulge-encoded arcs for smooth line-to-arc joins.
 
-    NOTE: SS vertically flips image fills for closed polyline entities. These
-    DXF files are cutting templates only, so fill orientation is irrelevant.
+    LINE+ARC entities were tried instead but rejected: SS renders a sharp
+    corner where line meets arc instead of a smooth join. (LINE+ARC also
+    merges multiple cards into one compound path, but Release Compound Path
+    fixes that — the sharp corner is the actual blocker.)
+
+    SS imports polyline paths at the coordinates as authored — confirmed by
+    manually opening a DXF in SS with no automation involved, the path is
+    never mirrored — but mirrors the image fill. flip_vertically() in
+    dxf_to_studio3.py fixes the fill by mirroring the whole object, which
+    mirrors the path too — a single combined flip, not two separate fixes.
+    Harmless today since generate_dxf() only emits a single uniform corner
+    radius (symmetric shapes); if per-corner radii are ever added, check
+    against the printed card art which orientation is actually correct
+    rather than assuming.
 
     Bulge factor for a 90° CCW arc = tan(22.5°) ≈ 0.4142.
     Positive bulge = CCW arc (left of travel direction).
