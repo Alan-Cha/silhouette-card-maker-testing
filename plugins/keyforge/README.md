@@ -64,13 +64,13 @@ python plugins/keyforge/fetch.py https://www.keyforgegame.com/deck-details/4b868
 Decks of KeyForge deck URL format.
 
 ```
-https://decksofkeyforge.com/decks/79c716d4-9605-4c8d-8b4c-5f9c9d3e2b7a
+https://decksofkeyforge.com/decks/4b86855f-71e5-4f54-a20d-2a58ec973f9c
 ```
 
 You can also use a Decks of KeyForge URL directly in the command line.
 
 ```sh
-python plugins/keyforge/fetch.py https://decksofkeyforge.com/decks/79c716d4-9605-4c8d-8b4c-5f9c9d3e2b7a decks_of_keyforge_url
+python plugins/keyforge/fetch.py https://decksofkeyforge.com/decks/4b86855f-71e5-4f54-a20d-2a58ec973f9c decks_of_keyforge_url
 ```
 
 ### `archon_arcana`
