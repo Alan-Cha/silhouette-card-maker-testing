@@ -12,8 +12,6 @@ DECK_API_TEMPLATE = 'https://www.keyforgegame.com/api/decks/{deck_id}/?links=car
 # Decks of KeyForge and Master Vault both key decks by the same UUID.
 UUID_PATTERN = compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', IGNORECASE)
 
-RATE_LIMIT_SECONDS = 0.075
-
 card_count_tuple = Tuple[str, int] # card name or reference, quantity
 
 def request_mastervault(url: str):
@@ -22,7 +20,7 @@ def request_mastervault(url: str):
     # Check for 2XX response code
     r.raise_for_status()
 
-    sleep(RATE_LIMIT_SECONDS)
+    sleep(0.075)
 
     return r
 
