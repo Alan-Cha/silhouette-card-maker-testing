@@ -37,22 +37,19 @@ def get_deck_card_counts(deck_id: str) -> List[card_count_tuple]:
     linked_cards = data.get('_linked', {}).get('cards', [])
     cards_by_id = {card.get('id'): card for card in linked_cards if card.get('id') is not None}
 
-    def card_name(card_id: str, card: dict) -> str:
+    # data._links.cards lists every card in the deck in order, including non-deck
+    # cards such as Prophecies. A dict preserves insertion order, so counts stay
+    # in the deck's card order too.
+    counts = {}
+    for card_id in data.get('data', {}).get('_links', {}).get('cards', []):
+        card = cards_by_id.get(card_id)
+        if card is None:
+            continue
+
         # Archon Arcana uses English card titles. Fall back to the card ID if
         # neither title field is present rather than raising, matching the
         # arkham_horror_lcg plugin's card.get('name') or code convention.
-        return card.get('card_title_en') or card.get('card_title') or card_id
-
-    # A dict preserves insertion order, so counts stay in the deck's card order.
-    counts = {}
-
-    def add_card(name: str) -> None:
+        name = card.get('card_title_en') or card.get('card_title') or card_id
         counts[name] = counts.get(name, 0) + 1
-
-    # data._links.cards lists every card in the deck including non-deck cards such as Prophecies
-    for card_id in data.get('data', {}).get('_links', {}).get('cards', []):
-        card = cards_by_id.get(card_id)
-        if card is not None:
-            add_card(card_name(card_id, card))
 
     return list(counts.items())
