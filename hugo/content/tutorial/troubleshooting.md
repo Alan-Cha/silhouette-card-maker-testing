@@ -86,7 +86,7 @@ Your machine uses two pinch rollers to grip the mat. Check if that is the case. 
 
 If either the fronts or the backs are offset, then there's most likely an issue with your printer alignment. Refer to your printer's instruction manual and try to recalibrate it. If there's no way to change the printer's settings, try using [offset.py]({{% ref "../docs/offset.md" %}}) to compensate for the offset.
 
-If both the fronts and backs are offset, then there may be an issue with registraion. Ensure that you are printing with the right scale and cutting with the right cutting template, and ensure that there's nothing that can interfere with the registration process.
+If both the fronts and backs are offset, then there may be an issue with registration. Ensure that you are printing with the right scale and cutting with the right cutting template, and ensure that there's nothing that can interfere with the registration process.
 
 ## Why are my cards the wrong size?
 
