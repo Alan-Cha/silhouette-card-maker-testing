@@ -5,9 +5,11 @@ Tests deck format parsing, Archon Arcana card resolution, and Master Vault deck 
 import os
 import shutil
 import tempfile
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from plugins.keyforge import deck_formats, mastervault
 from plugins.keyforge.archonarcana import (API_URL, entry_to_title,
                                            extract_image_url, get_handle_card,
                                            normalize_title,
@@ -15,7 +17,7 @@ from plugins.keyforge.archonarcana import (API_URL, entry_to_title,
                                            request_archonarcana, resolve_card,
                                            translate_special_characters)
 from plugins.keyforge.deck_formats import (DeckFormat, parse_archon_arcana,
-                                           parse_deck)
+                                           parse_deck, parse_deck_url)
 from plugins.keyforge.mastervault import extract_deck_id, get_deck_card_counts
 
 # A stable, public deck used for Master Vault integration tests.
@@ -142,6 +144,85 @@ class TestMasterVaultDeckId:
     def test_raises_without_uuid(self):
         with pytest.raises(Exception):
             extract_deck_id('https://decksofkeyforge.com/decks/not-a-real-id')
+
+
+# --- Unit Tests for Master Vault Defensive Field Access ---
+
+class TestGetDeckCardCountsDefensive:
+    """Test get_deck_card_counts against malformed/incomplete API data."""
+
+    def _fake_response(self, data: dict):
+        response = MagicMock()
+        response.json.return_value = data
+        return response
+
+    def test_missing_title_fields_falls_back_to_card_id(self):
+        # A card record missing both card_title_en and card_title (e.g. an
+        # unannounced/non-standard card) must not raise a KeyError.
+        data = {
+            '_linked': {'cards': [{'id': 'card-1'}]},
+            'data': {'_links': {'cards': ['card-1']}},
+        }
+        with patch.object(mastervault, 'request_mastervault', return_value=self._fake_response(data)):
+            cards = mastervault.get_deck_card_counts('deck-1')
+
+        assert cards == [('card-1', 1)]
+
+    def test_missing_id_is_skipped_without_crashing(self):
+        # A linked card missing 'id' must be skipped rather than raising a KeyError.
+        data = {
+            '_linked': {'cards': [{'card_title': 'Ecto-Charge'}]},
+            'data': {'_links': {'cards': ['card-1']}},
+        }
+        with patch.object(mastervault, 'request_mastervault', return_value=self._fake_response(data)):
+            cards = mastervault.get_deck_card_counts('deck-1')
+
+        assert cards == []
+
+    def test_prefers_english_title_over_localized_title(self):
+        data = {
+            '_linked': {'cards': [{'id': 'card-1', 'card_title': 'Titre', 'card_title_en': 'Title'}]},
+            'data': {'_links': {'cards': ['card-1']}},
+        }
+        with patch.object(mastervault, 'request_mastervault', return_value=self._fake_response(data)):
+            cards = mastervault.get_deck_card_counts('deck-1')
+
+        assert cards == [('Title', 1)]
+
+
+# --- Unit Tests for Master Vault Multi-Deck URL Batches ---
+
+class TestParseDeckUrlResilience:
+    """A bad deck URL must not drop decks already fetched earlier in the batch."""
+
+    def test_bad_deck_does_not_drop_already_fetched_decks(self):
+        def fake_extract_deck_id(line):
+            if 'bad' in line:
+                raise Exception(f'could not find a deck ID in "{line}"')
+            return line
+
+        def fake_get_deck_card_counts(deck_id):
+            return [(f'{deck_id}-card', 1)]
+
+        deck_text = '\n'.join(['good-deck-1', 'bad-deck', 'good-deck-2'])
+
+        collected = []
+        with patch.object(deck_formats, 'extract_deck_id', side_effect=fake_extract_deck_id), \
+             patch.object(deck_formats, 'get_deck_card_counts', side_effect=fake_get_deck_card_counts):
+            parse_deck_url(deck_text, lambda index, name, quantity: collected.append((index, name, quantity)))
+
+        names = [name for _, name, _ in collected]
+        assert names == ['good-deck-1-card', 'good-deck-2-card']
+
+    def test_all_decks_bad_reports_errors_and_fetches_nothing(self):
+        def fake_extract_deck_id(line):
+            raise Exception(f'could not find a deck ID in "{line}"')
+
+        collected = []
+        with patch.object(deck_formats, 'extract_deck_id', side_effect=fake_extract_deck_id):
+            parse_deck_url('bad-deck-1\nbad-deck-2', lambda index, name, quantity: collected.append((index, name, quantity)))
+
+        assert collected == []
 
 
 # --- Unit Tests for Archon Arcana List Format ---
