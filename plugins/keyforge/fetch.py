@@ -20,20 +20,23 @@ front_directory = path.join(REPO_ROOT, 'game', 'front')
 def cli(deck_path: str, format: DeckFormat):
     ensure_directory(front_directory)
 
-    if not path.isfile(deck_path):
-        print(f'{deck_path} is not a valid file.')
-        return
+    if format in (DeckFormat.MASTER_VAULT_URL, DeckFormat.DECKS_OF_KEYFORGE_URL):
+        deck_text = deck_path
+    else:
+        if not path.isfile(deck_path):
+            print(f'{deck_path} is not a valid file.')
+            return
 
-    with open(deck_path, 'r') as deck_file:
-        deck_text = deck_file.read()
+        with open(deck_path, 'r') as deck_file:
+            deck_text = deck_file.read()
 
-        parse_deck(
-            deck_text,
-            format,
-            get_handle_card(
-                front_directory
-            )
+    parse_deck(
+        deck_text,
+        format,
+        get_handle_card(
+            front_directory
         )
+    )
 
 if __name__ == '__main__':
     cli()

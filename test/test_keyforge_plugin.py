@@ -35,11 +35,8 @@ class TestDeckFormatEnum:
 
     def test_format_values(self):
         assert DeckFormat.ARCHON_ARCANA.value == 'archon_arcana'
-        assert DeckFormat.MASTER_VAULT.value == 'master_vault'
-
-    def test_no_separate_decks_of_keyforge_format(self):
-        # Decks of KeyForge URLs are handled by the master_vault format.
-        assert not hasattr(DeckFormat, 'DECKS_OF_KEYFORGE')
+        assert DeckFormat.MASTER_VAULT_URL.value == 'master_vault_url'
+        assert DeckFormat.DECKS_OF_KEYFORGE_URL.value == 'decks_of_keyforge_url'
 
 
 # --- Unit Tests for Special Character Translation ---
@@ -289,6 +286,31 @@ class TestGetDeckCardCountsDefensive:
         assert cards == [('Title', 1)]
 
 
+# --- Unit Tests for master_vault_url/decks_of_keyforge_url Accepting a File or a Literal URL ---
+
+class TestParseDeckUrlFileOrLiteral:
+    """parse_deck_url should accept either a path to a file of deck URLs or a single URL."""
+
+    def test_reads_deck_urls_from_a_file(self, tmp_path):
+        deck_file = tmp_path / 'deck.txt'
+        deck_file.write_text('deck-from-file')
+
+        collected = []
+        with patch.object(deck_formats, 'extract_deck_id', return_value='deck-from-file'), \
+             patch.object(deck_formats, 'get_deck_card_counts', return_value=[('a card', 1)]):
+            parse_deck_url(str(deck_file), lambda index, name, quantity: collected.append((index, name, quantity)))
+
+        assert collected == [(1, 'a card', 1)]
+
+    def test_treats_non_file_text_as_a_literal_url(self):
+        collected = []
+        with patch.object(deck_formats, 'extract_deck_id', return_value='literal-deck-id'), \
+             patch.object(deck_formats, 'get_deck_card_counts', return_value=[('a card', 1)]):
+            parse_deck_url('https://www.keyforgegame.com/deck-details/not-a-file-path', lambda index, name, quantity: collected.append((index, name, quantity)))
+
+        assert collected == [(1, 'a card', 1)]
+
+
 # --- Unit Tests for Master Vault Multi-Deck URL Batches ---
 
 class TestParseDeckUrlResilience:
@@ -447,7 +469,16 @@ class TestFullFetchWorkflow:
 
     @pytest.mark.slow
     def test_fetch_master_vault_deck(self, temp_dir):
-        parse_deck(MASTER_VAULT_URL, DeckFormat.MASTER_VAULT, get_handle_card(temp_dir))
+        parse_deck(MASTER_VAULT_URL, DeckFormat.MASTER_VAULT_URL, get_handle_card(temp_dir))
+
+        files = os.listdir(temp_dir)
+        assert len(files) >= 1
+        for f in files:
+            assert os.path.getsize(os.path.join(temp_dir, f)) > 0
+
+    @pytest.mark.slow
+    def test_fetch_decks_of_keyforge_deck(self, temp_dir):
+        parse_deck(DECKS_OF_KEYFORGE_URL, DeckFormat.DECKS_OF_KEYFORGE_URL, get_handle_card(temp_dir))
 
         files = os.listdir(temp_dir)
         assert len(files) >= 1
