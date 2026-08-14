@@ -10,7 +10,7 @@ sys.path.insert(0, REPO_ROOT)
 from plugins.lotr_lcg.deck_formats import DeckFormat, parse_deck
 from plugins.lotr_lcg.hallofbeorn import ScenarioMode
 from plugins.lotr_lcg.ringsdb import get_handle_card
-from utilities import ensure_directory
+from utilities import configure_console_encoding, ensure_directory
 
 front_directory = path.join(REPO_ROOT, "game", "front")
 double_sided_directory = path.join(REPO_ROOT, "game", "double_sided")
@@ -38,5 +38,6 @@ def cli(deck_path: str, format: DeckFormat, scenario_mode: str):
     )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    configure_console_encoding()
     cli()
