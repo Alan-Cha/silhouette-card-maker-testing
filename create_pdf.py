@@ -52,7 +52,7 @@ specialty_choices = get_all_specialty_layout_names(layout_config)
 @click.option("--show_outline", default=False, is_flag=True, help="Show a white outline for cutting paths.")
 @click.option("--borderless", default=False, is_flag=True, help="Use tighter inset to fit more cards per page.")
 
-@click.version_option("2.2.0")
+@click.version_option("3.0.0")
 
 def cli(
     front_dir_path,
