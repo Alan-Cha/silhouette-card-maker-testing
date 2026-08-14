@@ -11,11 +11,11 @@ from xml.etree import ElementTree as ET
 from plugins.mtg.patterns import DECKSTATS_PATTERN, MOXFIELD_PATTERN
 
 import cloudscraper
-import filetype
 import mtg_parser
 import requests
 
 from plugins.mtg.common import remove_nonalphanumeric
+from utilities import guess_extension
 
 card_data_tuple = Tuple[str, str, int, int]
 
@@ -370,8 +370,7 @@ def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, do
                 clean_name = remove_nonalphanumeric(name)
                 response = requests.get(image_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
                 response.raise_for_status()
-                kind = filetype.guess(response.content)
-                ext = f'.{kind.extension}' if kind else '.png'
+                ext = guess_extension(response.content)
                 for counter in range(quantity):
                     image_path = os.path.join(front_img_dir, f'{str(index)}{clean_name}{str(counter + 1)}{ext}')
                     with open(image_path, 'wb') as f:
@@ -381,8 +380,7 @@ def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, do
                     print(f'Fetching back image from URL: {image_back_url}')
                     back_response = requests.get(image_back_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
                     back_response.raise_for_status()
-                    back_kind = filetype.guess(back_response.content)
-                    back_ext = f'.{back_kind.extension}' if back_kind else '.png'
+                    back_ext = guess_extension(back_response.content)
                     for counter in range(quantity):
                         image_path = os.path.join(double_sided_dir, f'{str(index)}{clean_name}{str(counter + 1)}{back_ext}')
                         with open(image_path, 'wb') as f:

@@ -4,13 +4,15 @@ from time import sleep
 from re import sub
 from unicodedata import normalize, category
 
+from utilities import guess_extension
+
 session = Session()
 
-NETRUNNERDB_SET_URL_TEMPLATE = 'https://api-preview.netrunnerdb.com/api/v3/public/card_sets/{set_name}'
-NETRUNNERDB_URL_TEMPLATE = 'https://api-preview.netrunnerdb.com/api/v3/public/cards/{card_name}'
+NETRUNNERDB_SET_URL_TEMPLATE = 'https://api.netrunnerdb.com/api/v3/public/card_sets/{set_name}'
+NETRUNNERDB_URL_TEMPLATE = 'https://api.netrunnerdb.com/api/v3/public/cards/{card_name}'
 NRO_PROXY_URL_TEMPLATE = 'https://nro-public.s3.nl-ams.scw.cloud/nro/card-printings/v2/webp/english/card/{print_id}.webp'
 
-OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}.png'
+OUTPUT_CARD_ART_FILE_TEMPLATE = '{deck_index}{card_name}{quantity_counter}{extension}'
 
 def request_api(query: str) -> Response:
     r = session.get(query, headers = {'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
@@ -41,16 +43,21 @@ def fetch_card(
 
     # Get the latest printing id
     latest_print_id = json.get('data').get('attributes').get('latest_printing_id')
-    card_art = request_api(NRO_PROXY_URL_TEMPLATE.format(print_id=latest_print_id)).content
+    card_art_bytes = request_api(NRO_PROXY_URL_TEMPLATE.format(print_id=latest_print_id)).content
 
-    if card_art is not None:
+    if not card_art_bytes:
+        raise ValueError(f"NRO proxy returned an empty response for print_id '{latest_print_id}' (name='{name}')")
 
-        # Save image based on quantity
-        for counter in range(quantity):
-            image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=sanitized, quantity_counter=str(counter+1)))
+    # The NRO proxy serves WebP; detect the real type rather than assuming .png,
+    # so the file extension always matches its actual content.
+    extension = guess_extension(card_art_bytes)
 
-            with open(image_path, 'wb') as f:
-                f.write(card_art)
+    # Save image based on quantity
+    for counter in range(quantity):
+        image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=sanitized, quantity_counter=str(counter+1), extension=extension))
+
+        with open(image_path, 'wb') as f:
+            f.write(card_art_bytes)
 
 def is_valid_set(set_name: str) -> bool:
     # Attempt to query for set info

@@ -5,6 +5,7 @@ import math
 import filetype
 import os
 import re
+import sys
 from glob import glob
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -17,6 +18,18 @@ from pydantic import BaseModel, model_validator
 import page_manager
 import size_convert
 from enums import Registration, Orientation, OrientationMode, Variant
+
+def configure_console_encoding() -> None:
+    """Reconfigure stdout/stderr to UTF-8, so printing non-ASCII card names
+    doesn't crash with UnicodeEncodeError on narrow console codepages (e.g.
+    Windows cp1252). Call once at CLI startup, not at import time, so this
+    module doesn't rewrite an embedding process's stdout/stderr as a side effect."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            try:
+                stream.reconfigure(encoding='utf-8', errors='backslashreplace')
+            except Exception:
+                pass
 
 # Specify directory locations
 # Use Path(__file__).parent to ensure paths work regardless of where script is run from
@@ -65,6 +78,11 @@ valid_mimetypes = (
     "image/qoi",
     "image/dds"
 )
+
+def guess_extension(data: bytes, default: str = '.png') -> str:
+    """Sniff the file extension from raw image bytes, falling back to `default`."""
+    kind = filetype.guess(data)
+    return f'.{kind.extension}' if kind else default
 
 # Approximately 1.25mm of bleed assuming 300 PPI: ceil(1.25mm * 1in/25.4mm * 300ppi)
 MINIMUM_BLEED = 15
