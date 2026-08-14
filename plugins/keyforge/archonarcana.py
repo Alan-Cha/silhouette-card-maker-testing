@@ -141,7 +141,7 @@ def resolve_card(entry: str) -> Tuple[str, str]:
 
     return title, image_url
 
-def fetch_card_art(index: int, card_name: str, quantity: int, front_img_dir: str):
+def fetch_card(index: int, card_name: str, quantity: int, front_img_dir: str):
     title, image_url = resolve_card(card_name)
 
     card_art = request_archonarcana(image_url).content
@@ -154,4 +154,4 @@ def fetch_card_art(index: int, card_name: str, quantity: int, front_img_dir: str
             f.write(card_art)
 
 def get_handle_card(front_img_dir: str):
-    return partial(fetch_card_art, front_img_dir=front_img_dir)
+    return partial(fetch_card, front_img_dir=front_img_dir)
