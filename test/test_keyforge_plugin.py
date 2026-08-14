@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from plugins.keyforge import deck_formats, mastervault
+from plugins.keyforge import archonarcana, deck_formats, mastervault
 from plugins.keyforge.archonarcana import (API_URL, entry_to_title,
-                                           extract_image_url, get_handle_card,
-                                           normalize_title,
+                                           get_handle_card, normalize_title,
+                                           query_page_image,
                                            remove_nonalphanumeric,
                                            request_archonarcana, resolve_card,
                                            translate_special_characters)
@@ -110,24 +110,106 @@ class TestRemoveNonalphanumeric:
         assert remove_nonalphanumeric('Shae \u201cCloudkicker\u201d') == 'ShaeCloudkicker'
 
 
-# --- Unit Tests for Image URL Extraction ---
+# --- Unit Tests for MediaWiki API Page/Image Lookup ---
 
-class TestExtractImageUrl:
-    """Test deriving the full-resolution image URL from page HTML."""
+class TestQueryPageImage:
+    """Test resolving a title to (canonical title, image URL) via the MediaWiki API."""
 
-    def test_derives_original_from_thumbnail(self):
-        html = (
-            '<a href="/wiki/File:939-070.png" class="image">'
-            '<img alt="Ecto-Charge" '
-            'src="https://mywikis-wiki-media.s3.us-central-1.wasabisys.com/archonarcana/thumb/939-070.png/300px-939-070.png" '
-            'width="300" height="420">'
-        )
-        assert extract_image_url(html) == (
-            'https://mywikis-wiki-media.s3.us-central-1.wasabisys.com/archonarcana/939-070.png'
-        )
+    def _fake_response(self, data: dict):
+        response = MagicMock()
+        response.json.return_value = data
+        return response
 
-    def test_returns_none_without_image(self):
-        assert extract_image_url('<p>This page has no card image.</p>') is None
+    def test_returns_title_and_image_for_existing_page(self):
+        data = {
+            'query': {
+                'pages': {
+                    '11067': {
+                        'pageid': 11067,
+                        'title': 'Ecto-Charge',
+                        'original': {'source': 'https://example.com/939-070.png'},
+                    }
+                }
+            }
+        }
+        with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
+            assert query_page_image('Ecto-Charge') == ('Ecto-Charge', 'https://example.com/939-070.png')
+
+    def test_returns_canonical_title_after_redirect(self):
+        # redirects=1 makes the API resolve a redirect title to its target; the
+        # page object's own title (not the query title) is the canonical one.
+        data = {
+            'query': {
+                'redirects': [{'from': 'Ecto Charge', 'to': 'Ecto-Charge'}],
+                'pages': {
+                    '11067': {
+                        'pageid': 11067,
+                        'title': 'Ecto-Charge',
+                        'original': {'source': 'https://example.com/939-070.png'},
+                    }
+                }
+            }
+        }
+        with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
+            assert query_page_image('Ecto Charge') == ('Ecto-Charge', 'https://example.com/939-070.png')
+
+    def test_returns_title_with_none_image_when_page_has_no_image(self):
+        data = {
+            'query': {
+                'pages': {
+                    '123': {'pageid': 123, 'title': 'Some Page'}
+                }
+            }
+        }
+        with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
+            assert query_page_image('Some Page') == ('Some Page', None)
+
+    def test_returns_none_for_missing_page(self):
+        data = {
+            'query': {
+                'pages': {
+                    '-1': {'title': 'Not A Real Card', 'missing': ''}
+                }
+            }
+        }
+        with patch.object(archonarcana, 'request_archonarcana', return_value=self._fake_response(data)):
+            assert query_page_image('Not A Real Card') is None
+
+
+# --- Unit Tests for Card Resolution Control Flow ---
+
+class TestResolveCard:
+    """Test resolve_card's direct-lookup/search-fallback branches without hitting the network."""
+
+    def test_direct_hit_skips_search(self):
+        with patch.object(archonarcana, 'query_page_image', return_value=('Ecto-Charge', 'https://example.com/a.png')), \
+             patch.object(archonarcana, 'search_title') as mock_search:
+            assert resolve_card('Ecto-Charge') == ('Ecto-Charge', 'https://example.com/a.png')
+            mock_search.assert_not_called()
+
+    def test_falls_back_to_search_when_direct_lookup_misses(self):
+        with patch.object(archonarcana, 'query_page_image', side_effect=[None, ('Resolved Title', 'https://example.com/b.png')]), \
+             patch.object(archonarcana, 'search_title', return_value='Resolved Title'):
+            assert resolve_card('ecto charge') == ('Resolved Title', 'https://example.com/b.png')
+
+    def test_raises_when_search_finds_nothing(self):
+        with patch.object(archonarcana, 'query_page_image', return_value=None), \
+             patch.object(archonarcana, 'search_title', return_value=None):
+            with pytest.raises(Exception, match='card not found'):
+                resolve_card('Not A Real Card')
+
+    def test_raises_when_search_result_also_misses(self):
+        with patch.object(archonarcana, 'query_page_image', return_value=None), \
+             patch.object(archonarcana, 'search_title', return_value='Resolved Title'):
+            with pytest.raises(Exception, match='card not found'):
+                resolve_card('ecto charge')
+
+    def test_raises_when_page_has_no_image(self):
+        with patch.object(archonarcana, 'query_page_image', return_value=('Some Page', None)), \
+             patch.object(archonarcana, 'search_title') as mock_search:
+            with pytest.raises(Exception, match='card image not found'):
+                resolve_card('Some Page')
+            mock_search.assert_not_called()
 
 
 # --- Unit Tests for Master Vault Deck ID Extraction ---

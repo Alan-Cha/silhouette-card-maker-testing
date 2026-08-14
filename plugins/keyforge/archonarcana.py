@@ -1,20 +1,18 @@
 from difflib import SequenceMatcher
 from functools import partial
-from html import unescape
 from os import path
 from re import IGNORECASE, compile, sub
 from time import sleep
 from typing import Optional, Tuple
 from unicodedata import combining
 from unicodedata import normalize as normalize_unicode
-from urllib.parse import quote, unquote
+from urllib.parse import unquote
 
 from requests import Response, Session
 
 session = Session()
 
 USER_AGENT = 'silhouette-card-maker/0.1'
-WIKI_PAGE_TEMPLATE = 'https://www.archonarcana.com/wiki/{title}'
 API_URL = 'https://www.archonarcana.com/w139/api.php'
 
 RATE_LIMIT_SECONDS = 0.075
@@ -22,10 +20,6 @@ RATE_LIMIT_SECONDS = 0.075
 # Minimum similarity for the last-resort fuzzy match to accept a search result.
 FUZZY_MATCH_THRESHOLD = 0.8
 
-# The card art is the single MediaWiki "image" anchor on a card page.
-IMAGE_ANCHOR_PATTERN = compile(r'<a[^>]*class="image"[^>]*>\s*<img[^>]*\bsrc="([^"]+)"', IGNORECASE)
-# MediaWiki thumbnails look like `.../thumb/<file>/<width>px-<file>`; the original drops the thumb segment.
-THUMB_PATTERN = compile(r'/thumb/(.+)/[^/]+$')
 URL_PATTERN = compile(r'^https?://', IGNORECASE)
 WIKI_PATH_PATTERN = compile(r'/wiki/(.+)$')
 
@@ -37,14 +31,10 @@ ASCII_APOSTROPHE_TRANSLATION = str.maketrans({"'": '\u2019'})
 # Fold those typographic characters back to ASCII so different spellings compare equal.
 TYPOGRAPHIC_TRANSLATION = str.maketrans({'\u2019': "'", '\u201c': '"', '\u201d': '"'})
 
-def request_archonarcana(url: str, params: Optional[dict] = None, allow_missing: bool = False) -> Optional[Response]:
+def request_archonarcana(url: str, params: Optional[dict] = None) -> Response:
     r = session.get(url, params=params, headers={'user-agent': USER_AGENT, 'accept': '*/*'})
 
     sleep(RATE_LIMIT_SECONDS)
-
-    # A missing wiki page responds with 404. Let callers treat that as "does not exist".
-    if allow_missing and r.status_code == 404:
-        return None
 
     # Check for 2XX response code
     r.raise_for_status()
@@ -77,9 +67,6 @@ def entry_to_title(entry: str) -> str:
 
     return entry
 
-def title_to_url(title: str) -> str:
-    return WIKI_PAGE_TEMPLATE.format(title=quote(title.replace(' ', '_'), safe="():,'!*-"))
-
 def search_title(query: str) -> Optional[str]:
     params = {
         'action': 'opensearch',
@@ -108,31 +95,42 @@ def search_title(query: str) -> Optional[str]:
 
     return None
 
-def extract_image_url(html: str) -> Optional[str]:
-    match = IMAGE_ANCHOR_PATTERN.search(html)
-    if not match:
+def query_page_image(title: str) -> Optional[Tuple[str, Optional[str]]]:
+    # Look up a page by title through the MediaWiki API, following redirects. Returns
+    # None if the page does not exist, otherwise (canonical title, original image URL
+    # or None if the page has no image). This avoids fetching and scraping the rendered
+    # wiki page, which the API returns as structured data directly.
+    params = {
+        'action': 'query',
+        'titles': title,
+        'prop': 'pageimages',
+        'piprop': 'original',
+        'redirects': '1',
+        'format': 'json',
+    }
+
+    pages = request_archonarcana(API_URL, params=params).json().get('query', {}).get('pages', {})
+    page = next(iter(pages.values()), None)
+
+    if page is None or 'missing' in page:
         return None
 
-    src = unescape(match.group(1))
-
-    # Derive the full-resolution original from the thumbnail URL.
-    return THUMB_PATTERN.sub(r'/\1', src)
+    return page.get('title', title), page.get('original', {}).get('source')
 
 def resolve_card(entry: str) -> Tuple[str, str]:
     title = translate_special_characters(entry_to_title(entry))
-    response = request_archonarcana(title_to_url(title), allow_missing=True)
+    result = query_page_image(title)
 
-    if response is None:
+    if result is None:
         # Exact title not found. Retry via search to handle casing and space/underscore differences.
         resolved = search_title(title)
         if resolved is not None:
-            title = resolved
-            response = request_archonarcana(title_to_url(title), allow_missing=True)
+            result = query_page_image(resolved)
 
-    if response is None:
+    if result is None:
         raise Exception(f'card not found on Archon Arcana: "{title}"')
 
-    image_url = extract_image_url(response.text)
+    title, image_url = result
     if image_url is None:
         raise Exception(f'card image not found on Archon Arcana: "{title}"')
 
