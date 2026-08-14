@@ -50,9 +50,7 @@ Options:
 
 ### `master_vault_url`
 
-A [Master Vault](https://www.keyforgegame.com) deck URL. The plugin reads the full deck, including non-deck cards such as Prophecies, and downloads each card's art from Archon Arcana.
-
-List one deck URL per line to combine several decks into a single PDF.
+Master Vault deck URL format.
 
 ```
 https://www.keyforgegame.com/deck-details/4b86855f-71e5-4f54-a20d-2a58ec973f9c
@@ -66,9 +64,7 @@ python plugins/keyforge/fetch.py https://www.keyforgegame.com/deck-details/4b868
 
 ### `decks_of_keyforge_url`
 
-A [Decks of KeyForge](https://decksofkeyforge.com) deck URL. Decks of KeyForge uses the same deck ID as Master Vault, so the deck is read the same way, including non-deck cards such as Prophecies, with each card's art downloaded from Archon Arcana.
-
-List one deck URL per line to combine several decks into a single PDF.
+Decks of KeyForge deck URL format.
 
 ```
 https://decksofkeyforge.com/decks/79c716d4-9605-4c8d-8b4c-5f9c9d3e2b7a
