@@ -46,15 +46,6 @@ Options:
   --help  Show this message and exit.
 ```
 
-### Examples
-
-You can also use a deck URL directly in the command line instead of saving it to a file first. Note the single quotes around the URL.
-
-```sh
-python plugins/keyforge/fetch.py 'https://www.keyforgegame.com/deck-details/4b86855f-71e5-4f54-a20d-2a58ec973f9c' master_vault_url
-python plugins/keyforge/fetch.py 'https://decksofkeyforge.com/decks/79c716d4-9605-4c8d-8b4c-5f9c9d3e2b7a' decks_of_keyforge_url
-```
-
 ## Formats
 
 ### `master_vault_url`
@@ -67,6 +58,12 @@ List one deck URL per line to combine several decks into a single PDF.
 https://www.keyforgegame.com/deck-details/4b86855f-71e5-4f54-a20d-2a58ec973f9c
 ```
 
+You can also use a Master Vault URL directly in the command line.
+
+```sh
+python plugins/keyforge/fetch.py https://www.keyforgegame.com/deck-details/4b86855f-71e5-4f54-a20d-2a58ec973f9c master_vault_url
+```
+
 ### `decks_of_keyforge_url`
 
 A [Decks of KeyForge](https://decksofkeyforge.com) deck URL. Decks of KeyForge uses the same deck ID as Master Vault, so the deck is read the same way, including non-deck cards such as Prophecies, with each card's art downloaded from Archon Arcana.
@@ -75,6 +72,12 @@ List one deck URL per line to combine several decks into a single PDF.
 
 ```
 https://decksofkeyforge.com/decks/79c716d4-9605-4c8d-8b4c-5f9c9d3e2b7a
+```
+
+You can also use a Decks of KeyForge URL directly in the command line.
+
+```sh
+python plugins/keyforge/fetch.py https://decksofkeyforge.com/decks/79c716d4-9605-4c8d-8b4c-5f9c9d3e2b7a decks_of_keyforge_url
 ```
 
 ### `archon_arcana`
