@@ -101,6 +101,12 @@ class TestEntryToTitle:
         # L%C3%A6rie -> Lærie
         assert entry_to_title('https://www.archonarcana.com/wiki/L%C3%A6rie_of_the_Lake') == 'L\u00e6rie of the Lake'
 
+    def test_url_query_string_excluded(self):
+        assert entry_to_title('https://www.archonarcana.com/wiki/Ecto-Charge?action=history') == 'Ecto-Charge'
+
+    def test_url_fragment_excluded(self):
+        assert entry_to_title('https://www.archonarcana.com/wiki/Ecto-Charge#Card') == 'Ecto-Charge'
+
 
 class TestRemoveNonalphanumeric:
     """Test the filename sanitizer."""
@@ -203,6 +209,16 @@ class TestResolveCard:
              patch.object(archonarcana, 'search_title', return_value='Resolved Title'):
             with pytest.raises(Exception, match='card not found'):
                 resolve_card('ecto charge')
+
+    def test_skips_redundant_requery_when_search_resolves_to_same_title(self):
+        # If search_title's exact-match branch returns the title already tried
+        # directly, re-querying it would just repeat the same miss.
+        with patch.object(archonarcana, 'query_page_image', return_value=None) as mock_query, \
+             patch.object(archonarcana, 'search_title', return_value='Ecto-Charge'):
+            with pytest.raises(Exception, match='card not found'):
+                resolve_card('Ecto-Charge')
+
+            mock_query.assert_called_once_with('Ecto-Charge')
 
     def test_raises_when_page_has_no_image(self):
         with patch.object(archonarcana, 'query_page_image', return_value=('Some Page', None)), \
