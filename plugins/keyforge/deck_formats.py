@@ -1,10 +1,9 @@
 from enum import Enum
-from typing import Callable, List, Tuple
+from typing import Callable, List
 
 from plugins.keyforge.archonarcana import entry_to_title, normalize_title
-from plugins.keyforge.mastervault import extract_deck_id, get_deck_card_counts
-
-card_count_tuple = Tuple[str, int] # card reference, quantity
+from plugins.keyforge.mastervault import (card_count_tuple, extract_deck_id,
+                                           get_deck_card_counts)
 
 def run_cards(cards: List[card_count_tuple], handle_card: Callable) -> None:
     error_lines = []
@@ -37,22 +36,19 @@ def read_lines(deck_text: str):
         yield line
 
 def parse_archon_arcana(deck_text: str, handle_card: Callable) -> None:
-    # Aggregate repeated cards into quantities, preserving first-seen order.
-    ordered_keys = []
-    counts = {}
-    references = {}
+    # Aggregate repeated cards into quantities, keyed by normalized title. A dict
+    # preserves insertion order, so this also keeps cards in first-seen order.
+    cards = {}
 
     for line in read_lines(deck_text):
         key = normalize_title(entry_to_title(line))
 
-        if key not in counts:
-            counts[key] = 0
-            ordered_keys.append(key)
-            references[key] = line
+        if key not in cards:
+            cards[key] = [line, 0]
 
-        counts[key] = counts[key] + 1
+        cards[key][1] += 1
 
-    run_cards([(references[key], counts[key]) for key in ordered_keys], handle_card)
+    run_cards([(reference, quantity) for reference, quantity in cards.values()], handle_card)
 
 def parse_deck_url(deck_text: str, handle_card: Callable) -> None:
     cards = []

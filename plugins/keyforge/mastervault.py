@@ -14,7 +14,7 @@ UUID_PATTERN = compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 
 RATE_LIMIT_SECONDS = 0.075
 
-card_count_tuple = Tuple[str, int] # card name, quantity
+card_count_tuple = Tuple[str, int] # card name or reference, quantity
 
 def request_mastervault(url: str):
     r = scraper.get(url, headers={'accept': 'application/json'})

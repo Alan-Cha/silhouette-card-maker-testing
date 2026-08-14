@@ -1,4 +1,5 @@
 from difflib import SequenceMatcher
+from functools import partial
 from html import unescape
 from os import path
 from re import IGNORECASE, compile, sub
@@ -55,7 +56,7 @@ def remove_nonalphanumeric(s: str) -> str:
 
 def normalize_title(title: str) -> str:
     # MediaWiki treats spaces and underscores as equivalent and is case-insensitive on the first letter.
-    normalized = sub(r'\s+', ' ', title.replace('_', ' ')).strip().lower()
+    normalized = sub(r'[\s_]+', ' ', title).strip().lower()
     # Strip accents (Gĕzdrutyŏ -> gezdrutyo) and fold typographic variants so spellings compare equal.
     normalized = ''.join(c for c in normalize_unicode('NFKD', normalized) if not combining(c))
     return normalized.translate(TYPOGRAPHIC_TRANSLATION).replace('\u00e6', 'ae')
@@ -119,19 +120,17 @@ def extract_image_url(html: str) -> Optional[str]:
 
 def resolve_card(entry: str) -> Tuple[str, str]:
     title = translate_special_characters(entry_to_title(entry))
-
     response = request_archonarcana(title_to_url(title), allow_missing=True)
 
     if response is None:
         # Exact title not found. Retry via search to handle casing and space/underscore differences.
         resolved = search_title(title)
-        if resolved is None:
-            raise Exception(f'card not found on Archon Arcana: "{title}"')
+        if resolved is not None:
+            title = resolved
+            response = request_archonarcana(title_to_url(title), allow_missing=True)
 
-        title = resolved
-        response = request_archonarcana(title_to_url(title), allow_missing=True)
-        if response is None:
-            raise Exception(f'card not found on Archon Arcana: "{title}"')
+    if response is None:
+        raise Exception(f'card not found on Archon Arcana: "{title}"')
 
     image_url = extract_image_url(response.text)
     if image_url is None:
@@ -151,15 +150,5 @@ def fetch_card_art(index: int, card_name: str, quantity: int, front_img_dir: str
         with open(image_path, 'wb') as f:
             f.write(card_art)
 
-def get_handle_card(
-    front_img_dir: str
-):
-    def configured_fetch_card(index: int, card_name: str, quantity: int = 1):
-        fetch_card_art(
-            index,
-            card_name,
-            quantity,
-            front_img_dir
-        )
-
-    return configured_fetch_card
+def get_handle_card(front_img_dir: str):
+    return partial(fetch_card_art, front_img_dir=front_img_dir)
