@@ -21,7 +21,8 @@ RATE_LIMIT_SECONDS = 0.075
 FUZZY_MATCH_THRESHOLD = 0.8
 
 URL_PATTERN = compile(r'^https?://', IGNORECASE)
-WIKI_PATH_PATTERN = compile(r'/wiki/(.+)$')
+# Stop at '?' or '#' so a pasted URL's query string or fragment isn't swept into the title.
+WIKI_PATH_PATTERN = compile(r'/wiki/([^?#]+)')
 
 # Archon Arcana page titles use typographic characters. Map common ASCII input to them,
 # e.g. AEmber Imp -> Æmber Imp, Nature's Call -> Nature’s Call, Shae "Cloudkicker" -> Shae “Cloudkicker”.
@@ -124,8 +125,10 @@ def resolve_card(entry: str) -> Tuple[str, str]:
     if result is None:
         # Exact title not found. Retry via search to handle casing and space/underscore differences.
         resolved = search_title(title)
-        if resolved is not None:
+        if resolved is not None and resolved != title:
             result = query_page_image(resolved)
+        if resolved is not None:
+            title = resolved
 
     if result is None:
         raise Exception(f'card not found on Archon Arcana: "{title}"')
