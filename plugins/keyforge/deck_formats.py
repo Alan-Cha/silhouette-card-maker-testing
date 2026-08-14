@@ -5,7 +5,10 @@ from plugins.keyforge.archonarcana import entry_to_title, normalize_title
 from plugins.keyforge.mastervault import (card_count_tuple, extract_deck_id,
                                            get_deck_card_counts)
 
-def run_cards(cards: List[card_count_tuple], handle_card: Callable) -> None:
+# Unlike other plugins' parse_deck_helper, this takes an already-aggregated
+# (reference, quantity) list rather than raw deck_text + line-matcher callables:
+# archon_arcana lines don't state a quantity, so duplicates must be counted first.
+def parse_deck_helper(cards: List[card_count_tuple], handle_card: Callable) -> None:
     error_lines = []
 
     index = 0
@@ -48,7 +51,7 @@ def parse_archon_arcana(deck_text: str, handle_card: Callable) -> None:
 
         cards[key][1] += 1
 
-    run_cards([(reference, quantity) for reference, quantity in cards.values()], handle_card)
+    parse_deck_helper([(reference, quantity) for reference, quantity in cards.values()], handle_card)
 
 def parse_deck_url(deck_text: str, handle_card: Callable) -> None:
     cards = []
@@ -70,7 +73,7 @@ def parse_deck_url(deck_text: str, handle_card: Callable) -> None:
         for line, error in error_lines:
             print(f'  - {line} ({error})')
 
-    run_cards(cards, handle_card)
+    parse_deck_helper(cards, handle_card)
 
 class DeckFormat(str, Enum):
     ARCHON_ARCANA = 'archon_arcana'
