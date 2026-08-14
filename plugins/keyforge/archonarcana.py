@@ -77,6 +77,8 @@ def search_title(query: str) -> Optional[str]:
         'format': 'json',
     }
 
+    # action=opensearch responds with a 4-element array, not an object:
+    # [query, [matched titles], [descriptions], [urls]]. Index 1 is the titles.
     results = request_archonarcana(API_URL, params=params).json()
     titles = results[1] if len(results) > 1 else []
     if not titles:
