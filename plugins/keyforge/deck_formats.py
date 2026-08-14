@@ -56,12 +56,23 @@ def parse_archon_arcana(deck_text: str, handle_card: Callable) -> None:
 
 def parse_deck_url(deck_text: str, handle_card: Callable) -> None:
     cards = []
+    error_lines = []
 
     # Each line is a deck URL. Master Vault and Decks of KeyForge share the same deck ID,
     # so both are resolved through Master Vault and can be mixed together.
     for line in read_lines(deck_text):
-        deck_id = extract_deck_id(line)
-        cards.extend(get_deck_card_counts(deck_id))
+        try:
+            deck_id = extract_deck_id(line)
+            cards.extend(get_deck_card_counts(deck_id))
+        except Exception as e:
+            print(f'Error: {e}')
+            error_lines.append((line, str(e)))
+
+    if len(error_lines) > 0:
+        print()
+        print(f'{len(error_lines)} deck(s) did not work:')
+        for line, error in error_lines:
+            print(f'  - {line} ({error})')
 
     run_cards(cards, handle_card)
 
