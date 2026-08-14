@@ -43,13 +43,15 @@ def fetch_card_art(index: int, card_name: str, card_stub: str, quantity: int, so
     
     card_art = request_ashes(url_template.format(card_stub=card_stub)).content
 
-    if card_art is not None:
-        # Save image based on quantity
-        for counter in range(quantity):
-            image_path = path.join(front_img_dir, f'{index}{card_name}_{counter + 1}.png')
+    if not card_art:
+        raise ValueError(f'Received an empty card art response for "{card_name}" (stub: {card_stub})')
 
-            with open(image_path, 'wb') as f:
-                f.write(card_art)
+    # Save image based on quantity
+    for counter in range(quantity):
+        image_path = path.join(front_img_dir, f'{index}{card_name}_{counter + 1}.png')
+
+        with open(image_path, 'wb') as f:
+            f.write(card_art)
 
 def get_handle_card(
     source: ImageServer,

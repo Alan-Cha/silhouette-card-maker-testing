@@ -64,6 +64,8 @@ def fetch_card(
     # Query for card info
     url = get_card_art_from_fftcg(card_name, serial_code, category)
     card_art = request_fftcg(url).content
+    if not card_art:
+        raise ValueError(f'Received an empty card art response for "{card_name}"')
 
     for counter in range(quantity):
         image_path = path.join(front_img_dir, f'{str(index)}{card_name}{str(counter + 1)}.png')

@@ -175,8 +175,9 @@ def fetch_card_art(
 ) -> None:
     # Query for the front side
     card_art = fetch_image(card_set, card_collector_number, prefer_langs)
-    if card_art is not None:
-        save_card_art_copies(card_art, front_img_dir, index, clean_card_name, quantity)
+    if not card_art:
+        raise ValueError(f'Received an empty card art response for "{clean_card_name}" (set: {card_set}, collector number: {card_collector_number})')
+    save_card_art_copies(card_art, front_img_dir, index, clean_card_name, quantity)
 
     # Get backside of card, if it exists
     if layout in double_sided_layouts:
@@ -185,8 +186,9 @@ def fetch_card_art(
                 fetch_meld_back(index, quantity, clean_card_name, card_name, all_parts, double_sided_dir)
         else:
             card_art = fetch_image(card_set, card_collector_number, prefer_langs, face='back')
-            if card_art is not None:
-                save_card_art_copies(card_art, double_sided_dir, index, clean_card_name, quantity)
+            if not card_art:
+                raise ValueError(f'Received an empty back-face card art response for "{clean_card_name}" (set: {card_set}, collector number: {card_collector_number})')
+            save_card_art_copies(card_art, double_sided_dir, index, clean_card_name, quantity)
 
 def partition_printings(printings: List, condition: List) -> Tuple[List, List]:
     matches = []

@@ -74,11 +74,16 @@ def fetch_card(
 
     printing = printings[0]
     front_art = request_swudb(SWUDB_ART_URL_TEMPLATE.format(card_art_ref=sub('.+cards/', '', printing.get('frontImagePath')))).content
+    if not front_art:
+        raise ValueError(f'Received an empty card art response for "{name}"')
+
     back_art = None
 
     back_image_path = printing.get('backImagePath', '')
     if back_image_path:
         back_art = request_swudb(SWUDB_ART_URL_TEMPLATE.format(card_art_ref=sub('.+cards/', '', back_image_path))).content
+        if not back_art:
+            raise ValueError(f'Received an empty back-face card art response for "{name}"')
 
     # Save images based on quantity
     for counter in range(quantity):

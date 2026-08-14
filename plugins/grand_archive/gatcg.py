@@ -32,18 +32,17 @@ def fetch_card(
     name_response = request_gatcg(CARD_URL_TEMPLATE.format(name=slugified))
 
     card_art_url = name_response.json().get('editions', [{}])[0].get('image')
-    art_response = request_gatcg(CARD_ART_URL_TEMPLATE.format(card_art_suffix=card_art_url))
-    
-    if art_response is not None:
-        card_art = art_response.content
+    card_art = request_gatcg(CARD_ART_URL_TEMPLATE.format(card_art_suffix=card_art_url)).content
 
-        if card_art is not None:
-            # Save image based on quantity
-            for counter in range(quantity):
-                image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=card_name, quantity_counter=str(counter + 1)))
+    if not card_art:
+        raise ValueError(f'Received an empty card art response for "{card_name}"')
 
-                with open(image_path, 'wb') as f:
-                    f.write(card_art)
+    # Save image based on quantity
+    for counter in range(quantity):
+        image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=card_name, quantity_counter=str(counter + 1)))
+
+        with open(image_path, 'wb') as f:
+            f.write(card_art)
 
 def get_handle_card(
     front_img_dir: str,

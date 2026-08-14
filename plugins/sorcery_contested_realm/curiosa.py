@@ -63,6 +63,9 @@ def fetch_card(
     front_img_dir: str,
 ):
     card_art = request_curiosa(image_url).content
+    if not card_art:
+        raise ValueError(f'Received an empty card art response for "{card_name}"')
+
     clean_name = remove_nonalphanumeric(card_name)
 
     for counter in range(quantity):

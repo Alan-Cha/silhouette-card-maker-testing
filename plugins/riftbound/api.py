@@ -40,16 +40,17 @@ def fetch_card_art(index: int, card_number: str, quantity: int, source: ImageSer
             image_server_query = url_template.format(card_number=f'{match.group(1)}s')
             api_response = request_api(image_server_query)
 
-    if api_response is not None:
-        card_art = api_response.content
+    card_art = api_response.content
 
-        if card_art is not None:
-            # Save image based on quantity
-            for counter in range(quantity):
-                image_path = path.join(front_img_dir, f'{index}{card_number}_{counter + 1}.jpg')
+    if not card_art:
+        raise ValueError(f'Received an empty card art response for card number "{card_number}"')
 
-                with open(image_path, 'wb') as f:
-                    f.write(card_art)
+    # Save image based on quantity
+    for counter in range(quantity):
+        image_path = path.join(front_img_dir, f'{index}{card_number}_{counter + 1}.jpg')
+
+        with open(image_path, 'wb') as f:
+            f.write(card_art)
 
 def fetch_card_number(name: str) -> str:
     url = f"https://riftmana.com/wp-json/wp/v2/cards?search={name}"

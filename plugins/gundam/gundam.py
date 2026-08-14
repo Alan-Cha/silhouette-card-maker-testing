@@ -26,14 +26,16 @@ def fetch_card(
 ):
     # Query for card info
     card_art = request_bandai(CARD_ART_URL_TEMPLATE.format(card_number=card_number)).content
-    
-    if card_art is not None:
-        # Save image based on quantity
-        for counter in range(quantity):
-            image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_number=card_number, quantity_counter=str(counter + 1)))
 
-            with open(image_path, 'wb') as f:
-                f.write(card_art)
+    if not card_art:
+        raise ValueError(f'Received an empty card art response for card number "{card_number}"')
+
+    # Save image based on quantity
+    for counter in range(quantity):
+        image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_number=card_number, quantity_counter=str(counter + 1)))
+
+        with open(image_path, 'wb') as f:
+            f.write(card_art)
 
 def get_handle_card(
     front_img_dir: str,

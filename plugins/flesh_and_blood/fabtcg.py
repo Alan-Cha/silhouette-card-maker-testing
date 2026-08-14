@@ -77,18 +77,17 @@ def fetch_card(
         raise ValueError(f"No printable face found for card_id '{card_id}' (name='{name}')")
 
     card_art_url = chosen_face.get('image', {}).get('normal')
-    card_art_response = request_fabtcg(card_art_url)
+    card_art = request_fabtcg(card_art_url).content
 
-    if card_art_response is not None:
-        card_art = card_art_response.content
+    if not card_art:
+        raise ValueError(f"Received an empty card art response for card_id '{card_id}' (name='{name}')")
 
-        if card_art is not None:
-            # Save image based on quantity
-            for counter in range(quantity):
-                image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=sanitized, quantity_counter=str(counter+1)))
+    # Save image based on quantity
+    for counter in range(quantity):
+        image_path = path.join(front_img_dir, OUTPUT_CARD_ART_FILE_TEMPLATE.format(deck_index=str(index), card_name=sanitized, quantity_counter=str(counter+1)))
 
-                with open(image_path, 'wb') as f:
-                    f.write(card_art)
+        with open(image_path, 'wb') as f:
+            f.write(card_art)
 
 def get_handle_card(
     front_img_dir: str,

@@ -232,6 +232,8 @@ def parse_scryfall_json(deck_text, handle_card: Callable, front_img_dir: str = '
                 if front_url:
                     response = requests.get(front_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
                     response.raise_for_status()
+                    if not response.content:
+                        raise ValueError(f'Received an empty card art response for "{name}"')
                     for counter in range(quantity):
                         with open(os.path.join(front_img_dir, f'{index}{clean_name}{counter + 1}.png'), 'wb') as f:
                             f.write(response.content)
@@ -240,6 +242,8 @@ def parse_scryfall_json(deck_text, handle_card: Callable, front_img_dir: str = '
                 if back_url and double_sided_dir:
                     response = requests.get(back_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
                     response.raise_for_status()
+                    if not response.content:
+                        raise ValueError(f'Received an empty back-face card art response for "{name}"')
                     for counter in range(quantity):
                         with open(os.path.join(double_sided_dir, f'{index}{clean_name}{counter + 1}.png'), 'wb') as f:
                             f.write(response.content)
@@ -370,6 +374,8 @@ def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, do
                 clean_name = remove_nonalphanumeric(name)
                 response = requests.get(image_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
                 response.raise_for_status()
+                if not response.content:
+                    raise ValueError(f'Received an empty card art response for "{name}"')
                 kind = filetype.guess(response.content)
                 ext = f'.{kind.extension}' if kind else '.png'
                 for counter in range(quantity):
@@ -381,6 +387,8 @@ def parse_cubecobra_csv(deck_text, handle_card: Callable, front_img_dir: str, do
                     print(f'Fetching back image from URL: {image_back_url}')
                     back_response = requests.get(image_back_url, headers={'user-agent': 'silhouette-card-maker/0.1', 'accept': '*/*'})
                     back_response.raise_for_status()
+                    if not back_response.content:
+                        raise ValueError(f'Received an empty back-face card art response for "{name}"')
                     back_kind = filetype.guess(back_response.content)
                     back_ext = f'.{back_kind.extension}' if back_kind else '.png'
                     for counter in range(quantity):
