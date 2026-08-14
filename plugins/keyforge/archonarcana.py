@@ -15,8 +15,6 @@ session = Session()
 USER_AGENT = 'silhouette-card-maker/0.1'
 API_URL = 'https://www.archonarcana.com/w139/api.php'
 
-RATE_LIMIT_SECONDS = 0.075
-
 # Minimum similarity for the last-resort fuzzy match to accept a search result.
 FUZZY_MATCH_THRESHOLD = 0.8
 
@@ -35,7 +33,7 @@ TYPOGRAPHIC_TRANSLATION = str.maketrans({'\u2019': "'", '\u201c': '"', '\u201d':
 def request_archonarcana(url: str, params: Optional[dict] = None) -> Response:
     r = session.get(url, params=params, headers={'user-agent': USER_AGENT, 'accept': '*/*'})
 
-    sleep(RATE_LIMIT_SECONDS)
+    sleep(0.075)
 
     # Check for 2XX response code
     r.raise_for_status()
