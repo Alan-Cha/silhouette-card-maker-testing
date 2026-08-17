@@ -10,6 +10,6 @@ pillow==12.3.0
 pyautogui==0.9.54
 pydantic==2.13.4
 pywinauto==0.6.9
-pypdfium2==5.12.1
+pypdfium2==5.13.0
 requests==2.34.2
 split-image==2.0.5
